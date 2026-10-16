@@ -1256,6 +1256,11 @@ namespace NetBunny
                     check(!c.battle.Automatic, "a saved manual preference survives hide/show too");
                     c.cultivation.AutoBattle = true; c.RestoreAutoBattlePreference(); c.battle.CancelQueue();
                     c.consent.CleanupEnabled = false;
+                    // Manual pause/resume of cultivation applies instantly.
+                    c.SetCultivationPaused(true);
+                    check(c.CultivationPaused && c.cultivation.LastNotice.Contains("暂歇"), "cultivation pause applies immediately");
+                    c.SetCultivationPaused(false);
+                    check(!c.CultivationPaused && c.cultivation.LastNotice.Contains("继续"), "cultivation resumes on request");
                     // Unattended recovery: a defeated cultivator always rests back.
                     c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
