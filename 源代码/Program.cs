@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -26,7 +26,7 @@ namespace NetBunny
             ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
             if (args.Length > 0 && args[0] == "--selftest")
             {
-                try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(LiveTempPopulation.SelfTest()); Console.WriteLine(EnemyBalance.SelfTest()); Console.WriteLine(MemoryReclaimer.SelfTest()); Console.WriteLine(CombatTactics.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
+                try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(LiveTempPopulation.SelfTest()); Console.WriteLine(EnemyBalance.SelfTest()); Console.WriteLine(MemoryReclaimer.SelfTest()); Console.WriteLine(CombatTactics.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(CultivationProgress.SelfTest()); Console.WriteLine(CultivationEncounterScheduler.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
                 catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
                 return;
             }
@@ -85,18 +85,29 @@ namespace NetBunny
                 catch(Exception e){Console.Error.WriteLine(e);Environment.ExitCode=1;}
                 return;
             }
-            if (!preview && !new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            // V6: pure cultivation mode must not depend on administrator rights.
+            // The app starts as the current user; desktop cultivation, adventure and
+            // temp-file features all work. Only network capture / firewall / rate
+            // limits need elevation, and the main window offers an explicit
+            // "restart as administrator" entry for that instead of forcing UAC.
+            bool elevated = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+            if (args.Length > 0 && args[0] == "--elevated-restart")
             {
-                try { Process.Start(new ProcessStartInfo(Application.ExecutablePath) { UseShellExecute = true, Verb = "runas", WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory }); }
-                catch (Exception e) { MessageBox.Show("需要管理员权限才能监控和管理网络。\n" + e.Message, "骑士助手"); }
-                return;
+                // The previous non-elevated instance releases its mutex while exiting.
+                for (int i = 0; i < 40; i++)
+                {
+                    bool free;
+                    using (Mutex probe = new Mutex(true, "Local\\NetBunny.Desktop.v1", out free)) { }
+                    if (free) break;
+                    Thread.Sleep(500);
+                }
             }
             bool first; using (Mutex gate = new Mutex(true, "Local\\NetBunny.Desktop.v1" + (preview ? ".Preview" : ""), out first))
             {
-                if (!first) { MessageBox.Show("骑士助手已经在运行。\n请先退出正在运行的旧版，再打开骑士助手。\n可在任务栏或右下角托盘找到已运行的窗口。", "骑士助手 · 桌面冒险与网络管理"); return; }
+                if (!first) { MessageBox.Show("桌面修仙传已经在运行。\n请先退出正在运行的旧版，再打开。\n可在任务栏或右下角托盘找到已运行的窗口。", "桌面修仙传 · 持续修仙桌宠"); return; }
                 SetProcessDPIAware(); Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
                 Application.ThreadException += delegate(object sender, ThreadExceptionEventArgs e) { MessageBox.Show(e.Exception.Message, "操作没有完成", MessageBoxButtons.OK, MessageBoxIcon.Information); };
-                using (MainForm form = new MainForm(preview))
+                using (MainForm form = new MainForm(preview, elevated))
                 {
                     if (preview)
                     {
@@ -168,9 +179,9 @@ namespace NetBunny
             Art.Fill(g,new Rectangle(0,0,Width-1,Height-1),24,Color.FromArgb(237,232,255));
             Art.Fill(g,new Rectangle(Width-232,-45,180,180),80,Color.FromArgb(228,219,253));
             KnightBrand.DrawHelmet(g,new Rectangle(Width-183,1,111,111));
-            using(Font title=Art.Font(23,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Ink)) g.DrawString("骑士助手",title,b,26,17);
-            using(Font sub=Art.Font(10)) using(Brush b=new SolidBrush(Color.FromArgb(107,92,156))) g.DrawString("守护网络，清理临时文件，开启骑士冒险。",sub,b,29,64);
-            using(Font small=Art.Font(9,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Purple)) g.DrawString("KNIGHT  /  05.4",small,b,Width-355,45);
+            using(Font title=Art.Font(23,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Ink)) g.DrawString("桌面修仙传",title,b,26,17);
+            using(Font sub=Art.Font(10)) using(Brush b=new SolidBrush(Color.FromArgb(107,92,156))) g.DrawString("一机一洞天，万机共仙界。修士持续修炼；真实清理与网络管理按需单独授权。",sub,b,29,64);
+            using(Font small=Art.Font(9,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Purple)) g.DrawString("DESK TO GOD  /  06.0",small,b,Width-355,45);
         }
     }
 
@@ -190,6 +201,7 @@ namespace NetBunny
     internal sealed class MainForm : Form
     {
         private readonly bool preview;
+        private readonly bool elevated;
         private NetworkEngine engine;
         private FirewallManager firewall;
         private AdventureController pet;
@@ -216,6 +228,7 @@ namespace NetBunny
         private readonly SoftButton petEquipment=new SoftButton();
         private readonly SoftButton autoPlan=new SoftButton(),clearField=new SoftButton();
         private readonly SoftButton speedCenter=new SoftButton(),trafficCenter=new SoftButton(),healthCenter=new SoftButton(),infoCenter=new SoftButton(),miniToggle=new SoftButton();
+        private readonly SoftButton elevateAdmin=new SoftButton();
         private readonly Label selectedName=new Label(),selectedPath=new Label(),selectedPids=new Label(),selectedState=new Label(),footer=new Label(),feedback=new Label();
         private readonly NumericUpDown down=new NumericUpDown(),up=new NumericUpDown();
         private readonly SoftButton unitKb=new SoftButton(),unitMb=new SoftButton();
@@ -227,9 +240,9 @@ namespace NetBunny
         private int tab;
         private string selectedKey="";
 
-        internal MainForm(bool isPreview)
+        internal MainForm(bool isPreview, bool isElevated)
         {
-            preview=isPreview; Text="骑士助手 · 桌面冒险与网络管理"; Font=Art.Font(10); BackColor=Art.Bg; ForeColor=Art.Ink;
+            preview=isPreview; elevated=isElevated; Text="桌面修仙传 · 持续修仙与网络管理"; Font=Art.Font(10); BackColor=Art.Bg; ForeColor=Art.Ink;
             ledger=new TrafficLedger(preview);
             AutoScaleMode=AutoScaleMode.None; ClientSize=new Size(1224,914); MinimumSize=new Size(1000,700); StartPosition=FormStartPosition.CenterScreen;
             Rectangle screen=Screen.PrimaryScreen.WorkingArea;if(Height>screen.Height-20)Height=Math.Max(700,screen.Height-20);if(Width>screen.Width-20)Width=Math.Max(1000,screen.Width-20);
@@ -243,6 +256,13 @@ namespace NetBunny
             {
                 if(preview) { LoadDemo(); return; }
                 InitializePet();
+                if(!elevated)
+                {
+                    footer.Text="普通权限运行：修仙、桌面冒险与临时文件清理正常；网络监控、限速与断网需要管理员权限。";
+                    tips.SetToolTip(footer,footer.Text);
+                    if(!closing)timer.Start();
+                    return;
+                }
                 firewall=new FirewallManager(); engine=new NetworkEngine();
                 NetworkEngine startingEngine=engine;
                 try { await Task.Run(delegate { startingEngine.Start(); }); } catch(Exception e) { if(!closing)ShowFeedback("监控启动失败："+e.Message,true); }
@@ -280,11 +300,11 @@ namespace NetBunny
             tips.SetToolTip(hideToTray,"主界面收进右下角托盘，骑士与网络管理继续运行。关闭窗口则退出整个程序。");
             tips.SetToolTip(petStatus,"动作取决于监测到的实际上传＋下载流量；没下载东西不等于断网。联网状态独立检测，网络状态不明时不会误判死亡。");
             if(preview)return;
-            trayMenu=new ContextMenuStrip();trayMenu.Items.Add("打开骑士助手",null,delegate{RestoreFromTray();});
-            trayPet=new ToolStripMenuItem("显示桌面冒险");trayPet.Click+=delegate{if(pet!=null){pet.Enabled=!pet.Enabled;UpdatePetControls();}};trayMenu.Items.Add(trayPet);
+            trayMenu=new ContextMenuStrip();trayMenu.Items.Add("打开桌面修仙传",null,delegate{RestoreFromTray();});
+            trayPet=new ToolStripMenuItem("显示桌面修士");trayPet.Click+=delegate{if(pet!=null){pet.Enabled=!pet.Enabled;UpdatePetControls();}};trayMenu.Items.Add(trayPet);
             trayRoaming=new ToolStripMenuItem("全屏漫游");trayRoaming.Click+=delegate{if(pet!=null){pet.Roaming=!pet.Roaming;UpdatePetControls();}};trayMenu.Items.Add(trayRoaming);
             trayMenu.Items.Add("战斗与动作演示",null,delegate{if(pet!=null){pet.Enabled=true;pet.PlayDemo();UpdatePetControls();}});
-            trayMenu.Items.Add("装备与地区皮肤",null,delegate{if(pet!=null)pet.ShowSettings();});
+            trayMenu.Items.Add("修行面板与装备",null,delegate{if(pet!=null)pet.ShowSettings();});
             trayMenu.Items.Add("切换自动规划杀怪",null,delegate{if(pet!=null){pet.SetAutoPlan(!pet.AutoPlanning);UpdatePetControls();}});
             trayMenu.Items.Add("一键清场并清理当前批次",null,delegate{if(pet!=null){pet.ClearField();UpdatePetControls();}});
             trayMenu.Items.Add(new ToolStripSeparator());
@@ -292,9 +312,9 @@ namespace NetBunny
             trayMenu.Items.Add("今日流量与曲线",null,delegate{OpenCenter(1);});
             trayMenu.Items.Add("网络体检",null,delegate{OpenCenter(2);});
             trayMenu.Items.Add("显示 / 隐藏网速小窗",null,delegate{ToggleMini();});
-            trayMenu.Items.Add(new ToolStripSeparator());trayMenu.Items.Add("退出骑士助手",null,delegate{Close();});
+            trayMenu.Items.Add(new ToolStripSeparator());trayMenu.Items.Add("退出桌面修仙传",null,delegate{Close();});
             trayMenu.Opening+=delegate{UpdatePetControls();};
-            tray=new NotifyIcon {Icon=Icon,Text="骑士助手 · 骑士宠物",ContextMenuStrip=trayMenu,Visible=true};
+            tray=new NotifyIcon {Icon=Icon,Text="桌面修仙传 · 桌面修士",ContextMenuStrip=trayMenu,Visible=true};
             tray.DoubleClick+=delegate{RestoreFromTray();};
         }
 
@@ -321,6 +341,22 @@ namespace NetBunny
             speedCenter.Click+=delegate{OpenCenter(0);};trafficCenter.Click+=delegate{OpenCenter(1);};healthCenter.Click+=delegate{OpenCenter(2);};infoCenter.Click+=delegate{OpenCenter(3);};miniToggle.Click+=delegate{ToggleMini();};
             tips.SetToolTip(speedCenter,"分别测试下载、上传，以及空闲和负载时的 HTTP 延迟；手动开始才产生测速流量。");
             tips.SetToolTip(trafficCenter,"仅累计本工具运行并成功监控期间的流量，按本机日期保存。");
+            elevateAdmin.Text="以管理员身份重启 · 启用网络管理";elevateAdmin.Font=Art.Font(9,FontStyle.Bold);
+            elevateAdmin.FillColor=Color.FromArgb(252,226,229);elevateAdmin.ForeColor=Color.FromArgb(181,77,93);
+            elevateAdmin.Visible=!elevated&&!preview;
+            elevateAdmin.Click+=delegate{RestartElevated();};
+            tips.SetToolTip(elevateAdmin,"网络监控、限速和断网需要管理员权限。点击后程序将以管理员身份重启；修仙进度与存档不受影响。");
+            Controls.Add(elevateAdmin);
+        }
+        private void RestartElevated()
+        {
+            if(closing||preview||elevated)return;
+            try
+            {
+                Process.Start(new ProcessStartInfo(Application.ExecutablePath){UseShellExecute=true,Verb="runas",WorkingDirectory=AppDomain.CurrentDomain.BaseDirectory,Arguments="--elevated-restart"});
+                Close();
+            }
+            catch(Exception e){ShowFeedback("未能请求管理员权限："+e.Message,true);}
         }
 
         private string RuleSummary()
@@ -365,7 +401,7 @@ namespace NetBunny
             if(ledger!=null&&!string.IsNullOrEmpty(ledger.PersistenceWarning)){footer.Text=ledger.PersistenceWarning;tips.SetToolTip(footer,ledger.PersistenceWarning);}
             if(center!=null&&!center.IsDisposed)center.RefreshData();
             if(mini!=null&&!mini.IsDisposed)mini.UpdateRates(download,upload,engine.IsCapturing,speedTesting);
-            if(tray!=null){string text="骑士助手 ↓"+Speed(download)+" ↑"+Speed(upload)+(speedTesting?" · 测速中":"");tray.Text=text.Length>63?text.Substring(0,63):text;}
+            if(tray!=null){string text="桌面修仙传 ↓"+Speed(download)+" ↑"+Speed(upload)+(speedTesting?" · 测速中":"");tray.Text=text.Length>63?text.Substring(0,63):text;}
         }
 
         private void UpdatePetControls()
@@ -375,7 +411,7 @@ namespace NetBunny
             petToggle.Text=pet.Enabled?"桌面冒险 · 开":"桌面冒险 · 隐藏";
             petToggle.FillColor=pet.Enabled?Art.Purple:Color.FromArgb(224,215,250);petToggle.ForeColor=pet.Enabled?Color.White:Art.Purple;
             petRoam.Text=pet.Roaming?"全屏漫游":"原地活动";
-            petStatus.Text=pet.StateText+"\n右键角色查看装备";
+            petStatus.Text=pet.CultivationLine+"\n"+pet.StateText;tips.SetToolTip(petStatus,pet.CultivationLine+"\n"+pet.StateText);
             autoPlan.Text=pet.AutoPlanning?"自动规划 · 开":"自动规划 · 关";autoPlan.FillColor=pet.AutoPlanning?Art.Mint:Color.FromArgb(224,215,250);autoPlan.ForeColor=pet.AutoPlanning?Color.White:Art.Purple;autoPlan.Enabled=!pet.IsDemo;clearField.Enabled=pet.CanClearField;
             petToggle.Invalidate();petRoam.Invalidate();
             if(trayPet!=null){trayPet.Checked=pet.Enabled;trayRoaming.Checked=pet.Roaming;}
@@ -385,7 +421,7 @@ namespace NetBunny
         {
             if(preview||closing||tray==null)return;
             Hide();
-            if(!trayHintShown){trayHintShown=true;tray.ShowBalloonTip(3000,"骑士助手仍在运行","双击托盘图标打开主界面；右键图标可以隐藏骑士或退出。",ToolTipIcon.Info);}
+            if(!trayHintShown){trayHintShown=true;tray.ShowBalloonTip(3000,"桌面修仙传仍在运行","双击托盘图标打开主界面；修士继续挂机修炼，右键图标可隐藏或退出。",ToolTipIcon.Info);}
         }
 
         private void RestoreFromTray()
@@ -484,7 +520,8 @@ namespace NetBunny
             search.SetBounds(Math.Max(290,leftWidth-218),20,194,28);
             grid.SetBounds(14,107,leftWidth-28,bodyHeight-146);
             foreach(Control c in listPanel.Controls)if(c.Tag as string=="hint")c.SetBounds(22,bodyHeight-29,leftWidth-40,23);
-            restore.SetBounds(w-152,ClientSize.Height-38,128,29);footer.SetBounds(25,ClientSize.Height-33,w-195,25);
+            restore.SetBounds(w-152,ClientSize.Height-38,128,29);if(elevateAdmin.Visible)elevateAdmin.SetBounds(w-352,ClientSize.Height-38,192,29);
+            footer.SetBounds(25,ClientSize.Height-33,elevateAdmin.Visible?w-380:w-195,25);
         }
 
         private async Task RefreshApps(bool force=false)
@@ -555,8 +592,8 @@ namespace NetBunny
         {
             bool valid=selected!=null&&!string.IsNullOrWhiteSpace(selected.Path)&&!actionBusy&&!preview;
             locate.Enabled=selected!=null&&!string.IsNullOrWhiteSpace(selected.Path)&&!preview;
-            block.Enabled=valid;apply.Enabled=valid&&engine!=null&&engine.IsCapturing;clearLimit.Enabled=valid;
-            down.Enabled=valid;up.Enabled=valid;unitKb.Enabled=unitMb.Enabled=valid;restore.Enabled=!actionBusy&&!preview&&engine!=null&&firewall!=null;
+            block.Enabled=valid&&elevated;apply.Enabled=valid&&elevated&&engine!=null&&engine.IsCapturing;clearLimit.Enabled=valid&&elevated;
+            down.Enabled=valid&&elevated;up.Enabled=valid&&elevated;unitKb.Enabled=unitMb.Enabled=valid&&elevated;restore.Enabled=!actionBusy&&!preview&&engine!=null&&firewall!=null;
             if(preview){locate.Enabled=block.Enabled=apply.Enabled=clearLimit.Enabled=down.Enabled=up.Enabled=unitKb.Enabled=unitMb.Enabled=true;}
         }
         private void SetUnit(bool megabytes){useMegabytes=megabytes;unitKb.FillColor=megabytes?Color.FromArgb(242,240,250):Art.Purple;unitMb.FillColor=megabytes?Art.Purple:Color.FromArgb(242,240,250);unitKb.ForeColor=megabytes?Art.Purple:Color.White;unitMb.ForeColor=megabytes?Color.White:Art.Purple;unitKb.Invalidate();unitMb.Invalidate();}

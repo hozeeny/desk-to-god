@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -35,11 +35,11 @@ namespace NetBunny
         private AdventureMonster(string id, string name, double health, double speed, int damage, double cooldown)
         { Id = id; Name = name; HealthFactor = health; WalkSpeed = speed; Damage = damage; AttackCooldown = cooldown; }
         internal static readonly AdventureMonster[] All = {
-            new AdventureMonster("skeleton", "骷髅卫兵", 1, 68, 4, 2.4),
-            new AdventureMonster("slime", "翡翠史莱姆", 1.18, 52, 3, 2.8),
-            new AdventureMonster("imp", "独眼小恶魔", .96, 80, 6, 2.6),
-            new AdventureMonster("bat", "暮光蝙蝠", .78, 102, 3, 1.9),
-            new AdventureMonster("mushroom", "魔法蘑菇怪", 1.08, 58, 5, 2.7)
+            new AdventureMonster("skeleton", "白骨妖兵", 1, 68, 4, 2.4),
+            new AdventureMonster("slime", "碧渊水灵", 1.18, 52, 3, 2.8),
+            new AdventureMonster("imp", "独眼山魈", .96, 80, 6, 2.6),
+            new AdventureMonster("bat", "夜行蝠妖", .78, 102, 3, 1.9),
+            new AdventureMonster("mushroom", "幻菌菇妖", 1.08, 58, 5, 2.7)
         };
         internal static AdventureMonster Find(string id) { return All.FirstOrDefault(m => m.Id == id) ?? All[0]; }
         internal static AdventureEnemy Create(CleanupBatch batch, Random random, int level = 1)
@@ -56,6 +56,9 @@ namespace NetBunny
     {
         internal string Id;
         internal CleanupBatch Batch;
+        // Virtual fiends spawn from the cultivation encounter scheduler and settle
+        // as pure combat: they never own files and never touch the cleanup worker.
+        internal bool IsVirtual;
         internal bool IsBoss, IsDiskBoss, Authorized, Cleaning, CleanupStarted, Failed, Defeated;
         internal bool VisualDefeated, VisualDirty = true, FacingRight = true, Dragging;
         internal bool KillRewarded;
@@ -281,7 +284,7 @@ namespace NetBunny
             if (enemy == null || !enemy.Authorized || enemy.Health > 0 || !enemy.VisualDefeated || enemy.Defeated || enemy.IsDiskWarning || enemy.KillRewarded) return false;
             enemy.KillRewarded = true; enemy.KillExperience = killRandom.Next(2, 4);
             Progress.Experience += enemy.KillExperience; Progress.Score += enemy.KillExperience * 5;
-            LastReward = "击败怪物 · 经验 +" + enemy.KillExperience + "；文件清理另行结算";
+            LastReward = enemy.IsVirtual ? "击败妖物 · 经验 +" + enemy.KillExperience + " · 修为另行结算" : "击败怪物 · 经验 +" + enemy.KillExperience + "；文件清理另行结算";
             int priorLevel = Progress.Level;
             while (Progress.Level < 100 && Progress.Experience >= Progress.NextLevelExperience)
             { Progress.Experience -= Progress.NextLevelExperience; Progress.Level++; if (!Progress.Dead) Progress.Health = Progress.MaxHealth; LevelGlow = 4.5; }
@@ -293,6 +296,29 @@ namespace NetBunny
                 LastReward += " · 升至 Lv." + Progress.Level;
             }
             return true;
+        }
+        // Virtual fiends settle as pure combat: no filesystem worker, no memory
+        // reclaim, no fabricated freed bytes. Idempotent and final, like death.
+        internal bool CompleteVirtual(AdventureEnemy enemy, int qi)
+        {
+            if (enemy == null || !enemy.IsVirtual || enemy.Defeated || enemy.Failed || !enemy.VisualDefeated || enemy.Health > 0) return false;
+            enemy.Cleaning = false; enemy.CleanupStarted = false; enemy.Authorized = false; enemy.Authorization = AdventureAuthorization.None;
+            queue.Remove(enemy); enemy.QueueNumber = 0;
+            enemy.Defeated = true; enemy.Health = 0; enemy.StartShatter();
+            enemy.Message = "妖物消散 · 修为 +" + qi + " · 虚拟妖物不触碰真实文件与内存";
+            LastReward = enemy.Message; Renumber(); return true;
+        }
+        // Maintenance consent is off (pure cultivation mode): the monster dies as a
+        // virtual victory while its real temp files stay untouched and unclaimed.
+        internal bool CompleteHeld(AdventureEnemy enemy, int qi)
+        {
+            if (enemy == null || enemy.IsVirtual || enemy.Defeated || enemy.Failed || !enemy.VisualDefeated || enemy.Health > 0) return false;
+            enemy.Cleaning = false; enemy.CleanupStarted = false; enemy.Authorized = false; enemy.Authorization = AdventureAuthorization.None;
+            queue.Remove(enemy); enemy.QueueNumber = 0;
+            enemy.Defeated = true; enemy.Health = 0; enemy.StartShatter();
+            enemy.Message = enemy.Batch == null ? "妖物已击败 · 修为 +" + qi + " · 未授权真实内存回收，仅结算虚拟奖励"
+                : "妖物已击败 · 修为 +" + qi + " · 未授权真实清理，对应临时文件保留，可在装备栏授权后重新扫描";
+            LastReward = enemy.Message; Renumber(); return true;
         }
         internal void Complete(AdventureEnemy enemy, long freedBytes, int deletedFiles, string message, double randomDrop, bool cancelled = false)
         {
@@ -572,6 +598,22 @@ namespace NetBunny
             check(!deathWork.Authorize(untouched) && deathWork.ClearFieldSnapshot().Count == 0 && deathWork.PlanNext(0, 0) == null, "dead hero cannot authorize future attacks or expand its cleanup snapshot");
             deathWork.Complete(waitingDead, 2048, 1, "actual synthetic result", 1); deathWork.Complete(activeDead, 0, 0, "cancelled", 1, true); deathWork.Tick(.31);
             check(deathWork.Progress.Dead && deathWork.Progress.Health == 0 && deathWork.Progress.Experience == deathXP && deathWork.Progress.FreedBytes == 2048 && deathWork.QueueCount == 0 && waitingDead.IsVisuallyHidden && activeDead.IsVisuallyHidden, "post-death queued cleanup settles real bytes once while keeping hero and monsters dead");
+            AdventureBattle virtualBattle = new AdventureBattle(new AdventureProgress(), new Random(5));
+            AdventureEnemy fiend = new AdventureEnemy { Id = "fiend", IsVirtual = true, Health = 1, MaxHealth = 1 };
+            virtualBattle.Enemies.Add(fiend); virtualBattle.Authorize(fiend); virtualBattle.Strike(fiend);
+            check(fiend.Cleaning && fiend.VisualDefeated && !fiend.Defeated, "virtual fiend shatters on a lethal strike like any monster");
+            check(virtualBattle.CompleteVirtual(fiend, 8) && fiend.Defeated && !fiend.Failed && !fiend.Cleaning && virtualBattle.QueueCount == 0, "virtual fiend settles as pure combat");
+            check(virtualBattle.Progress.FreedBytes == 0 && virtualBattle.Progress.Experience == fiend.KillExperience && virtualBattle.LastReward.Contains("修为 +8"), "virtual settlement reports qi without inventing freed bytes");
+            check(!virtualBattle.CompleteVirtual(fiend, 8), "virtual settlement is final and idempotent");
+            AdventureEnemy ordinary = new AdventureEnemy { Id = "ordinary", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\held.bin", Length = 512 } }, 1), Health = 1, MaxHealth = 1 };
+            virtualBattle.Enemies.Add(ordinary); virtualBattle.Authorize(ordinary); virtualBattle.Cooldown = 0; virtualBattle.Strike(ordinary);
+            check(!virtualBattle.CompleteVirtual(ordinary, 8), "a file-backed monster can never take the virtual settlement path");
+            check(virtualBattle.CompleteHeld(ordinary, 5) && ordinary.Defeated && !ordinary.Failed && virtualBattle.QueueCount == 0 &&
+                virtualBattle.Progress.FreedBytes == 0 && virtualBattle.LastReward.Contains("未授权真实清理"), "held settlement defeats the monster while leaving real files untouched");
+            check(!virtualBattle.CompleteHeld(ordinary, 5), "held settlement is final and idempotent");
+            AdventureEnemy settledFiend = new AdventureEnemy { Id = "fiend-held", IsVirtual = true, Health = 1, MaxHealth = 1 };
+            virtualBattle.Enemies.Add(settledFiend); virtualBattle.Authorize(settledFiend); virtualBattle.Cooldown = 0; virtualBattle.Strike(settledFiend);
+            check(!virtualBattle.CompleteHeld(settledFiend, 5), "a virtual fiend never takes the held settlement path");
             string fixtureDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistantProject", "v5.2", "model-selftest", Guid.NewGuid().ToString("N"));
             string temporary = Path.Combine(fixtureDirectory, "progress.txt");
             try { p.Inventory.Add("laser"); p.WeaponId = "laser"; p.ThemeMode = "JP"; p.Save(temporary); AdventureProgress loaded = AdventureProgress.Load(temporary); check(loaded.WeaponId == "laser" && loaded.FreedBytes == p.FreedBytes && loaded.ThemeMode == "JP", "isolated progress roundtrip outside user Temp and real save"); }
