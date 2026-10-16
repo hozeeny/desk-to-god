@@ -36,7 +36,7 @@ Copy-Item -LiteralPath ".\正式版\第三方许可" -Destination ".\源代码\b
 
 ## 验证和打包
 
-构建后可运行内置测试，并检查退出码：
+构建后，在管理员 PowerShell 中运行内置测试，并检查退出码：
 
 ```powershell
 $testProcess = Start-Process -FilePath ".\源代码\bin\骑士助手.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
