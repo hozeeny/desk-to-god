@@ -43,7 +43,11 @@ namespace NetBunny
         private readonly CultivationDeviceGrade deviceGrade;
         private readonly string cultivationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "cultivation-v2.txt");
         private readonly string consentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "maintenance-consent.txt");
-        private bool maintenanceConsent, cultivationPaused, encounterDue;
+        // Two independent real-maintenance scopes; neither is implied by combat
+        // or by the (separately persisted) unattended auto-battle preference.
+        private readonly MaintenanceConsentStore consent = new MaintenanceConsentStore();
+        private bool cultivationPaused, encounterDue;
+        private KnightConnectivity lastConnectivity = KnightConnectivity.Unknown;
         private double lastCultivationAt = -1;
         private readonly RegionThemeService region;
         private readonly KnightConnectivityReader connectivity;
@@ -89,13 +93,24 @@ namespace NetBunny
             renderer = new AdventureRenderer(assetDirectory);
             region = new RegionThemeService();
             connectivity = demonstrationOnly ? null : new KnightConnectivityReader();
+            // Freeze the historical v5.4 archive once before anything can rewrite
+            // it; adventure-v1.txt itself stays the live v1-format runtime archive.
+            if (!demonstrationOnly) AdventureProgress.EnsureLegacyBackup(progressPath);
             battle = new AdventureBattle(demonstrationOnly ? new AdventureProgress() : AdventureProgress.Load(progressPath));
             // Demonstration and smoke runs never touch the real cultivation archive.
             cultivation = demonstrationOnly ? new CultivationProgress() : CultivationProgress.Load(cultivationPath);
             cultivation.EnsureIdentity(random);
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
-            maintenanceConsent = demonstrationOnly || LoadMaintenanceConsent();
+            if (demonstrationOnly) { consent.CleanupEnabled = consent.MemoryEnabled = true; }
+            else
+            {
+                MaintenanceConsentStore persisted = MaintenanceConsentStore.Load(consentPath);
+                consent.CleanupEnabled = persisted.CleanupEnabled; consent.MemoryEnabled = persisted.MemoryEnabled;
+                // Unattended self-battle is the default and independent from
+                // real maintenance consent; a dead hero first finishes resting.
+                if (cultivation.AutoBattle && !battle.Progress.Dead) battle.SetAutomatic(true);
+            }
             if (!demonstrationOnly) region.SelectMode(battle.Progress.LastThemeCode);
             region.SelectMode(demonstrationOnly ? "OFF" : battle.Progress.ThemeMode);
             region.Changed += RegionChanged;
@@ -132,9 +147,10 @@ namespace NetBunny
         internal string CaveText { get { return CultivationHardware.GradeName(deviceGrade); } }
         internal bool CultivationPaused { get { return cultivationPaused; } }
         // Pure cultivation mode (default) settles every kill virtually. Real file
-        // cleanup, process working-set trims and firewall edits need this explicit,
-        // separately persisted consent; boss kills never imply it.
-        internal bool MaintenanceConsent { get { return maintenanceConsent; } }
+        // cleanup and process working-set trims each need their own explicit,
+        // separately persisted consent; boss kills never imply either.
+        internal bool MaintenanceConsentCleanup { get { return consent.CleanupEnabled; } }
+        internal bool MaintenanceConsentMemory { get { return consent.MemoryEnabled; } }
         internal double NextEncounterSeconds { get { return encounters.SecondsUntilNext; } }
         internal string CultivationLine
         {
@@ -149,30 +165,62 @@ namespace NetBunny
             try { MemorySnapshot snapshot = CleanupService.ReadMemory(); return snapshot.Available ? snapshot.TotalBytes : 0UL; }
             catch { return 0UL; }
         }
-        private bool LoadMaintenanceConsent()
+        // Fail-closed enable: the store applies the flag only after a durable
+        // write; on failure consent stays off and the checkbox reverts.
+        internal bool SetCleanupConsent(bool value)
         {
-            try { return File.Exists(consentPath) && File.ReadAllText(consentPath, Encoding.UTF8).Contains("consent=1"); }
-            catch { return false; }
-        }
-        internal void SetMaintenanceConsent(bool value)
-        {
-            if (disposed || demonstrationOnly || maintenanceConsent == value) return;
-            maintenanceConsent = value;
-            try
+            if (disposed) return false;
+            string error;
+            if (!consent.SetCleanup(demonstrationOnly ? null : consentPath, value, out error))
             {
-                string folder = Path.GetDirectoryName(consentPath);
-                if (!String.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
-                File.WriteAllText(consentPath, "consent=" + (value ? "1" : "0") + "\n", new UTF8Encoding(false));
+                scanStatus = "授权状态暂未保存：" + error;
+                battle.LastReward = value
+                    ? "授权文件写入失败，为安全起见文件清理授权保持关闭"
+                    : "文件清理授权已在本机立即关闭，但授权文件未能更新或删除；若重启后仍显示已授权，请手动删除 " + consentPath;
+                return false;
             }
-            catch (Exception e) { scanStatus = "授权状态暂未保存：" + e.Message; }
             if (!value)
             {
-                // In-flight cleanups keep their accounting authority and finish;
-                // everything not yet started returns to a pure virtual state.
-                CancelPending();
-                battle.LastReward = "真实系统维护授权已关闭：击败妖物只结算虚拟奖励，不删除文件、不回收内存";
+                // Not-yet-started file cleanups return to a pure virtual state;
+                // the in-flight worker gets a cancellation request and reports
+                // its actual result as soon as it stops.
+                CancelCleanupWork("文件清理授权已关闭 · 清理未执行");
+                battle.LastReward = "文件清理授权已关闭：未开始的清理已撤销，进行中的任务已请求取消并尽快汇报实际结果；此后击败文件怪只结算虚拟奖励";
             }
-            else battle.LastReward = "真实系统维护授权已开启：击败文件怪将清理其绑定的旧临时文件，内存 Boss 可触发工作集回收";
+            else battle.LastReward = "文件清理授权已开启：击败文件怪将安全清理其绑定的、超过 24 小时的本用户临时文件";
+            return true;
+        }
+        internal bool SetMemoryConsent(bool value)
+        {
+            if (disposed) return false;
+            string error;
+            if (!consent.SetMemory(demonstrationOnly ? null : consentPath, value, out error))
+            {
+                scanStatus = "授权状态暂未保存：" + error;
+                battle.LastReward = value
+                    ? "授权文件写入失败，为安全起见内存维护授权保持关闭"
+                    : "内存维护授权已在本机立即关闭，但授权文件未能更新或删除；若重启后仍显示已授权，请手动删除 " + consentPath;
+                return false;
+            }
+            if (!value)
+            {
+                // Memory reclaim only starts at a boss kill, so future reclaim is
+                // gated by the flag itself; the in-flight task is cancelled here.
+                if (memoryReclaimCancellation != null) memoryReclaimCancellation.Cancel();
+                battle.LastReward = "内存维护授权已关闭：未开始的工作集回收不会执行，进行中的回收已请求取消；此后击败内存 Boss 只结算虚拟奖励";
+            }
+            else battle.LastReward = "内存维护授权已开启：击败内存 Boss 将尝试回收同会话后台进程的工作集";
+            return true;
+        }
+        private void CancelCleanupWork(string notice)
+        {
+            if (workCancellation != null) workCancellation.Cancel();
+            while (pendingCleanup.Count > 0)
+            {
+                AdventureEnemy enemy = pendingCleanup.Dequeue();
+                if (enemy.VisualDefeated && enemy.Batch != null) RecordRecheck(enemy.Batch.Candidates);
+                enemy.CancelBeforeCleanup(notice);
+            }
         }
         internal void SetCultivationPaused(bool paused)
         {
@@ -243,11 +291,11 @@ namespace NetBunny
                 if (!enabled) return "骑士与怪物已隐藏";
                 if (demoPending) return "正在停止清理，准备安全演示";
                 if (demoStarted >= 0) return "冒险演示 · 不清理文件，不改变经验和装备";
-                if (battle.Progress.Dead) return "骑士战死 · 右键墓碑复活";
-                if (networkState.Phase == KnightPhase.Dying || networkState.Phase == KnightPhase.Grave) return "网络断开 · 灵魂升天，墓碑等待重连";
+                if (battle.Progress.Dead) return "修士力竭 · 入定调息约 " + Math.Max(1, (int)(CultivationBalance.ReviveRestSeconds - battle.DeathTime)) + " 秒后自行恢复";
+                if (lastConnectivity == KnightConnectivity.Offline) return "断网 · 修士入定吐纳，本地修炼与战斗继续";
                 if (networkState.Phase == KnightPhase.Revive) return "网络恢复 · 从坟地爬出";
-                if (battle.QueueCount > 0) return (battle.Target == null ? "后台清理 · " : battle.Automatic ? "自动规划 · " + tacticalStatus + " · " : "清理队列 · ") + battle.QueueCount + " 个目标 · " + battle.Weapon.Name + " · Lv." + battle.Progress.Level;
-                return "Lv." + battle.Progress.Level + " · " + (actualMoveSpeed > 1 ? "随网速奔跑" : networkState.Phase == KnightPhase.Pant ? "正在大喘气" : "原地待命") + " · " + CleanupAmountText;
+                if (battle.QueueCount > 0) return (battle.Target == null ? "后台清理 · " : battle.Automatic ? "自动规划 · " + tacticalStatus + " · " : "清理队列 · ") + battle.QueueCount + " 个目标 · " + battle.Weapon.Name + " · 战斗Lv." + battle.Progress.Level;
+                return "战斗Lv." + battle.Progress.Level + " · " + (actualMoveSpeed > 1 ? "随网速奔跑" : networkState.Phase == KnightPhase.Pant ? "入定吐纳" : "原地待命") + " · " + CleanupAmountText;
             }
         }
         public void UpdateTelemetry(double bytes, bool available)
@@ -401,9 +449,9 @@ namespace NetBunny
         }
         private void BindDiskBossCandidates()
         {
-            // Without maintenance consent the disk boss stays a pure warning omen:
+            // Without cleanup consent the disk boss stays a pure warning omen:
             // it never takes ownership of real cleanup candidates.
-            if (!maintenanceConsent) return;
+            if (!consent.CleanupEnabled) return;
             AdventureEnemy boss = battle.Enemies.FirstOrDefault(e => e.IsDiskBoss && e.IsDiskWarning && !e.Defeated);
             if (boss == null) return;
             AdventureEnemy[] donors = battle.Enemies.Where(e => !e.IsBoss && e.Batch != null && !e.Authorized && !e.Cleaning && !e.Defeated && !e.Failed).ToArray();
@@ -438,8 +486,22 @@ namespace NetBunny
                 StopDemo();
             }
             KnightConnectivity online = connectivity == null ? KnightConnectivity.Online : connectivity.Read(out connectivityDetail);
-            networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6, online);
-            battle.Tick(dt); ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
+            lastConnectivity = online;
+            // Cultivation is local-first: losing the network never kills the
+            // cultivator or stops local battle; the pet meditates (Pant) instead.
+            networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6,
+                online == KnightConnectivity.Offline ? KnightConnectivity.Unknown : online);
+            battle.Tick(dt);
+            // Unattended recovery: a defeated cultivator always meditates back to
+            // full health; no manual revival and no fixed online schedule needed.
+            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds)
+            {
+                battle.Revive();
+                if (cultivation.AutoBattle) battle.SetAutomatic(true);
+                battle.LastReward = "修士调息完毕，伤势尽复，继续自主修行";
+                Save();
+            }
+            ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
             bool canFight = !battle.Progress.Dead && networkState.Phase != KnightPhase.Dying && networkState.Phase != KnightPhase.Grave && networkState.Phase != KnightPhase.Revive;
             // Ambient virtual fiends keep the cultivation world alive even when the
             // machine has no temp files at all; the field budget caps render cost.
@@ -565,9 +627,17 @@ namespace NetBunny
             // maintenance consent, file monsters and bosses all settle virtually.
             // No kill ever deletes real files or trims another process on its own.
             if (enemy.IsVirtual) { SettleVirtual(enemy); return; }
-            if (!maintenanceConsent) { SettleHeld(enemy); return; }
+            // Each real-maintenance scope is gated by its own persisted consent:
+            // memory bosses need memory consent; file monsters and disk bosses
+            // need cleanup consent. Without it the kill settles purely virtually.
+            bool memoryBoss = enemy.IsBoss && !enemy.IsDiskBoss;
+            if (memoryBoss ? !consent.MemoryEnabled : !consent.CleanupEnabled) { SettleHeld(enemy); return; }
+            if (memoryBoss)
+            {
+                if (demonstrationOnly && simulatedMemoryReclaimer == null) return;
+                battle.Complete(enemy, 0, 0, null, 1); StartMemoryReclaim(); Save(); return;
+            }
             if (demonstrationOnly && simulatedCleaner == null) return;
-            if (enemy.IsBoss && !enemy.IsDiskBoss) { battle.Complete(enemy, 0, 0, null, 1); StartMemoryReclaim(); Save(); return; }
             if (enemy.Batch == null) { battle.Complete(enemy, 0, 0, "没有真实文件批次", 1); return; }
             if (!pendingCleanup.Contains(enemy)) pendingCleanup.Enqueue(enemy);
             // The read-only census yields its filesystem gate to a newly killed target.
@@ -740,7 +810,7 @@ namespace NetBunny
             else if (attackAnimation > 0) phase = "attack";
             else if (actualMoveSpeed > 1 && phase != "grave" && phase != "dying" && phase != "revive") phase = "run";
             else if (phase == "run") phase = "idle";
-            return new AdventureRenderState { Kind = "Hero", Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "右键墓碑 · 复活" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
+            return new AdventureRenderState { Kind = "Hero", Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
         }
         private void RenderWorld(bool enemies)
         {
@@ -830,8 +900,10 @@ namespace NetBunny
             if (disposed || demonstrationOnly || demoStarted >= 0) return;
             lastSave = clock.Elapsed.TotalSeconds;
             try { battle.Progress.Save(progressPath); } catch (Exception e) { scanStatus = "进度暂未保存：" + e.Message; }
-            // The cultivation archive is a separate, versioned file; the legacy
-            // adventure-v1 archive is never overwritten or migrated away.
+            // adventure-v1.txt stays the live runtime combat archive in the
+            // unchanged v1 format (v5.4 can still read it); the frozen
+            // *.v54-backup copy made at first launch preserves history.
+            // Cultivation data lives in its own separate versioned archive.
             try { cultivation.Save(cultivationPath); } catch (Exception e) { scanStatus = "修炼档案暂未保存：" + e.Message; }
         }
         public void Dispose()
@@ -862,7 +934,10 @@ namespace NetBunny
             if (disposed || IsDemo || demonstrationOnly) return;
             if (value && !enabled) Enabled = true;
             battle.SetAutomatic(value); RemoveCancelledAutomaticJobs();
-            battle.LastReward = battle.Automatic ? (maintenanceConsent ? "自动规划已开启：优先处理近处、残血与高威胁怪物，手动点击始终优先；会清理对应临时文件" : "自动规划已开启：自动索敌战斗并获得修为经验；未授权真实维护，不会删除文件或回收内存") : "自动规划已关闭；未开始的自动目标已撤销，手动队列保留";
+            // The unattended-battle preference persists independently from both
+            // real maintenance consents; it is honored again after every rest.
+            cultivation.AutoBattle = value; Save();
+            battle.LastReward = battle.Automatic ? (consent.CleanupEnabled ? "自动规划已开启：优先处理近处、残血与高威胁怪物，手动点击始终优先；会清理对应临时文件" : "自动规划已开启：自动索敌战斗并获得修为经验；未授权文件清理，不会删除文件") : "自动规划已关闭；未开始的自动目标已撤销，手动队列保留；力竭调息后将保持手动待机";
             if (enabled) RenderWorld(true);
         }
         private void RemoveCancelledAutomaticJobs()
@@ -894,7 +969,7 @@ namespace NetBunny
             PointF origin = new PointF((float)blackholeX, (float)blackholeY);
             effects.FireField(origin, selected.Select(enemy => new PointF((float)enemy.X + 65 * displayScale, (float)enemy.Y + 80 * displayScale)), displayScale);
             foreach (AdventureEnemy enemy in selected) BeginCleanup(enemy);
-            battle.LastReward = "一键清场：击败 " + selected.Count + " 个目标 · 经验 +" + selected.Sum(enemy => enemy.KillExperience) + (maintenanceConsent ? "；对应临时文件逐批安全清理，可随时取消待办清理" : "；未授权真实维护，只结算虚拟奖励，不删除文件");
+            battle.LastReward = "一键清场：击败 " + selected.Count + " 个目标 · 经验 +" + selected.Sum(enemy => enemy.KillExperience) + (consent.CleanupEnabled ? "；对应临时文件逐批安全清理，可随时取消待办清理" : "；未授权文件清理，只结算虚拟奖励，不删除文件");
             PumpCleanup(); Save(); RenderWorld(true);
         }
         internal void ChangeScale(float value) { displayScale = value; heroWindow.Size = HeroSize; landmarkWindow.Size = LandmarkSize; ClampHero(); PositionLandmark(); foreach (AdventureEnemy e in battle.Enemies) BoundEnemy(e); RenderWorld(true); }
@@ -991,8 +1066,8 @@ namespace NetBunny
                     check(!c.enemyWindows.ContainsKey(cancelledEnemy.Id) && !cancelledEnemy.Cleaning && cancelledEnemy.IsVisuallyHidden && cancelledEnemy.Defeated && !cancelledEnemy.Authorized, "cancelled queued kill remains hidden and never starts file cleanup");
                     check(c.recheckFiles == 2 && c.recheckBytes == 12288 && c.battle.Progress.Experience == xpAfterCancelKill, "cancelled files are reported for rescan and kill XP is not paid twice");
                     // V6 consent gate: kills never reach the real cleanup worker or the
-                    // memory reclaimer unless maintenance consent is explicitly on.
-                    c.maintenanceConsent = false;
+                    // memory reclaimer unless the matching scope consent is on.
+                    c.consent.CleanupEnabled = false; c.consent.MemoryEnabled = false;
                     AdventureEnemy heldEnemy = new AdventureEnemy { Id = "held-consent", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\held.tmp", Length = 2048 } }, 1), Health = 1, MaxHealth = 1 };
                     c.battle.Enemies.Add(heldEnemy); c.Spawn(heldEnemy); c.battle.Authorize(heldEnemy); c.battle.Cooldown = 0; c.battle.Strike(heldEnemy);
                     long heldQi = c.cultivation.LifetimeQi; c.BeginCleanup(heldEnemy); c.battle.Tick(.31);
@@ -1006,7 +1081,34 @@ namespace NetBunny
                     c.battle.Enemies.Add(heldBoss); c.Spawn(heldBoss); c.battle.Authorize(heldBoss); c.battle.Cooldown = 0; c.battle.Strike(heldBoss);
                     long bossQi = c.cultivation.LifetimeQi; c.BeginCleanup(heldBoss); c.battle.Tick(.31);
                     check(heldBoss.Defeated && c.cultivation.LifetimeQi > bossQi && c.memoryReclaimTask == null, "no consent: a boss kill never triggers memory reclaim");
-                    c.maintenanceConsent = true; // restore smoke default for the remaining checks
+                    // The two scopes are independent permissions, each gated alone.
+                    c.consent.CleanupEnabled = true; c.consent.MemoryEnabled = false;
+                    AdventureEnemy cleanupOnlyBoss = new AdventureEnemy { Id = "cleanup-only-boss", IsBoss = true, MonsterKind = "boss", EvilTheme = "CN", BossWeapon = "spear", Health = 1, MaxHealth = 1 };
+                    c.battle.Enemies.Add(cleanupOnlyBoss); c.Spawn(cleanupOnlyBoss); c.battle.Authorize(cleanupOnlyBoss); c.battle.Cooldown = 0; c.battle.Strike(cleanupOnlyBoss);
+                    c.BeginCleanup(cleanupOnlyBoss); c.battle.Tick(.31);
+                    check(cleanupOnlyBoss.Defeated && c.memoryReclaimTask == null && c.battle.LastReward.Contains("未授权"), "cleanup consent alone never unlocks memory reclaim");
+                    c.consent.CleanupEnabled = false; c.consent.MemoryEnabled = true;
+                    AdventureEnemy memoryOnlyFile = new AdventureEnemy { Id = "memory-only-file", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\memory-only.tmp", Length = 1024 } }, 1), Health = 1, MaxHealth = 1 };
+                    c.battle.Enemies.Add(memoryOnlyFile); c.Spawn(memoryOnlyFile); c.battle.Authorize(memoryOnlyFile); c.battle.Cooldown = 0; c.battle.Strike(memoryOnlyFile);
+                    c.BeginCleanup(memoryOnlyFile); c.battle.Tick(.31);
+                    check(memoryOnlyFile.Defeated && c.cleanupTask == null && c.pendingCleanup.Count == 0 && c.battle.LastReward.Contains("未授权"), "memory consent alone never unlocks file deletion");
+                    int reclaimCalls = 0; c.simulatedMemoryReclaimer = delegate(CancellationToken token) { reclaimCalls++; return Task.FromResult(new MemoryReclaimResult { Before = new MemorySnapshot { Available = true, UsedPercent = 80 }, After = new MemorySnapshot { Available = true, UsedPercent = 79 }, Trimmed = 1, WorkingSetReduction = 4096 }); };
+                    AdventureEnemy memoryBoss = new AdventureEnemy { Id = "memory-ok-boss", IsBoss = true, MonsterKind = "boss", EvilTheme = "CN", BossWeapon = "spear", Health = 1, MaxHealth = 1 };
+                    c.battle.Enemies.Add(memoryBoss); c.Spawn(memoryBoss); c.battle.Authorize(memoryBoss); c.battle.Cooldown = 0; c.battle.Strike(memoryBoss);
+                    c.BeginCleanup(memoryBoss); c.DrainMemoryReclaim();
+                    check(reclaimCalls == 1 && memoryBoss.Defeated && c.battle.Progress.FreedBytes == freed, "memory consent alone runs the reclaim path without touching files");
+                    // Revoking consent mid-flight cancels the active task promptly.
+                    TaskCompletionSource<MemoryReclaimResult> hangingReclaim = new TaskCompletionSource<MemoryReclaimResult>();
+                    c.simulatedMemoryReclaimer = delegate(CancellationToken token) { token.Register(delegate { hangingReclaim.TrySetCanceled(); }); return hangingReclaim.Task; };
+                    AdventureEnemy cancelBoss = new AdventureEnemy { Id = "memory-cancel-boss", IsBoss = true, MonsterKind = "boss", EvilTheme = "CN", BossWeapon = "spear", Health = 1, MaxHealth = 1 };
+                    c.battle.Enemies.Add(cancelBoss); c.Spawn(cancelBoss); c.battle.Authorize(cancelBoss); c.battle.Cooldown = 0; c.battle.Strike(cancelBoss);
+                    c.BeginCleanup(cancelBoss);
+                    check(c.memoryReclaimTask != null && c.SetMemoryConsent(false) && !c.consent.MemoryEnabled, "memory consent revocation accepted while a reclaim runs");
+                    c.DrainMemoryReclaim();
+                    check(c.memoryReclaimTask == null && !c.consent.MemoryEnabled && c.battle.LastReward.Contains("取消"), "in-flight memory reclaim responds to revocation and reports cancellation");
+                    // The fail-closed store path is unit-tested; in demo the setter still applies in memory.
+                    check(c.SetCleanupConsent(true) && c.consent.CleanupEnabled && c.SetMemoryConsent(true) && c.consent.MemoryEnabled, "consent setters apply both scopes");
+                    c.simulatedMemoryReclaimer = null;
                     c.simulatedCleaner = null; c.roaming = false;
                     AdventureEnemy walking = c.battle.Enemies.First(e => e.Id == "paint-0"); walking.X = -23500; walking.Y = -23500; walking.TargetX = -23000; walking.TargetY = -23500;
                     c.AdvanceEnemyPatrol(walking, false, .2); check(walking.X > -23500 && walking.FacingRight, "monsters patrol while the hero roaming switch is off");
@@ -1025,6 +1127,24 @@ namespace NetBunny
                     c.actualMoveSpeed = 0; c.attackAnimation = 0; check(c.HeroVisual(0).Phase != "run" && c.HeroVisual(0).MoveSpeed == 0, "waiting next to a selected target does not animate an in-place run");
                     c.actualMoveSpeed = 80 * c.displayScale; check(c.HeroVisual(0).Phase == "run" && c.HeroVisual(0).MoveSpeed == 80, "walking animation receives actual reference-space movement speed");
                     c.CancelPending(); c.actualMoveSpeed = 0;
+                    // Unattended recovery: a defeated cultivator always rests back.
+                    c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
+                    c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
+                    c.enabled = true; c.demoStarted = -1; c.demoPending = false;
+                    c.Tick(null, EventArgs.Empty);
+                    check(!c.battle.Progress.Dead && c.battle.Progress.Health == c.battle.Progress.MaxHealth && c.battle.Automatic && c.battle.LastReward.Contains("调息"), "an unattended cultivator recovers from defeat and resumes auto battle");
+                    c.cultivation.AutoBattle = false; c.battle.SetAutomatic(false);
+                    c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
+                    c.Tick(null, EventArgs.Empty);
+                    check(!c.battle.Progress.Dead && !c.battle.Automatic, "unattended rest respects the manual-battle preference");
+                    c.cultivation.AutoBattle = true;
+                    KnightState offlineProbe = new KnightState();
+                    for (int probe = 0; probe < 400; probe++) offlineProbe.Tick(.1, 0, false, KnightConnectivity.Unknown);
+                    check(offlineProbe.Phase == KnightPhase.Pant && c.networkState.Phase != KnightPhase.Dying && c.networkState.Phase != KnightPhase.Grave, "offline maps to meditating: no false death while the network is down");
+                    AdventureEnemy offlineFiend = new AdventureEnemy { Id = "offline-fiend", IsVirtual = true, MonsterKind = "slime", Health = 20, MaxHealth = 20 };
+                    c.battle.Enemies.Add(offlineFiend); c.Spawn(offlineFiend); c.battle.Authorize(offlineFiend);
+                    check(c.StateText.Contains("战斗Lv."), "growth display separates combat level from cultivation realm");
+                    c.battle.Enemies.Remove(offlineFiend); c.battle.CancelQueue();
                     c.battle.Enemies.Clear(); c.StartDemo();
                     c.demoPending = true; c.resumeAutomaticAfterDemo = true; c.Enabled = false; c.Tick(null, EventArgs.Empty);
                     check(!c.heroWindow.Visible && c.enemyWindows.Values.All(w => !w.Visible), "hide affects all desktop actors");

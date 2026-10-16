@@ -162,6 +162,22 @@ namespace NetBunny
             File.WriteAllText(temporary, data, new UTF8Encoding(false));
             if (File.Exists(path)) File.Replace(temporary, path, null); else File.Move(temporary, path);
         }
+        // adventure-v1.txt remains the live *runtime* combat archive: V6 keeps
+        // writing it in the unchanged v1 format, so a v5.4 build can still read it.
+        // The *.v54-backup file is a one-time frozen copy of the exact bytes v5.4
+        // last wrote — created on first V6 launch and never touched again — so a
+        // downgrade can restore the historical archive verbatim.
+        internal static string LegacyBackupPath(string path) { return path + ".v54-backup"; }
+        internal static bool EnsureLegacyBackup(string path)
+        {
+            try
+            {
+                if (String.IsNullOrEmpty(path) || !File.Exists(path) || File.Exists(LegacyBackupPath(path))) return false;
+                File.Copy(path, LegacyBackupPath(path));
+                return true;
+            }
+            catch { return false; }
+        }
     }
     internal sealed class AdventureBattle
     {
@@ -618,6 +634,30 @@ namespace NetBunny
             string temporary = Path.Combine(fixtureDirectory, "progress.txt");
             try { p.Inventory.Add("laser"); p.WeaponId = "laser"; p.ThemeMode = "JP"; p.Save(temporary); AdventureProgress loaded = AdventureProgress.Load(temporary); check(loaded.WeaponId == "laser" && loaded.FreedBytes == p.FreedBytes && loaded.ThemeMode == "JP", "isolated progress roundtrip outside user Temp and real save"); }
             finally { if (File.Exists(temporary)) File.Delete(temporary); if (File.Exists(temporary + ".new")) File.Delete(temporary + ".new"); if (Directory.Exists(fixtureDirectory)) Directory.Delete(fixtureDirectory, false); }
+            string legacyFixture = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistantProject", "v5.2", "model-selftest", Guid.NewGuid().ToString("N"));
+            string legacyArchive = Path.Combine(legacyFixture, "adventure-v1.txt");
+            string legacyBackup = AdventureProgress.LegacyBackupPath(legacyArchive);
+            try
+            {
+                check(!AdventureProgress.EnsureLegacyBackup(legacyArchive) && !File.Exists(legacyBackup), "no backup is fabricated when no historical archive exists");
+                Directory.CreateDirectory(legacyFixture);
+                File.WriteAllText(legacyArchive, "version=1\nlevel=7\nexperience=12\nscore=345\nhealth=88\nfreed=2048\ndead=0\nweapon=greatsword\ninventory=spear,greatsword\ntheme=CN\nlasttheme=CN\n", new UTF8Encoding(false));
+                check(AdventureProgress.EnsureLegacyBackup(legacyArchive) && File.Exists(legacyBackup), "first V6 launch freezes the historical archive once");
+                AdventureProgress runtime = AdventureProgress.Load(legacyArchive);
+                check(runtime.Level == 7 && runtime.Experience == 12 && runtime.FreedBytes == 2048 && runtime.WeaponId == "greatsword", "historical archive still loads normally");
+                runtime.Level = 9; runtime.FreedBytes = 4096; runtime.Save(legacyArchive);
+                check(!AdventureProgress.EnsureLegacyBackup(legacyArchive), "repeated launches never overwrite the frozen backup");
+                AdventureProgress runtimeReload = AdventureProgress.Load(legacyArchive);
+                check(runtimeReload.Level == 9 && runtimeReload.FreedBytes == 4096, "runtime archive keeps evolving in the unchanged v1 format");
+                check(AdventureProgress.Load(legacyBackup).Level == 7, "v5.4 can still read the frozen backup byte-for-byte");
+                File.Copy(legacyBackup, legacyArchive, true);
+                AdventureProgress restored = AdventureProgress.Load(legacyArchive);
+                check(restored.Level == 7 && restored.Experience == 12 && restored.FreedBytes == 2048 && restored.WeaponId == "greatsword", "rollback to the frozen backup restores the historical state");
+            }
+            finally
+            {
+                try { if (Directory.Exists(legacyFixture)) Directory.Delete(legacyFixture, true); } catch { }
+            }
             return "Adventure model: " + checks + " assertions passed (synthetic combat plus isolated save fixture; user Temp and real progress untouched).";
         }
     }

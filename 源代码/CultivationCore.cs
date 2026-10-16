@@ -29,6 +29,9 @@ namespace NetBunny
         internal const double VirtualEncounterPostponeSeconds = 15;
         internal const int VirtualKillQiMin = 6, VirtualKillQiSpan = 5;
         internal const int BossKillQiMin = 30, BossKillQiSpan = 21;
+        // A defeated cultivator meditates and always recovers on their own;
+        // no manual revival and no fixed online schedule is ever required.
+        internal const double ReviveRestSeconds = 60;
 
         internal static int NextLayerCost(int realmIndex, int layer)
         {
@@ -124,7 +127,8 @@ namespace NetBunny
                 case "water": return "水灵根";
                 case "fire": return "火灵根";
                 case "earth": return "土灵根";
-                default: return "杂灵根";
+                case "mixed": return "杂灵根";
+                default: return "灵根待觉醒";
             }
         }
         internal static bool IsValidRoot(string root)
@@ -177,9 +181,15 @@ namespace NetBunny
         internal double FractionalQi;
         internal int BreakthroughAttempts;
         internal string DaoTitle = "";
-        internal string SpiritRoot = "mixed";
+        // Empty means "not yet awakened": first launch must roll a real root from
+        // the full table. A saved archive (including migrated v1 archives) always
+        // carries a valid root, which is never overwritten here.
+        internal string SpiritRoot = "";
         internal string DaoPath = "sword";
         internal string TechniqueId = "breath";
+        // Unattended idle cultivation is the default; manual battle stays opt-in.
+        // This toggle is independent from real maintenance consent.
+        internal bool AutoBattle = true;
         internal string LastNotice = "道种已苏醒，修士正在感应天地灵气";
 
         internal string RealmName { get { return Realms[Math.Max(0, Math.Min(Realms.Length - 1, RealmIndex))]; } }
@@ -204,9 +214,13 @@ namespace NetBunny
             }
         }
 
-        // First launch (or archive migration) assigns identity: a generated dao title
-        // and a random spirit root. Machine specs never decide the root, and no root
-        // or technique choice is permanent.
+        // Identity assignment, split by archive origin:
+        // - first creation (no archive): every field falls back to a fresh roll,
+        //   so a new cultivator always gets a dao title and one of the six roots;
+        // - normal load / v1 migration: saved valid values are kept verbatim and
+        //   only missing or invalid fields are repaired, never rerolled.
+        // Machine specs never decide the root, and no root or technique choice
+        // is permanent.
         internal void EnsureIdentity(Random random)
         {
             if (random == null) throw new ArgumentNullException("random");
@@ -302,6 +316,7 @@ namespace NetBunny
                     else if (key == "attempts" && Int32.TryParse(value, out n)) next.BreakthroughAttempts = n;
                     else if (key == "root" && CultivationIdentity.IsValidRoot(value)) next.SpiritRoot = value;
                     else if (key == "path" && CultivationIdentity.IsValidPath(value)) next.DaoPath = value;
+                    else if (key == "autobattle") next.AutoBattle = value == "1";
                     else if (key == "tech" && CultivationTechnique.IsValid(value)) { next.TechniqueId = value; hasIdentity = true; }
                     else if (key == "title" && value.Length > 0 && value.Length <= 24 && value.IndexOfAny(new[] { '\r', '\n', '=' }) < 0) { next.DaoTitle = value; hasIdentity = true; }
                 }
@@ -327,7 +342,8 @@ namespace NetBunny
                 "\nlifetime=" + LifetimeQi.ToString(CultureInfo.InvariantCulture) +
                 "\ncarry=" + FractionalQi.ToString("R", CultureInfo.InvariantCulture) +
                 "\nattempts=" + BreakthroughAttempts + "\nroot=" + SpiritRoot +
-                "\npath=" + DaoPath + "\ntech=" + TechniqueId + "\ntitle=" + DaoTitle + "\n";
+                "\npath=" + DaoPath + "\ntech=" + TechniqueId + "\ntitle=" + DaoTitle +
+                "\nautobattle=" + (AutoBattle ? "1" : "0") + "\n";
             File.WriteAllText(tmp, data, new UTF8Encoding(false));
             if (File.Exists(path)) File.Replace(tmp, path, path + ".bak");
             else File.Move(tmp, path);
@@ -370,12 +386,28 @@ namespace NetBunny
             check(mature.TryBreakthrough(new Random(1)) && mature.RealmIndex == 1 && mature.Layer == 1, "explicit breakthrough");
             check(!new CultivationProgress().TryBreakthrough(new Random(1)), "no premature breakthrough");
             CultivationProgress identity = new CultivationProgress();
+            check(identity.SpiritRoot == "" && identity.RootName == "灵根待觉醒", "fresh archive starts un-awakened, not mixed");
             identity.EnsureIdentity(new Random(7));
             check(identity.DaoTitle.Length > 0 && CultivationIdentity.IsValidRoot(identity.SpiritRoot) && CultivationTechnique.IsValid(identity.TechniqueId), "identity assigned on first launch");
             identity.EnsureIdentity(new Random(8));
             string keptTitle = identity.DaoTitle, keptRoot = identity.SpiritRoot;
             identity.EnsureIdentity(new Random(9));
             check(identity.DaoTitle == keptTitle && identity.SpiritRoot == keptRoot, "existing identity is never rerolled");
+            bool[] seenRoots = new bool[CultivationIdentity.RootIds.Length];
+            for (int seed = 0; seed < 100; seed++)
+            {
+                CultivationProgress rolled = new CultivationProgress();
+                rolled.EnsureIdentity(new Random(seed));
+                for (int r = 0; r < CultivationIdentity.RootIds.Length; r++)
+                    if (rolled.SpiritRoot == CultivationIdentity.RootIds[r]) seenRoots[r] = true;
+            }
+            for (int r = 0; r < seenRoots.Length; r++) check(seenRoots[r], "random assignment reaches root " + CultivationIdentity.RootIds[r]);
+            CultivationProgress keepMixed = new CultivationProgress { SpiritRoot = "mixed", DaoTitle = "试剑子" };
+            keepMixed.EnsureIdentity(new Random(5));
+            check(keepMixed.SpiritRoot == "mixed" && keepMixed.DaoTitle == "试剑子", "a saved mixed root and title survive normal load");
+            CultivationProgress broken = new CultivationProgress { SpiritRoot = "adamant" };
+            broken.EnsureIdentity(new Random(6));
+            check(CultivationIdentity.IsValidRoot(broken.SpiritRoot), "corrupted root is repaired once, then persists");
             identity.DaoTitle = new string('道', 40);
             string testFolder = Path.Combine(Path.GetTempPath(), "cultivation-v6-selftest-" + Guid.NewGuid().ToString("N"));
             string file = Path.Combine(testFolder, "cultivation-v6.txt");
@@ -390,11 +422,19 @@ namespace NetBunny
                 check(Load(file).RealmIndex == loaded.RealmIndex, "recovery from backup");
                 identity.Save(file);
                 check(Load(file).DaoTitle == "", "overlong dao title is rejected on load and reassigned later");
+                CultivationProgress awakened = new CultivationProgress();
+                awakened.EnsureIdentity(new Random(21));
+                awakened.AutoBattle = false;
+                awakened.Save(file);
+                CultivationProgress awakenedReload = Load(file);
+                check(awakenedReload.SpiritRoot == awakened.SpiritRoot && awakenedReload.DaoTitle == awakened.DaoTitle &&
+                    !awakenedReload.AutoBattle, "awakened root, title and manual-battle preference survive a save/load round trip");
                 File.WriteAllText(file, "version=1\nrealm=0\nlayer=5\nqi=12\nlifetime=300\ncarry=0.5\nattempts=0\nroot=fire\npath=magic\n", new UTF8Encoding(false));
                 if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
                 CultivationProgress migrated = Load(file);
                 check(migrated.Layer == 5 && migrated.Qi == 12 && migrated.SpiritRoot == "fire" && migrated.DaoPath == "magic" &&
-                    migrated.TechniqueId == "breath" && migrated.LastNotice.Contains("迁移"), "version 1 archive migrates without losing progress");
+                    migrated.TechniqueId == "breath" && migrated.LastNotice.Contains("迁移") && migrated.AutoBattle,
+                    "version 1 archive migrates without losing progress and keeps the unattended default");
                 File.WriteAllText(file, "version=99\nrealm=0\nlayer=1\n", new UTF8Encoding(false));
                 if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
                 check(Load(file).Layer == 1 && Load(file).LifetimeQi == 0, "unknown future version falls back to a fresh archive instead of crashing");

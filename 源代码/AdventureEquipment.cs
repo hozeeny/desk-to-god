@@ -15,7 +15,7 @@ namespace NetBunny
         private readonly CultivationCard cultivation = new CultivationCard();
         private readonly ComboBox techniques = new ComboBox();
         private readonly Button breakthrough = new Button(), pauseCultivation = new Button();
-        private readonly CheckBox maintenance = new CheckBox();
+        private readonly CheckBox cleanupConsent = new CheckBox(), memoryConsent = new CheckBox();
         private readonly ListBox weapons = new ListBox();
         private readonly RadioButton automatic = new RadioButton(), manual = new RadioButton();
         private readonly CheckBox roam = new CheckBox();
@@ -53,21 +53,39 @@ namespace NetBunny
             Configure(pauseCultivation, "暂停修炼", 110, delegate { controller.SetCultivationPaused(!controller.CultivationPaused); RefreshData(); });
             practice.Controls.AddRange(new Control[] { techniques, breakthrough, pauseCultivation }); content.Controls.Add(practice);
             FlowLayoutPanel consentRow = Row();
-            maintenance.Text = "授权真实系统维护：击败文件怪才清理其绑定的旧临时文件，击败内存 Boss 才回收后台工作集";
-            maintenance.Width = 470; maintenance.Height = 30; maintenance.BackColor = Color.Transparent;
-            maintenance.CheckedChanged += delegate
+            cleanupConsent.Text = "授权文件清理：击败文件怪后，删除其绑定的、超过 24 小时的本用户临时文件";
+            cleanupConsent.Width = 470; cleanupConsent.Height = 30; cleanupConsent.BackColor = Color.Transparent;
+            cleanupConsent.CheckedChanged += delegate
             {
                 if (updating) return;
-                if (maintenance.Checked)
+                if (cleanupConsent.Checked)
                 {
                     DialogResult answer = MessageBox.Show(this,
-                        "开启后，击败对应怪物才会执行真实维护：\n· 文件怪：删除其绑定的、超过 24 小时的本用户临时文件\n· 内存 Boss：尝试回收同会话后台进程的工作集\n\n击杀怪物本身永远不会自动执行这些操作；授权状态会保存，可随时取消。\n确认开启真实系统维护授权吗？",
-                        "真实系统维护授权", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
-                    if (answer != DialogResult.OK) { updating = true; maintenance.Checked = false; updating = false; return; }
+                        "本授权只覆盖文件清理：\n· 击败文件怪后，删除其绑定的、超过 24 小时且未被占用的本用户临时文件\n\n不包含内存工作集回收（那是下方独立授权）。\n击杀怪物本身永远不会自动删除文件；授权状态会保存，可随时关闭。\n确认开启文件清理授权吗？",
+                        "文件清理授权", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                    if (answer != DialogResult.OK) { updating = true; cleanupConsent.Checked = false; updating = false; return; }
                 }
-                controller.SetMaintenanceConsent(maintenance.Checked); RefreshData();
+                if (!controller.SetCleanupConsent(cleanupConsent.Checked)) { updating = true; cleanupConsent.Checked = controller.MaintenanceConsentCleanup; updating = false; }
+                RefreshData();
             };
-            consentRow.Controls.Add(maintenance); content.Controls.Add(consentRow);
+            consentRow.Controls.Add(cleanupConsent); content.Controls.Add(consentRow);
+            FlowLayoutPanel memoryConsentRow = Row();
+            memoryConsent.Text = "授权内存维护：击败内存 Boss 后，回收同会话后台进程的工作集";
+            memoryConsent.Width = 470; memoryConsent.Height = 30; memoryConsent.BackColor = Color.Transparent;
+            memoryConsent.CheckedChanged += delegate
+            {
+                if (updating) return;
+                if (memoryConsent.Checked)
+                {
+                    DialogResult answer = MessageBox.Show(this,
+                        "本授权只覆盖内存维护：\n· 击败内存 Boss 后，尝试回收同会话后台进程的工作集，并显示实测前后占用\n\n不包含任何文件删除（那是上方独立授权）。应用再次访问内存时占用可能回升。\n授权状态会保存，可随时关闭。\n确认开启内存维护授权吗？",
+                        "内存维护授权", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                    if (answer != DialogResult.OK) { updating = true; memoryConsent.Checked = false; updating = false; return; }
+                }
+                if (!controller.SetMemoryConsent(memoryConsent.Checked)) { updating = true; memoryConsent.Checked = controller.MaintenanceConsentMemory; updating = false; }
+                RefreshData();
+            };
+            memoryConsentRow.Controls.Add(memoryConsent); content.Controls.Add(memoryConsentRow);
             content.Controls.Add(TextLine("默认纯修仙模式：修炼、战斗、修为与境界成长都不依赖真实文件；未开启授权时，击败任何妖物只结算虚拟奖励，不会删除文件或回收内存。", 50));
             stats.Width = 640; stats.Height = 108; stats.BackColor = Color.White; stats.Padding = new Padding(12); stats.BorderStyle = BorderStyle.FixedSingle; stats.Font = new Font(Font.FontFamily, 12, FontStyle.Bold); content.Controls.Add(stats);
             diskSpace.Width = 640; diskSpace.Height = 95; diskSpace.BackColor = BackColor; diskSpace.Margin = new Padding(0, 7, 0, 7); content.Controls.Add(diskSpace);
@@ -79,12 +97,12 @@ namespace NetBunny
             Configure(revive, "从墓碑复活", 130, delegate { controller.Resurrect(); RefreshData(); });
             actions.Controls.AddRange(new Control[] { equip, revive }); content.Controls.Add(actions);
             content.Controls.Add(TextLine("作战方式 · 白骨妖兵 / 碧渊水灵 / 独眼山魈 / 夜行蝠妖 / 幻菌菇妖随机现身，洞天的灵气也会持续吸引虚拟妖物来访", 30));
-            FlowLayoutPanel modes = Row(); manual.Text = "手动点选（默认）"; manual.Width = 180; manual.Height = 34;
-            automatic.Text = "自动规划杀怪并清理"; automatic.Width = 250; automatic.Height = 34;
+            FlowLayoutPanel modes = Row(); manual.Text = "手动点选作战"; manual.Width = 180; manual.Height = 34;
+            automatic.Text = "自动作战（默认 · 挂机自主修炼）"; automatic.Width = 250; automatic.Height = 34;
             manual.CheckedChanged += delegate { if (!updating && manual.Checked) controller.SetAutoPlan(false); };
             automatic.CheckedChanged += delegate { if (!updating && automatic.Checked) controller.SetAutoPlan(true); };
             modes.Controls.AddRange(new Control[] { manual, automatic }); content.Controls.Add(modes);
-            content.Controls.Add(TextLine("自动模式会利用攻击冷却退避、侧移，并根据武器射程反击。", 30));
+            content.Controls.Add(TextLine("自动模式会利用攻击冷却退避、侧移，并根据武器射程反击。自动作战是独立于两项真实维护授权的偏好；力竭后修士入定调息约一分钟自行恢复，无需定时上线。", 44));
             content.Controls.Add(TextLine("每击杀一只怪物随机获得 2～3 经验，只结算一次。怪物空血后立即碎裂消失；临时文件在后台清理，占用或失败的文件记为待重扫，不会让死怪复活。", 56));
             FlowLayoutPanel clear = Row(); Configure(blackhole, "一键清场并清理本批临时文件", 300, delegate { controller.ClearField(); RefreshData(); }); Configure(cancel, "取消待办清理", 155, delegate { controller.CancelPending(); RefreshData(); }); clear.Controls.AddRange(new Control[] { blackhole, cancel }); content.Controls.Add(clear);
             content.Controls.Add(TextLine("一键清场处理眼前的文件怪，邪恶分身 Boss 需正常战斗。每只击杀仍得 2～3 经验；文件占用或近期文件会跳过，只有实际删除计入磁盘释放。", 56));
@@ -96,7 +114,7 @@ namespace NetBunny
             themes.SelectedIndexChanged += delegate { if (!updating && themes.SelectedIndex >= 0) controller.ChooseTheme(ThemeCodes[themes.SelectedIndex]); }; content.Controls.Add(themes);
             Button refreshRegion = new Button(); Configure(refreshRegion, "刷新出口地区", 165, delegate { controller.RefreshRegion(); }); content.Controls.Add(refreshRegion);
             content.Controls.Add(TextLine(RegionThemeService.PrivacyNote + " 所有皮肤共用武器和等级。", 64));
-            FlowLayoutPanel display = Row(); roam.Text = "骑士满屏漫游"; roam.Width = 150; roam.Height = 30; roam.Checked = controller.Roaming; roam.CheckedChanged += delegate { if (!updating) controller.Roaming = roam.Checked; }; hints.SetToolTip(roam, "只控制骑士空闲漫游。怪物主动追击和攻击，角色战死或断网时改为巡逻；警示Boss不攻击。"); display.Controls.Add(roam);
+            FlowLayoutPanel display = Row(); roam.Text = "骑士满屏漫游"; roam.Width = 150; roam.Height = 30; roam.Checked = controller.Roaming; roam.CheckedChanged += delegate { if (!updating) controller.Roaming = roam.Checked; }; hints.SetToolTip(roam, "只控制骑士空闲漫游。怪物主动追击和攻击；修士力竭后入定调息并自行恢复，断网时本地修炼与战斗照常；警示Boss不攻击。"); display.Controls.Add(roam);
             sizes.DropDownStyle = ComboBoxStyle.DropDownList; sizes.Width = 130; sizes.Items.AddRange(new object[] { "小 · 80%", "中 · 100%", "大 · 120%" }); sizes.SelectedIndex = 1; sizes.SelectedIndexChanged += delegate { if (!updating && sizes.SelectedIndex >= 0) controller.ChangeScale(new[] { .8f, 1f, 1.2f }[sizes.SelectedIndex]); }; display.Controls.Add(sizes);
             monitors.DropDownStyle = ComboBoxStyle.DropDownList; monitors.Width = 190; int n = 0; foreach (Screen screen in Screen.AllScreens) monitors.Items.Add("屏幕 " + (++n) + (screen.Primary ? "（主屏）" : "")); monitors.SelectedIndex = Math.Max(0, Array.FindIndex(Screen.AllScreens, screen => screen.WorkingArea == controller.WorkingArea)); monitors.SelectedIndexChanged += delegate { if (!updating && monitors.SelectedIndex >= 0) controller.ChangeScreen(Screen.AllScreens[monitors.SelectedIndex]); }; display.Controls.Add(monitors);
             Button hide = new Button(); Configure(hide, "隐藏桌面角色", 160, delegate { controller.Enabled = false; }); display.Controls.Add(hide); content.Controls.Add(display);
@@ -141,11 +159,12 @@ namespace NetBunny
                     breakthrough.Enabled = practice.CanBreakthrough && !controller.IsDemo;
                     breakthrough.Text = practice.IsFinalRealm ? "已至巅峰" : "尝试破境（" + practice.BreakthroughPercent + "%）";
                     pauseCultivation.Text = controller.CultivationPaused ? "恢复修炼" : "暂停修炼";
-                    maintenance.Checked = controller.MaintenanceConsent;
+                    cleanupConsent.Checked = controller.MaintenanceConsentCleanup;
+                    memoryConsent.Checked = controller.MaintenanceConsentMemory;
                 }
                 diskSpace.SetSnapshot(controller.DiskSnapshot); hints.SetToolTip(diskSpace, diskSpace.Summary);
                 resourceGrowth.SetStatus(controller.ResourceGrowthText, controller.ResourceGrowthRatio); hints.SetToolTip(resourceGrowth, resourceGrowth.Summary);
-                stats.Text = "Lv." + p.Level + "   经验 " + p.Experience + " / " + p.NextLevelExperience + "   生命 " + p.Health + " / " + p.MaxHealth + "   RAM " + controller.MemoryText + "\r\n战斗分 " + p.Score + "   累计实际清理 " + AdventureBattle.FormatBytes(p.FreedBytes) + "   排队 " + battle.QueueCount + "\r\n" + (controller.IsDemo ? "纯演示：本页不改变真实进度，不会清理文件" : controller.StateText);
+                stats.Text = "战斗Lv." + p.Level + "（战斗熟练等级，与修仙境界相互独立）   经验 " + p.Experience + " / " + p.NextLevelExperience + "   生命 " + p.Health + " / " + p.MaxHealth + "   RAM " + controller.MemoryText + "\r\n战斗分 " + p.Score + "   累计实际清理 " + AdventureBattle.FormatBytes(p.FreedBytes) + "   排队 " + battle.QueueCount + "\r\n" + (controller.IsDemo ? "纯演示：本页不改变真实进度，不会清理文件" : controller.StateText);
                 reward.Text = battle.LastReward;
                 string key = String.Join(",", p.Inventory.ToArray()) + ":" + p.WeaponId;
                 if (key != inventoryKey)
