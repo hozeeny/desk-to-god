@@ -43,6 +43,14 @@ namespace NetBunny
         private readonly CultivationDeviceGrade deviceGrade;
         private readonly string cultivationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "cultivation-v2.txt");
         private readonly string consentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "maintenance-consent.txt");
+        // 百业证道：独立存档与识别器；与修仙主进度、战斗、真实维护互不耦合。
+        private readonly string baiyePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "baiye-v1.txt");
+        private string baiyePathOverride;
+        private readonly BaiyeProgress baiye;
+        private readonly BaiyeTracker baiyeTracker;
+        private BaiyeSteleForm stele;
+        private double lastBaiyeAt = -1;
+        private string baiyeNotice;
         // Two independent real-maintenance scopes; neither is implied by combat
         // or by the (separately persisted) unattended auto-battle preference.
         private readonly MaintenanceConsentStore consent = new MaintenanceConsentStore();
@@ -100,6 +108,10 @@ namespace NetBunny
             // Demonstration and smoke runs never touch the real cultivation archive.
             cultivation = demonstrationOnly ? new CultivationProgress() : CultivationProgress.Load(cultivationPath);
             cultivation.EnsureIdentity(random);
+            // Demonstration and smoke runs keep the real baiye archive untouched too.
+            baiye = demonstrationOnly ? new BaiyeProgress() : BaiyeProgress.Load(BaiyeWritePath);
+            baiyeTracker = new BaiyeTracker(baiye);
+            baiyeTracker.Reset();
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
             if (demonstrationOnly) { consent.CleanupEnabled = consent.MemoryEnabled = true; }
@@ -324,6 +336,76 @@ namespace NetBunny
             if (cultivation.AdvanceActiveTime(elapsed, deviceGrade) > 0) Save();
             if (encounters.Observe(elapsed)) encounterDue = true;
         }
+        // 百业证道：同一节拍用真实流逝秒数结算道韵。与修仙吐纳互不依赖——
+        // 暂停修炼不影响百业，关闭百业也不影响修炼；演示与示范运行不结算。
+        private void AdvanceBaiye(double now)
+        {
+            // 示范运行不驱动百业：烟测用 TickBaiyeForTest 走同一结算路径，结果可复现。
+            if (demonstrationOnly || baiye == null || baiyeTracker == null) return;
+            if (lastBaiyeAt < 0 || IsDemo) { lastBaiyeAt = now; return; }
+            double elapsed = now - lastBaiyeAt; lastBaiyeAt = now;
+            if (elapsed <= 0) return;
+            AdvanceBaiyeCore(elapsed);
+        }
+        // 结算 + 机缘评估 + 按需即时存档。机缘奖励的修为经由修仙主进度的
+        // 公开入口发放，百业模块本身不反向依赖 CultivationProgress。
+        private void AdvanceBaiyeCore(double elapsed)
+        {
+            bool leveledUp;
+            string notice = baiyeTracker.Tick(elapsed, out leveledUp);
+            if (notice != null) baiyeNotice = notice;
+            List<BaiyeEncounterDef> unlocked = BaiyeEncounters.Evaluate(baiye, baiyeTracker.UtcNow());
+            foreach (BaiyeEncounterDef def in unlocked)
+            {
+                if (!demonstrationOnly && def.QiBonus > 0) cultivation.AddQi(def.QiBonus);
+                baiyeNotice = "机缘 · " + def.Name + "：" + def.RewardText + (def.QiBonus > 0 ? "（修为 +" + def.QiBonus + "）" : "");
+                battle.LastReward = baiyeNotice;
+            }
+            if (leveledUp || unlocked.Count > 0) Save();
+        }
+        // Smoke hook: feed synthetic elapsed time through the real settlement path.
+        internal void TickBaiyeForTest(double elapsedSeconds) { AdvanceBaiyeCore(elapsedSeconds); }
+        internal string BaiyeWritePath { get { return baiyePathOverride ?? baiyePath; } }
+        internal BaiyeProgress Baiye { get { return baiye; } }
+        internal BaiyeTracker BaiyeTracking { get { return baiyeTracker; } }
+        internal bool BaiyeExplained { get { return baiye != null && baiye.FirstRunExplained; } }
+        internal string BaiyeActivityText { get { return baiyeTracker == null ? "百业识别未开启" : baiyeTracker.StatusText; } }
+        internal string BaiyeCurrentPathId { get { return baiyeTracker == null ? null : baiyeTracker.CurrentPathId; } }
+        internal string BaiyeNotice { get { return baiyeNotice; } }
+        internal string BaiyeResonanceHint { get { return ""; } }
+        internal void AcknowledgeBaiye()
+        {
+            if (baiye == null || baiye.FirstRunExplained) return;
+            baiye.FirstRunExplained = true;
+            Save();
+        }
+        // 关闭识别立即生效：停止采样、结算并丢弃当前片段；存档失败不阻塞关闭，
+        // 由下一轮周期存档继续尝试（模式已写入内存，本进程内不会再采样）。
+        internal bool SetBaiyeMode(int mode)
+        {
+            if (disposed || baiye == null || mode < 0 || mode > 2) return false;
+            if (mode > 0 && !baiye.FirstRunExplained) return false;
+            if (baiye.Mode == mode) return true;
+            baiye.Mode = mode;
+            baiyeTracker.Reset();
+            Save();
+            return true;
+        }
+        internal void SetBaiyeManualMark(string markId)
+        {
+            if (disposed || baiye == null) return;
+            string next = markId != null && BaiyeCatalog.FindManualMark(markId) != null ? markId : "";
+            if (baiye.ManualMarkId == next) return;
+            baiye.ManualMarkId = next;
+            baiyeTracker.Reset();
+            Save();
+        }
+        public void OpenBaiyeStele()
+        {
+            if (disposed) return;
+            if (stele == null || stele.IsDisposed) stele = new BaiyeSteleForm(this);
+            stele.RefreshData(); stele.Show(); stele.BringToFront(); stele.Activate();
+        }
         private void SpawnVirtualFiend()
         {
             AdventureMonster kind = AdventureMonster.All[random.Next(AdventureMonster.All.Length)];
@@ -546,6 +628,8 @@ namespace NetBunny
             double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
             // Cultivation uses the raw elapsed time, never the render-clamped dt.
             AdvanceCultivation(now);
+            // 百业道韵同样按真实流逝结算，且藏在后台/隐藏桌宠时照常识别前台工作。
+            AdvanceBaiye(now);
             // A consent revocation whose file update failed is retried until the
             // stale grant is gone — even while the pet is hidden.
             if ((consentRetryCleanup || consentRetryMemory) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
@@ -978,6 +1062,8 @@ namespace NetBunny
             // *.v54-backup copy made at first launch preserves history.
             // Cultivation data lives in its own separate versioned archive.
             try { cultivation.Save(cultivationPath); } catch (Exception e) { scanStatus = "修炼档案暂未保存：" + e.Message; }
+            // 百业道韵第三个独立存档；保存失败只记状态，不影响其他存档。
+            if (baiye != null) { try { baiye.Save(BaiyeWritePath); } catch (Exception e) { scanStatus = "百业档案暂未保存：" + e.Message; } }
         }
         public void Dispose()
         {
@@ -993,7 +1079,7 @@ namespace NetBunny
             if (cleanupTask != null) { try { cleanupTask.Wait(); DrainCleanup(); } catch { } }
             demoStarted = -1; demoPending = false; Save(); disposed = true;
             timer.Dispose(); if (connectivity != null) connectivity.Dispose(); region.Changed -= RegionChanged; region.Dispose();
-            if (equipment != null) equipment.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
+            if (equipment != null) equipment.Dispose(); if (stele != null) stele.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
         }        internal AdventureBattle Battle { get { return battle; } }
         internal string DetailText { get { return cleanupNotice + "\r\n" + scanStatus + "\r\n" + (diskSnapshot.Available ? "C 盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) + " / " + AdventureBattle.FormatBytes(diskSnapshot.TotalBytes) : diskSnapshot.Error) + "\r\n" + connectivityDetail + "\r\n" + region.Status; } }
         internal string ThemeMode { get { return battle.Progress.ThemeMode; } }
@@ -1261,6 +1347,37 @@ namespace NetBunny
                     check(c.CultivationPaused && c.cultivation.LastNotice.Contains("暂歇"), "cultivation pause applies immediately");
                     c.SetCultivationPaused(false);
                     check(!c.CultivationPaused && c.cultivation.LastNotice.Contains("继续"), "cultivation resumes on request");
+                    // 百业证道（示范运行 + 合成数据源）：首启说明门槛、模式门控、
+                    // 结算、空闲停算、手动标记与第一条机缘都经控制器入口生效。
+                    Action<double> feedBaiye = delegate(double seconds) { for (double s = 0; s < seconds; s += 3) c.TickBaiyeForTest(3); };
+                    string baiyeSmokeArchive = Path.Combine(Path.GetTempPath(), "baiye-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    c.baiyePathOverride = baiyeSmokeArchive;
+                    check(!c.SetBaiyeMode(1), "baiye recognition stays locked before the first-run explanation");
+                    c.AcknowledgeBaiye();
+                    check(c.SetBaiyeMode(1) && c.Baiye.Mode == 1, "category recognition enabled after acknowledgement");
+                    c.baiyeTracker.ForegroundProcessName = delegate { return "devenv"; };
+                    c.baiyeTracker.IdleSeconds = delegate { return 0; };
+                    feedBaiye(660);
+                    check(c.Baiye.YunOf("zhen") >= 63 && c.Baiye.LevelOf("zhen") >= 1, "coding accrues formation dao-yun through the controller path");
+                    double heldYun = c.Baiye.YunOf("zhen");
+                    c.baiyeTracker.IdleSeconds = delegate { return 300; };
+                    feedBaiye(120);
+                    check(c.Baiye.YunOf("zhen") == heldYun, "idle periods never accrue dao-yun");
+                    c.baiyeTracker.IdleSeconds = delegate { return 0; };
+                    check(c.SetBaiyeMode(0) && c.Baiye.Mode == 0, "recognition can be switched off at any time");
+                    feedBaiye(120);
+                    check(c.Baiye.YunOf("zhen") == heldYun, "closed recognition stops sampling immediately");
+                    c.SetBaiyeMode(2); c.SetBaiyeManualMark("manual-tianji");
+                    feedBaiye(1260);
+                    check(c.Baiye.YunOf("tianji") >= 122, "manual marks accrue the chosen dao in mark mode");
+                    c.SetBaiyeManualMark(null);
+                    feedBaiye(720);
+                    check(c.Baiye.YunOf("zhen") >= 120, "auto recognition resumes after the manual mark clears");
+                    check(c.Baiye.EncounterUnlockedUtc.ContainsKey("tianji-yansuan") && c.Baiye.Heritages.Contains("tianji-chart"),
+                        "zhen + tianji trigger the first resonance through the controller");
+                    check(c.battle.LastReward.Contains("天机演算") && c.BaiyeNotice != null && c.BaiyeNotice.Contains("机缘"),
+                        "resonance surfaces a reward notice instead of a bare popup");
+                    check(!File.Exists(c.BaiyeWritePath), "demonstration runs never write the real baiye archive");
                     // Unattended recovery: a defeated cultivator always rests back.
                     c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
@@ -1403,6 +1520,35 @@ namespace NetBunny
                     c.battle.LastReward = "预览示例：获得「星渊黑洞」· 不读取或清理真实文件";
                     c.memoryAvailable = true; c.memoryPercent = 47.2; c.diskSnapshot = DiskSpaceSnapshot.FromValues(256L * 1024 * 1024 * 1024, 24L * 1024 * 1024 * 1024); c.scanStatus = "预览示例数据；真实临时文件只在正常启动后扫描。";
                     using (AdventureEquipmentForm panel = new AdventureEquipmentForm(c))
+                    using (Bitmap capture = new Bitmap(panel.Width, panel.Height))
+                    {
+                        panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000); panel.Show(); Application.DoEvents(); panel.RefreshData();
+                        panel.DrawToBitmap(capture, new Rectangle(Point.Empty, panel.Size)); capture.Save(output, ImageFormat.Png);
+                    }
+                }
+            }
+        }
+        // 百业道碑预览：全部使用合成数据，不读真实存档、不接触系统探针。
+        public static void ExportBaiyeStelePreview(string assetDirectory, string output)
+        {
+            using (Form owner = new Form())
+            {
+                IntPtr ownerHandle = owner.Handle;
+                using (AdventureController c = new AdventureController(owner, assetDirectory, true))
+                {
+                    DateTime stamp = new DateTime(2026, 10, 17, 6, 30, 0, DateTimeKind.Utc);
+                    c.baiye.FirstRunExplained = true; c.baiye.Mode = 2; c.baiye.ManualMarkId = "manual-youli-learn";
+                    c.baiye.AddYun("zhen", 186, stamp); c.baiye.AddYun("tianji", 132, stamp);
+                    c.baiye.AddYun("wen", 64, stamp); c.baiye.AddYun("youli", 26, stamp);
+                    c.baiye.AddLog("zhen", 6.0, "自动识别", stamp.AddMinutes(-42));
+                    c.baiye.AddLog("tianji", 4.5, "自动识别", stamp.AddMinutes(-30));
+                    c.baiye.AddLog("youli", 3.2, "手动标记", stamp.AddMinutes(-12));
+                    BaiyeEncounters.Evaluate(c.baiye, stamp);
+                    c.baiyeNotice = "机缘 · 天机演算：阵法与天机两道交相印证，悟得阵图「天机阵图」（修为 +120）";
+                    c.baiyeTracker.ForegroundProcessName = delegate { return "code"; };
+                    c.baiyeTracker.IdleSeconds = delegate { return 0; };
+                    c.TickBaiyeForTest(3);
+                    using (BaiyeSteleForm panel = new BaiyeSteleForm(c))
                     using (Bitmap capture = new Bitmap(panel.Width, panel.Height))
                     {
                         panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000); panel.Show(); Application.DoEvents(); panel.RefreshData();
