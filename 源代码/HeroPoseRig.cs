@@ -20,7 +20,7 @@ namespace NetBunny
     {
         internal HeroFootPose NearFoot, FarFoot;
         internal PointF NearShoulder, NearElbow, NearHand, FarShoulder, FarElbow, FarHand;
-        internal double Bob, Lean, Attack, WeaponAngle;
+        internal double Bob, Lean, Attack, WeaponAngle, HeadTilt;
         internal HeroWeaponGrip Weapon;
         internal PointF BodyPoint(PointF point)
         {
@@ -43,6 +43,9 @@ namespace NetBunny
             HeroPose pose = new HeroPose(); pose.Weapon = weapon; pose.Attack = attacking ? Math.Sin(Clamp(state.AttackProgress) * Math.PI) : 0;
             pose.Bob = run ? Math.Cos(a * 2) * 1.6 : -6.5 + (pant ? Math.Sin(state.Time * 6) * .7 : Math.Sin(state.Time * 2) * .4);
             pose.Lean = run ? 7 + Math.Sin(a) * .7 : pant ? 7 + Math.Sin(state.Time * 6) * .8 : attacking ? 1 + pose.Attack * 7 : 2;
+            // Head rotation is relative to the body, around the skin's neck attachment.
+            // A shared parent transform keeps gait bounce and attack lunges connected.
+            pose.HeadTilt = pant ? 8 + Math.Sin(state.Time * 6) * 1.4 : -pose.Lean * .55 + Math.Sin(a) * .65;
             pose.NearFoot = Foot(pose.BodyPoint(new PointF(104, 146)), 104, 191, cycle, run);
             pose.FarFoot = Foot(pose.BodyPoint(new PointF(120, 144)), 120, 188, cycle + .5, run);
             pose.NearShoulder = new PointF(96, 112); pose.FarShoulder = new PointF(126, 111);

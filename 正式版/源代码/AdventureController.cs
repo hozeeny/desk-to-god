@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -20,13 +20,21 @@ namespace NetBunny
         private sealed class LootView { internal KnightLayeredWindow Window; internal string WeaponId, Label; internal double Life = 3.2, X, Y; }
         private readonly Dictionary<string, KnightLayeredWindow> enemyWindows = new Dictionary<string, KnightLayeredWindow>();
         private readonly CleanupService cleanup = new CleanupService();
-        private readonly ResourceWaveState resourceWaves = new ResourceWaveState();
+        private readonly LiveTempPopulation liveTemp = new LiveTempPopulation();
+        private FileSystemWatcher tempWatcher;
+        private int tempChangeVersion, scannedChangeVersion;
+        private Task<MemoryReclaimResult> memoryReclaimTask;
+        private CancellationTokenSource memoryReclaimCancellation;
+        private Func<CancellationToken, Task<MemoryReclaimResult>> simulatedMemoryReclaimer;
+        private double lastRefill = -100;
         private readonly DiskSpaceService diskSpace = new DiskSpaceService();
         private readonly LowDiskBossPolicy diskBossPolicy = new LowDiskBossPolicy();
         private DiskSpaceSnapshot diskSnapshot = DiskSpaceSnapshot.Unavailable("等待 C 盘容量采样");
-        private bool diskBusy, diskWaveRequested;
+        private bool diskBusy;
         private double lastDisk = -100;
         private readonly AdventureEffects effects = new AdventureEffects();
+        private readonly CombatTactics combatTactics = new CombatTactics();
+        private string tacticalStatus = "";
         private readonly RegionThemeService region;
         private readonly KnightConnectivityReader connectivity;
         private readonly bool demonstrationOnly;
@@ -61,9 +69,13 @@ namespace NetBunny
         private int recheckFiles;
         private readonly Dictionary<string, CleanupCandidate> recheckCandidates = new Dictionary<string, CleanupCandidate>(StringComparer.OrdinalIgnoreCase);
         private string cleanupNotice = "等待击杀 · 每只怪物获得 2～3 经验";
-        public AdventureController(Form owner, string assetDirectory, bool demonstrationOnly = false)
+        private bool lastInventoryComplete;
+        private double lastInventoryObservation = -1;
+        internal const double IdleInventoryIntervalSeconds = 2, ActiveInventoryIntervalSeconds = 2;
+        public AdventureController(Form owner, string assetDirectory, bool demonstrationOnly = false, Func<double> waveClock = null)
         {
             if (owner == null) throw new ArgumentNullException("owner"); this.owner = owner; this.demonstrationOnly = demonstrationOnly;
+
             renderer = new AdventureRenderer(assetDirectory);
             region = new RegionThemeService();
             connectivity = demonstrationOnly ? null : new KnightConnectivityReader();
@@ -85,7 +97,7 @@ namespace NetBunny
             PositionLandmark(); timer.Interval = 15; timer.Tick += Tick; lastTick = clock.Elapsed.TotalSeconds; timer.Start();
         }
         private Size HeroSize { get { return new Size((int)(220 * displayScale), (int)(240 * displayScale)); } }
-        private Size LandmarkSize { get { return new Size((int)(200 * displayScale), (int)(250 * displayScale)); } }
+        private Size LandmarkSize { get { return new Size((int)(200 * displayScale), (int)(280 * displayScale)); } }
         private KnightLayeredWindow NewWindow(string name) { KnightLayeredWindow w = new KnightLayeredWindow(); w.Text = name; return w; }
         public bool Enabled
         {
@@ -112,7 +124,7 @@ namespace NetBunny
                 if (battle.Progress.Dead) return "骑士战死 · 右键墓碑复活";
                 if (networkState.Phase == KnightPhase.Dying || networkState.Phase == KnightPhase.Grave) return "网络断开 · 灵魂升天，墓碑等待重连";
                 if (networkState.Phase == KnightPhase.Revive) return "网络恢复 · 从坟地爬出";
-                if (battle.QueueCount > 0) return (battle.Target == null ? "后台清理 · " : battle.Automatic ? "自动规划 · " : "清理队列 · ") + battle.QueueCount + " 个目标 · " + battle.Weapon.Name + " · Lv." + battle.Progress.Level;
+                if (battle.QueueCount > 0) return (battle.Target == null ? "后台清理 · " : battle.Automatic ? "自动规划 · " + tacticalStatus + " · " : "清理队列 · ") + battle.QueueCount + " 个目标 · " + battle.Weapon.Name + " · Lv." + battle.Progress.Level;
                 return "Lv." + battle.Progress.Level + " · " + (actualMoveSpeed > 1 ? "随网速奔跑" : networkState.Phase == KnightPhase.Pant ? "正在大喘气" : "原地待命") + " · " + CleanupAmountText;
             }
         }
@@ -129,6 +141,7 @@ namespace NetBunny
             // Preview must not silently resume an automatic deletion mode afterwards.
             resumeAutomaticAfterDemo = false; battle.SetAutomatic(false); RemoveCancelledAutomaticJobs();
             if (workCancellation != null) workCancellation.Cancel(); demoPending = true;
+            if (memoryReclaimCancellation != null) memoryReclaimCancellation.Cancel();
             if (cleanupTask == null) StartDemo();
         }
         private void StartDemo()
@@ -145,8 +158,9 @@ namespace NetBunny
         public void RefreshWorld() { RefreshWorld(true); }
         private void RefreshWorld(bool manualRequest)
         {
-            if (disposed || demonstrationOnly || scanBusy || IsDemo || battle.QueueCount > 0 || cleanupTask != null) return;
-            scanBusy = true; int scanEpoch = cleanupEpoch; lastScan = clock.Elapsed.TotalSeconds; scanStatus = "正在扫描 24 小时以上、可安全检查的临时文件…";
+            if (disposed || demonstrationOnly || scanBusy || IsDemo) return;
+            EnsureTempWatcher(); scannedChangeVersion = Interlocked.CompareExchange(ref tempChangeVersion,0,0);
+            scanBusy = true; int scanEpoch = cleanupEpoch; lastScan = clock.Elapsed.TotalSeconds; scanStatus = "正在实时复核临时文件与可处理项目…";
             scanCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
             CancellationToken scanToken = scanCancellation.Token;
             Task.Run(delegate
@@ -165,47 +179,65 @@ namespace NetBunny
         }
         private void ApplyInventory(CleanupSnapshot snapshot, bool manualRequest)
         {
-            resourceWaves.ObserveInventory(snapshot.ObservedTempBytes, snapshot.InventoryComplete);
-            if (battle.QueueCount > 0 || cleanupTask != null || IsDemo) return;
-            // A scan is an observation, not permission to refill the field. Old files
-            // beyond the twelve-batch display budget are already in the census baseline.
-            if (manualRequest) resourceWaves.CompleteWave();
-            CompleteResourceWaveIfSettled();
-            bool diskRequest = diskWaveRequested && !resourceWaves.WaveActive;
-            if (!resourceWaves.TryBeginWave(manualRequest || diskRequest))
+            if (snapshot == null || IsDemo) return;
+            liveTemp.Observe(snapshot, manualRequest);
+            lastInventoryComplete = snapshot.InventoryComplete;
+            lastInventoryObservation = clock.Elapsed.TotalSeconds;
+            ReconcileRecheck(snapshot, new List<CleanupBatch>());
+            foreach (AdventureEnemy enemy in battle.Enemies.ToArray())
             {
-                scanStatus = resourceWaves.WaveActive ? "本轮怪物尚未清完；扫描不会补回已击败的怪物。" : "本轮已结束；等待临时文件或内存占用增长，也可手动重新扫描。";
-                if (!snapshot.InventoryComplete) scanStatus += " 本次总量检查不完整，不据此判断临时文件增长。";
-                return;
+                if (enemy.Batch == null || enemy.Authorized || enemy.Cleaning || enemy.Defeated) continue;
+                CleanupBatch updated = liveTemp.Refresh(enemy.Batch);
+                if (updated == null && snapshot.InventoryComplete)
+                {
+                    if (enemy.IsDiskBoss) { enemy.Batch = null; enemy.VisualDirty = true; }
+                    else battle.Enemies.Remove(enemy);
+                }
+                else if (updated != null) { enemy.Batch = updated; enemy.VisualDirty = true; }
             }
-            diskWaveRequested = false;
-            // No queued/active jobs exist here. Replace only the previous file wave;
-            // a passive low-disk warning and independent RAM-pressure boss can remain.
-            battle.Enemies.RemoveAll(e => !e.IsBoss || (e.IsDiskBoss && e.Defeated));
-            foreach (AdventureEnemy existingDiskBoss in battle.Enemies.Where(e => e.IsDiskBoss))
-            {
-                existingDiskBoss.Batch = null; existingDiskBoss.Failed = false;
-                existingDiskBoss.Health = existingDiskBoss.MaxHealth; existingDiskBoss.RestoreVisual(AdventureBattle.DiskWarningMessage);
-            }
-            List<CleanupBatch> fieldBatches = EnemyFieldBudget.CoalesceBatches(snapshot.Batches, EnemyFieldBudget.AvailableOrdinarySlots(battle.Enemies));
+            candidateBytes = liveTemp.EligibleBytes;
+            scanStatus = snapshot.InventoryComplete ? "实时普查已更新：可处理 " + liveTemp.EligibleFiles + " 个，监测 " + liveTemp.TotalFiles + " 个临时文件。" : "本次普查不完整；合并已确认数据，未核实项目保留。";
+            lastLandmarkPaint = -100;
+            lastRefill = -100;
+            RefillEnemies();
+        }
+        private void ReconcileRecheck(CleanupSnapshot snapshot, IEnumerable<CleanupBatch> fieldBatches)
+        {
             HashSet<string> reboundPaths = new HashSet<string>(fieldBatches.SelectMany(batch => batch.Candidates).Select(file => file.Path), StringComparer.OrdinalIgnoreCase);
             foreach (string path in recheckCandidates.Keys.ToArray())
                 if (reboundPaths.Contains(path) || (snapshot.InventoryComplete && snapshot.ObservedPathsAvailable && !snapshot.ObservedPaths.Contains(path))) recheckCandidates.Remove(path);
             recheckBytes = recheckCandidates.Values.Sum(file => file.Length); recheckFiles = recheckCandidates.Count;
-            candidateBytes = fieldBatches.Sum(batch => batch.Bytes) + recheckBytes;
-            scanStatus = "第 " + resourceWaves.WaveNumber + " 轮 · " + (diskRequest ? "C 盘新增低空间压力" : resourceWaves.LastWaveReason) + "；" + snapshot.Message;
-            foreach (CleanupBatch batch in fieldBatches)
+        }
+        private void RefillEnemies()
+        {
+            if (IsDemo) return;
+            int slots = EnemyFieldBudget.AvailableOrdinarySlots(battle.Enemies);
+            if (slots <= 0 || clock.Elapsed.TotalSeconds - lastRefill < .25) return;
+            lastRefill = clock.Elapsed.TotalSeconds;
+            foreach (CleanupBatch batch in liveTemp.TakePending(battle.Enemies, slots))
             {
-                AdventureEnemy enemy = AdventureMonster.Create(batch, random);
+                AdventureEnemy enemy = AdventureMonster.Create(batch, random, battle.Progress.Level);
                 Spawn(enemy); battle.Enemies.Add(enemy);
             }
             BindDiskBossCandidates();
-            CompleteResourceWaveIfSettled(); lastLandmarkPaint = -100;
         }
-        private void CompleteResourceWaveIfSettled()
+        private void EnsureTempWatcher()
         {
-            if (cleanupTask == null && pendingCleanup.Count == 0 && !battle.Enemies.Any(e => e.Batch != null && !e.Defeated))
-                resourceWaves.CompleteWave();
+            if (tempWatcher != null || demonstrationOnly || disposed) return;
+            try
+            {
+                InstallTempWatcher(cleanup.RootPath);
+            }
+            catch { if (tempWatcher != null) tempWatcher.Dispose(); tempWatcher = null; }
+        }
+        private void InstallTempWatcher(string root)
+        {
+                tempWatcher = new FileSystemWatcher(root) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size | NotifyFilters.LastWrite, InternalBufferSize = 32768 };
+                FileSystemEventHandler changed = delegate { Interlocked.Increment(ref tempChangeVersion); };
+                tempWatcher.Created += changed; tempWatcher.Changed += changed; tempWatcher.Deleted += changed;
+                tempWatcher.Renamed += delegate { Interlocked.Increment(ref tempChangeVersion); };
+                tempWatcher.Error += delegate { Interlocked.Increment(ref tempChangeVersion); };
+                tempWatcher.EnableRaisingEvents = true;
         }
         private void ReadDisk(double now)
         {
@@ -230,16 +262,15 @@ namespace NetBunny
                 if (formerBatch != null)
                     foreach (CleanupBatch batch in EnemyFieldBudget.CoalesceBatches(new[] { formerBatch }, EnemyFieldBudget.AvailableOrdinarySlots(battle.Enemies)))
                     {
-                        AdventureEnemy ordinary = AdventureMonster.Create(batch, random);
+                        AdventureEnemy ordinary = AdventureMonster.Create(batch, random, battle.Progress.Level);
                         ordinary.Failed = existing.Failed; Spawn(ordinary); battle.Enemies.Add(ordinary);
                     }
-                existing = null; diskWaveRequested = false;
+                existing = null;
             }
             if (diskBossPolicy.Observe(diskSnapshot, now, existing != null || !EnemyFieldBudget.CanAddBoss(battle.Enemies, true)))
             {
                 AdventureEnemy boss = new AdventureEnemy { Id = "disk-boss-" + Guid.NewGuid().ToString("N"), IsBoss = true, IsDiskBoss = true, MonsterKind = "boss", MaxHealth = 800 + battle.Progress.Level * 40 };
                 boss.Health = boss.MaxHealth; Spawn(boss); battle.Enemies.Add(boss);
-                diskWaveRequested = true;
                 BindDiskBossCandidates();
                 if (boss.IsDiskWarning) { battle.LastReward = AdventureBattle.DiskWarningMessage; lastScan = -100; }
                 else battle.LastReward = "C 盘剩余空间低于 1 GiB：磁盘危机 Boss 出现！击败后清理它对应的临时文件。";
@@ -250,22 +281,27 @@ namespace NetBunny
         {
             AdventureEnemy boss = battle.Enemies.FirstOrDefault(e => e.IsDiskBoss && e.IsDiskWarning && !e.Defeated);
             if (boss == null) return;
-            AdventureEnemy[] donors = battle.Enemies.Where(e => !e.IsBoss && e.Batch != null && !e.Authorized && !e.Cleaning && !e.Defeated && !e.Failed && e.Batch.Candidates.All(f => String.Equals(Path.GetPathRoot(f.Path), @"C:\", StringComparison.OrdinalIgnoreCase))).ToArray();
+            AdventureEnemy[] donors = battle.Enemies.Where(e => !e.IsBoss && e.Batch != null && !e.Authorized && !e.Cleaning && !e.Defeated && !e.Failed).ToArray();
             if (donors.Length == 0) return;
             // Transfer ownership, never duplicate it. Both normal mobs and the disk
             // boss enter the same exclusive, identity-checked cleanup worker.
-            List<CleanupCandidate> files = donors.SelectMany(e => e.Batch.Candidates).GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
+            List<CleanupCandidate> files = donors.SelectMany(e => e.Batch.Candidates).Where(f => f.EligibleForCleanup && String.Equals(Path.GetPathRoot(f.Path), @"C:\", StringComparison.OrdinalIgnoreCase)).GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
             if (files.Count == 0) return;
             boss.Batch = new CleanupBatch(files, 1); boss.VisualDirty = true;
-            foreach (AdventureEnemy donor in donors) battle.Enemies.Remove(donor);
-            diskWaveRequested = false;
+            HashSet<string> transferred = new HashSet<string>(files.Select(f=>f.Path),StringComparer.OrdinalIgnoreCase);
+            foreach (AdventureEnemy donor in donors)
+            {
+                List<CleanupCandidate> rest=donor.Batch.Candidates.Where(f=>!transferred.Contains(f.Path)).ToList();
+                if(rest.Count==0)battle.Enemies.Remove(donor);
+                else { donor.Batch=new CleanupBatch(rest,1); donor.VisualDirty=true; }
+            }
             battle.LastReward = "磁盘危机 Boss 已绑定 " + files.Count + " 个临时文件 · 可清理 " + AdventureBattle.FormatBytes(boss.Bytes);
         }
         private void Tick(object sender, EventArgs args)
         {
             if (disposed) return;
             double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
-            DrainCleanup(); if (demoPending && cleanupTask == null) StartDemo();
+            DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
             if (!demonstrationOnly && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
             if (!enabled) return; effects.Tick(dt);
             if (demoPending) { RenderWorld(false); return; }
@@ -276,22 +312,27 @@ namespace NetBunny
             }
             KnightConnectivity online = connectivity == null ? KnightConnectivity.Online : connectivity.Read(out connectivityDetail);
             networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6, online);
-            battle.Tick(dt); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
+            battle.Tick(dt); ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
             bool canFight = !battle.Progress.Dead && networkState.Phase != KnightPhase.Dying && networkState.Phase != KnightPhase.Grave && networkState.Phase != KnightPhase.Revive;
             if (canFight && battle.Automatic) battle.PlanNext(x, y);
             AdventureEnemy target = canFight ? battle.Target : null;
+            if (target == null || !battle.Automatic) { combatTactics.Reset(); tacticalStatus = ""; }
             double moveStartX = x, moveStartY = y;
             if (!dragging && now > pauseMotionUntil)
             {
                 if (target != null)
                 {
+                    if (battle.Automatic) AdvanceAutomaticCombat(target, now, dt);
+                    else
+                    {
                     double tx = target.X + (target.IsBoss ? 30 : -35), ty = target.Y - (HeroSize.Height - EnemySize(target).Height);
                     double distance = AdventureBattle.Distance(x, y, tx, ty);
                     if (distance > battle.Weapon.Range * displayScale * .8) MoveToward(tx, ty, Math.Max(200, networkState.PixelsPerSecond), dt);
                     else
                     {
                         heroFacing = target.X >= x;
-                        if (battle.Cooldown <= 0) { attackAnimation = 1; if (battle.Weapon.Id == "blackhole") { blackholeUntil = now + 1.1; blackholeX = target.X; blackholeY = target.Y; } effects.Fire(new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale), new PointF((float)target.X + 65 * displayScale, (float)target.Y + 80 * displayScale), battle.Weapon.Id, displayScale); int inventoryBefore = battle.Progress.Inventory.Count; List<AdventureEnemy> killed = battle.Strike(target); foreach (AdventureEnemy defeated in killed) BeginCleanup(defeated); if (battle.Progress.Inventory.Count > inventoryBefore) ShowLoot(battle.Progress.Inventory.Last(), target.X, target.Y); if (killed.Count > 0) Save(); }
+                        if (battle.Cooldown <= 0) StrikeTarget(target, now);
+                    }
                     }
                 }
                 else if (canFight && roaming && networkState.Phase == KnightPhase.Run)
@@ -310,11 +351,54 @@ namespace NetBunny
                 if (battle.Progress.Dead && canFight) { battle.StopFightingAfterDeath(); canFight = false; Save(); }
             }
             PumpCleanup();
-            if (now - lastScan >= 60) RefreshWorld(false);
-            if (!demonstrationOnly && now - lastMemory >= 5 && !memoryBusy) ReadMemory(now);
+            RefillEnemies();
+            if (now - lastScan >= InventoryIntervalSeconds || (now - lastScan >= .35 && scannedChangeVersion != Interlocked.CompareExchange(ref tempChangeVersion,0,0))) RefreshWorld(false);
+            if (!demonstrationOnly && now - lastMemory >= 1 && !memoryBusy) ReadMemory(now);
             if (!demonstrationOnly && now - lastRegion >= 60) { lastRegion = now; region.RefreshAsync(); }
             if (now - lastSave >= 20) Save();
             RenderWorld(false);
+        }
+        private void AdvanceAutomaticCombat(AdventureEnemy target, double now, double dt)
+        {
+            PointF heroFeet = new PointF((float)(x + HeroSize.Width / 2.0), (float)(y + HeroSize.Height));
+            Size targetSize = EnemySize(target);
+            PointF targetFeet = new PointF((float)(target.X + targetSize.Width / 2.0), (float)(target.Y + targetSize.Height));
+            PointF[] threats = battle.Enemies.Where(e => !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.Failed && !e.IsDiskWarning)
+                .Select(e => new PointF((float)(e.X + EnemySize(e).Width / 2.0), (float)(e.Y + EnemySize(e).Height))).ToArray();
+            CombatTacticsDecision choice = combatTactics.Plan(new CombatTacticsInput {
+                Automatic = true, TargetId = target.Id, Hero = heroFeet, Target = targetFeet,
+                MovementBounds = new RectangleF(area.Left + HeroSize.Width / 2f, area.Top + HeroSize.Height, Math.Max(0, area.Width - HeroSize.Width), Math.Max(0, area.Height - HeroSize.Height)),
+                Scale = displayScale, WeaponRange = battle.Weapon.Range * displayScale * .8,
+                Cooldown = battle.Cooldown, HealthRatio = (double)battle.Progress.Health / Math.Max(1, battle.Progress.MaxHealth), Time = now, Threats = threats
+            });
+            tacticalStatus = choice.Mode == "retreat" ? "拉开距离" : choice.Mode == "flank" ? "侧移避让" : choice.Mode == "counter" ? "反击" : choice.Mode == "approach" ? "接近目标" : "观察敌人";
+            if (choice.Move) MoveToward(choice.Destination.X - HeroSize.Width / 2.0, choice.Destination.Y - HeroSize.Height, Math.Max(200, networkState.PixelsPerSecond), dt);
+            if (choice.Attack && battle.Cooldown <= 0 && EnemyHeroDistance(target) <= battle.Weapon.Range * displayScale * .8 + .01)
+            {
+                heroFacing = targetFeet.X >= heroFeet.X;
+                StrikeTarget(target, now);
+            }
+        }
+        private void ScaleOrdinaryEnemies()
+        {
+            foreach (AdventureEnemy enemy in battle.Enemies)
+            {
+                if (enemy.IsBoss || enemy.Cleaning || enemy.Defeated || enemy.VisualDefeated || enemy.SpawnLevel >= battle.Progress.Level) continue;
+                double remaining = enemy.Health / (double)Math.Max(1,enemy.MaxHealth);
+                enemy.MaxHealth = EnemyBalance.OrdinaryHealth(battle.Progress.Level,AdventureMonster.Find(enemy.MonsterKind).HealthFactor,enemy.Bytes);
+                enemy.Health = Math.Max(1,(int)Math.Ceiling(enemy.MaxHealth*remaining)); enemy.SpawnLevel=battle.Progress.Level; enemy.VisualDirty=true;
+            }
+        }
+        private void StrikeTarget(AdventureEnemy target, double now)
+        {
+            attackAnimation = 1;
+            if (battle.Weapon.Id == "blackhole") { blackholeUntil = now + 1.1; blackholeX = target.X; blackholeY = target.Y; }
+            effects.Fire(new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale), new PointF((float)target.X + EnemySize(target).Width / 2f, (float)target.Y + EnemySize(target).Height * .47f), battle.Weapon.Id, displayScale);
+            int inventoryBefore = battle.Progress.Inventory.Count;
+            List<AdventureEnemy> killed = battle.Strike(target);
+            foreach (AdventureEnemy defeated in killed) BeginCleanup(defeated);
+            if (battle.Progress.Inventory.Count > inventoryBefore) ShowLoot(battle.Progress.Inventory.Last(), target.X, target.Y);
+            if (killed.Count > 0) Save();
         }
         private void ReadMemory(double now)
         {
@@ -326,27 +410,48 @@ namespace NetBunny
                 Post(delegate
                 {
                     memoryBusy = false; memoryAvailable = value != null && value.Available; if (!memoryAvailable || disposed) return; memoryPercent = value.UsedPercent;
-                    resourceWaves.ObserveMemory(memoryPercent, true);
-                    if (!IsDemo && resourceWaves.AutomaticWaveAllowed && !resourceWaves.WaveActive) lastScan = -100;
-                    if (!IsDemo && EnemyFieldBudget.CanAddBoss(battle.Enemies, false) && battle.ObserveMemory(value.UsedPercent, elapsed, now))
+                    
+                    // RAM updates the visible progress every five seconds. Inventory
+                    // keeps its own cadence, even while growth waits for safe files.
+                    if (!IsDemo) lastLandmarkPaint = -100;
+                    if (!IsDemo && memoryReclaimTask == null && EnemyFieldBudget.CanAddBoss(battle.Enemies, false) && battle.ObserveMemory(value.UsedPercent, elapsed, now))
                     {
-                        AdventureEnemy boss = new AdventureEnemy { Id = "boss-" + Guid.NewGuid().ToString("N"), IsBoss = true, MonsterKind = "boss", MaxHealth = 550 + battle.Progress.Level * 40 };
+                        AdventureEnemy boss = EnemyBalance.MemoryBoss(battle.Progress, battle.Weapon, random);
                         boss.Health = boss.MaxHealth; Spawn(boss); battle.Enemies.Add(boss);
-                        battle.LastReward = "系统内存持续超过 85%：内存压力 Boss 出现！击败它不会强制清空内存";
+                        battle.LastReward = "内存超过 70%：邪恶分身 Boss 出现！击败后尝试回收后台工作集";
                     }
                 });
             });
         }
         private void BeginCleanup(AdventureEnemy enemy)
         {
-            if (disposed || (demonstrationOnly && simulatedCleaner == null) || IsDemo || !enemy.Authorized) return;
-            if (enemy.IsBoss && !enemy.IsDiskBoss) { battle.Complete(enemy, 0, 0, null, 1); Save(); return; }
+            if (disposed || (demonstrationOnly && simulatedCleaner == null) || IsDemo || !enemy.Authorized || enemy.Defeated) return;
+            if (enemy.IsBoss && !enemy.IsDiskBoss) { battle.Complete(enemy, 0, 0, null, 1); StartMemoryReclaim(); Save(); return; }
             if (enemy.Batch == null) { battle.Complete(enemy, 0, 0, "没有真实文件批次", 1); return; }
             if (!pendingCleanup.Contains(enemy)) pendingCleanup.Enqueue(enemy);
             // The read-only census yields its filesystem gate to a newly killed target.
-            if (scanCancellation != null) scanCancellation.Cancel();
             cleanupNotice = "怪物已击败 · 正在清理对应临时文件";
             PumpCleanup();
+        }
+        private void StartMemoryReclaim()
+        {
+            if (memoryReclaimTask != null || disposed || IsDemo || (demonstrationOnly && simulatedMemoryReclaimer == null)) return;
+            memoryReclaimCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
+            CancellationToken token = memoryReclaimCancellation.Token;
+            memoryReclaimTask = simulatedMemoryReclaimer != null ? simulatedMemoryReclaimer(token) : Task.Run(delegate {
+                try { return MemoryReclaimer.Reclaim(token); }
+                catch (Exception e) { return new MemoryReclaimResult { Error = e.Message }; }
+            });
+            battle.LastReward = "邪恶分身已击败 · 正在回收后台进程工作集…";
+        }
+        private void DrainMemoryReclaim()
+        {
+            if (memoryReclaimTask == null || !memoryReclaimTask.IsCompleted) return;
+            MemoryReclaimResult result = memoryReclaimTask.IsFaulted ? new MemoryReclaimResult {Error="工作集回收失败"} : memoryReclaimTask.IsCanceled ? new MemoryReclaimResult {Error="回收已取消"} : memoryReclaimTask.Result;
+            memoryReclaimTask = null; memoryReclaimCancellation.Dispose(); memoryReclaimCancellation = null;
+            cleanupNotice = result.Summary; battle.LastReward = result.Summary;
+            if (result.After != null && result.After.Available) { memoryAvailable = true; memoryPercent = result.After.UsedPercent; }
+            lastMemory = -100; lastLandmarkPaint = -100;
         }
         private void PumpCleanup()
         {
@@ -379,10 +484,10 @@ namespace NetBunny
             else if (result.DeletedFiles == 0 && enemy.Batch != null) RecordRecheck(enemy.Batch.Candidates);
             candidateBytes = Math.Max(0, candidateBytes - result.FreedBytes);
             cleanupNotice = "已清理 " + result.DeletedFiles + " 个文件 / " + AdventureBattle.FormatBytes(result.FreedBytes) + (recheckFiles > 0 ? "；待重扫 " + recheckFiles + " 个 / " + AdventureBattle.FormatBytes(recheckBytes) : "");
-            resourceWaves.RecordDeletion(result.FreedBytes);
-            CompleteResourceWaveIfSettled();
+            liveTemp.Deleted(enemy.Batch, result); candidateBytes = liveTemp.EligibleBytes;
+            RefillEnemies();
             lastLandmarkPaint = -100; lastDisk = -100;
-            if (resourceWaves.AutomaticWaveAllowed) lastScan = -100;
+            lastScan = -100;
             Save();
             PumpCleanup();
             // Completion reduces the current field's displayed bytes immediately.
@@ -392,7 +497,20 @@ namespace NetBunny
             if (disposed || owner.IsDisposed || !owner.IsHandleCreated) return;
             try { owner.BeginInvoke(new Action(delegate { if (!disposed) action(); })); } catch (InvalidOperationException) { }
         }
-        private string CleanupAmountText { get { return recheckFiles > 0 ? "可处理 " + AdventureBattle.FormatBytes(Math.Max(0, candidateBytes - recheckBytes)) + " · 待重扫 " + AdventureBattle.FormatBytes(recheckBytes) : "本轮可清理 " + AdventureBattle.FormatBytes(candidateBytes); } }
+        private string CleanupAmountText { get { return liveTemp.Known ? "可处理 " + liveTemp.EligibleFiles + " 项 · " + AdventureBattle.FormatBytes(candidateBytes) : "可处理：等待扫描"; } }
+        private double InventoryIntervalSeconds { get { return 2; } }
+        private string CastleAmountText { get { return CleanupAmountText; } }
+        private string GrowthStatusText { get { return liveTemp.Known ? "临时文件 " + liveTemp.TotalFiles + " 项 · 敌人 " + battle.Enemies.Count(e=>!e.IsVisuallyHidden) + "/11" : "等待临时文件采样"; } }
+        internal double ResourceGrowthRatio { get { return battle.Enemies.Count(e=>!e.IsVisuallyHidden) / 11.0; } }
+        internal string ResourceGrowthText
+        {
+            get
+            {
+                string freshness = lastInventoryObservation < 0 ? "等待扫描" : "最近复核 " + (int)Math.Max(0,clock.Elapsed.TotalSeconds-lastInventoryObservation) + " 秒前";
+                return "临时文件实时监测 · " + GrowthStatusText + "\r\n" + CleanupAmountText + "；监测总量 " + AdventureBattle.FormatBytes(liveTemp.TotalBytes) + "\r\n" +
+                    "待重扫 " + recheckFiles + " 项；近期/占用文件须通过安全检查后才能删除。\r\n" + freshness + (lastInventoryComplete ? "" : " · 普查未完整，部分项目等待核实") + "；文件变化立即触发复核，满员后等待空位。";
+            }
+        }
         private void RecordRecheck(IEnumerable<CleanupCandidate> candidates)
         {
             foreach (CleanupCandidate candidate in candidates)
@@ -420,7 +538,7 @@ namespace NetBunny
                 Size size = EnemySize(enemy);
                 double chaseX = x + HeroSize.Width / 2.0 - size.Width / 2.0;
                 double chaseY = y + HeroSize.Height - size.Height;
-                double reach = (enemy.IsBoss ? 88 : 70) * displayScale;
+                double reach = (!String.IsNullOrEmpty(enemy.EvilTheme) ? Math.Min(210,AdventureWeapon.Find(enemy.BossWeapon).Range*.5) : enemy.IsBoss ? 88 : 70) * displayScale;
                 if (heroDistance > reach) MoveEnemy(enemy, chaseX, chaseY, (enemy.IsBoss ? 56 : AdventureMonster.Find(enemy.MonsterKind).WalkSpeed) * displayScale, dt);
                 else FaceEnemy(enemy, chaseX - enemy.X);
                 return;
@@ -439,12 +557,13 @@ namespace NetBunny
         private void AttackHero(AdventureEnemy enemy, bool canFight, double dt)
         {
             if (!canFight || enemy.Dragging || enemy.Cleaning || enemy.VisualDefeated || enemy.Defeated || enemy.Failed || enemy.IsDiskWarning) { enemy.AttackTime = 0; return; }
-            double cooldown = enemy.IsBoss ? 1.8 : AdventureMonster.Find(enemy.MonsterKind).AttackCooldown;
-            if (EnemyHeroDistance(enemy) > (enemy.IsBoss ? 105 : 86) * displayScale) { enemy.AttackTime = 0; return; }
+            double cooldown = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2.4 + AdventureWeapon.Find(enemy.BossWeapon).Cooldown : enemy.IsBoss ? 1.8 : AdventureMonster.Find(enemy.MonsterKind).AttackCooldown;
+            if (EnemyHeroDistance(enemy) > (!String.IsNullOrEmpty(enemy.EvilTheme) ? Math.Min(300,AdventureWeapon.Find(enemy.BossWeapon).Range*.65) : enemy.IsBoss ? 105 : 86) * displayScale) { enemy.AttackTime = 0; return; }
             enemy.AttackTime += dt;
             if (enemy.AttackTime < cooldown) return;
-            enemy.AttackTime = 0; enemy.VisualDirty = true;
-            battle.Damage(enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage);
+            enemy.AttackTime = 0; enemy.VisualDirty = true; enemy.AttackFlash = 1;
+            battle.Damage(!String.IsNullOrEmpty(enemy.EvilTheme) ? 2 + enemy.SpawnLevel / 12 : enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage);
+            if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
         }
         private static void FaceEnemy(AdventureEnemy enemy, double dx)
         {
@@ -493,7 +612,7 @@ namespace NetBunny
                 if (enemies || !landmarkWindow.Visible || paintNow - lastLandmarkPaint >= .25)
                 {
                     lastLandmarkPaint = paintNow;
-                    PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = renderTime, Label = CleanupAmountText, DiskLabel = diskSnapshot.Available ? "C盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) : "C盘剩余：等待采样", DiskFreeRatio = diskSnapshot.Available ? diskSnapshot.FreeRatio : -1, DiskCritical = diskSnapshot.Available && diskSnapshot.AvailableBytes < LowDiskBossPolicy.LowThresholdBytes, Opacity = 1 });
+                    PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = renderTime, Label = CastleAmountText, GrowthLabel = GrowthStatusText, GrowthRatio = ResourceGrowthRatio, DiskLabel = diskSnapshot.Available ? "C盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) : "C盘剩余：等待采样", DiskFreeRatio = diskSnapshot.Available ? diskSnapshot.FreeRatio : -1, DiskCritical = diskSnapshot.Available && diskSnapshot.AvailableBytes < LowDiskBossPolicy.LowThresholdBytes, Opacity = 1 });
                 }
                 HashSet<string> visible = new HashSet<string>();
                 // Dispose retired windows BEFORE showing replacements, including demo transitions.
@@ -512,7 +631,7 @@ namespace NetBunny
                     bool newWindow = !enemyWindows.TryGetValue(enemy.Id, out window);
                     if (newWindow)
                     {
-                        AdventureEnemy captured = enemy; window = NewWindow(enemy.IsDiskBoss ? "C 盘空间危机 Boss" : enemy.IsBoss ? "内存压力 Boss" : AdventureMonster.Find(enemy.MonsterKind).Name + " · 临时文件怪物"); enemyWindows.Add(enemy.Id, window);
+                        AdventureEnemy captured = enemy; window = NewWindow(enemy.IsDiskBoss ? "C 盘空间危机 Boss" : enemy.IsBoss ? "邪恶分身 Boss" : AdventureMonster.Find(enemy.MonsterKind).Name + " · 临时文件怪物"); enemyWindows.Add(enemy.Id, window);
                         Point pressedAt = Point.Empty; bool dragged = false;
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
                         window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else battle.Authorize(captured); RenderWorld(true); } };
@@ -522,9 +641,9 @@ namespace NetBunny
                     }
                     window.Location = new Point((int)enemy.X, (int)enemy.Y);
                     if (!enemies && !newWindow && !enemy.VisualDirty && !enemy.VisualDefeated && (enemyIndex - paintStart + enemyCount) % enemyCount >= 4) continue;
-                    string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "内存压力 " + memoryPercent.ToString("0") + "%" : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name;
+                    string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "邪恶分身 · " + AdventureWeapon.Find(enemy.BossWeapon).Name : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name + (enemy.Batch != null && enemy.Batch.Candidates.Any(f=>!f.EligibleForCleanup) ? " · 近期文件" : "");
                     double deathProgress = enemy.VisualDefeated ? Math.Min(1, enemy.DeathElapsed / AdventureEnemy.ShatterSeconds) : 0;
-                    PaintWindow(window, new AdventureRenderState { Kind = enemy.IsBoss ? "Boss" : "Skeleton", MonsterKind = enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
+                    PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
                     enemy.VisualDirty = false;
                 }
                 enemyPaintCursor = enemyCount == 0 ? 0 : (paintStart + 4) % enemyCount;
@@ -575,6 +694,8 @@ namespace NetBunny
         {
             if (disposed) return;
             timer.Stop(); CancelPending(); cancellation.Cancel();
+            if (tempWatcher != null) { tempWatcher.Dispose(); tempWatcher = null; }
+            if (memoryReclaimTask != null) { try { memoryReclaimTask.Wait(6000); DrainMemoryReclaim(); } catch { } }
             // Clean only works under the local temporary directory and checks the
             // token between files. Finish the active result before saving progress.
             if (cleanupTask != null) { try { cleanupTask.Wait(); DrainCleanup(); } catch { } }
@@ -608,12 +729,13 @@ namespace NetBunny
         }
         internal void CancelPending()
         {
+            if (memoryReclaimCancellation != null) memoryReclaimCancellation.Cancel();
             demoPending = false; demoStarted = -1; resumeAutomaticAfterDemo = false;
             blackholeUntil = 0; effects.Clear();
             if (workCancellation != null) workCancellation.Cancel();
             while (pendingCleanup.Count > 0) { AdventureEnemy enemy = pendingCleanup.Dequeue(); if (enemy.VisualDefeated && enemy.Batch != null) RecordRecheck(enemy.Batch.Candidates); enemy.CancelBeforeCleanup("清理已取消 · 对应文件待重扫"); }
             battle.CancelQueue();
-            CompleteResourceWaveIfSettled();
+            RefillEnemies();
         }
         internal void Resurrect() { if (IsDemo) return; battle.Revive(); Save(); }
         internal void AbsorbAll() { ClearField(); }
@@ -623,7 +745,7 @@ namespace NetBunny
             int inventoryBefore = battle.Progress.Inventory.Count;
             List<AdventureEnemy> selected = battle.ClearFieldSnapshot();
             if (battle.Progress.Inventory.Count > inventoryBefore) ShowLoot(battle.Progress.Inventory.Last(), x, y);
-            if (selected.Count == 0) { battle.LastReward = "当前没有可清场的怪物；可以重新扫描临时文件"; return; }
+            if (selected.Count == 0) { battle.LastReward = "当前没有可清场的临时文件怪；邪恶分身 Boss 需要正常战斗"; return; }
             blackholeUntil = clock.Elapsed.TotalSeconds + 1.7; blackholeX = x + HeroSize.Width / 2; blackholeY = y + HeroSize.Height / 2; attackAnimation = 1;
             PointF origin = new PointF((float)blackholeX, (float)blackholeY);
             effects.FireField(origin, selected.Select(enemy => new PointF((float)enemy.X + 65 * displayScale, (float)enemy.Y + 80 * displayScale)), displayScale);
@@ -757,120 +879,102 @@ namespace NetBunny
         }
         private static string ResourceSmoke(string assetDirectory)
         {
-            int count = 0;
-            Action<bool, string> check = delegate(bool ok, string label) { if (!ok) throw new InvalidOperationException("Adventure resource smoke: " + label); count++; };
-            const long MiB = 1024L * 1024, GiB = 1024L * MiB;
-            Func<string, long, CleanupBatch> batch = delegate(string id, long size) { return new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\" + id + ".tmp", Length = size } }, 1); };
-            Func<long, CleanupBatch[], CleanupSnapshot> inventory = delegate(long total, CleanupBatch[] batches) { return new CleanupSnapshot { ObservedTempBytes = total, InventoryComplete = true, Batches = batches.ToList(), CandidateBytes = batches.Sum(b => b.Bytes), Message = "synthetic inventory" }; };
-            using (Form owner = new Form())
+            return LiveSmoke(assetDirectory) + "\r\n" + TacticsSmoke(assetDirectory);
+        }
+        private static string LiveSmoke(string assetDirectory)
+        {
+            int n=0; Action<bool,string> check=delegate(bool ok,string label) { if(!ok) throw new Exception("Live field: "+label); n++; };
+            Func<string,long,bool,CleanupCandidate> file=delegate(string id,long len,bool safe) { return new CleanupCandidate {Path=@"C:\KnightAssistantSynthetic\"+id,Length=len,Created=1,EligibleForCleanup=safe}; };
+            Func<CleanupCandidate[],CleanupSnapshot> snap=delegate(CleanupCandidate[] f) { return new CleanupSnapshot {ObservedFilesAvailable=true,ObservedPathsAvailable=true,ObservedFiles=f.ToList(),ObservedPaths=new HashSet<string>(f.Select(x=>x.Path),StringComparer.OrdinalIgnoreCase),InventoryComplete=true}; };
+            using(Form owner=new Form())
             {
-                IntPtr ownerHandle = owner.Handle;
-                using (AdventureController c = new AdventureController(owner, assetDirectory, true))
+                IntPtr handle=owner.Handle;
+                using(AdventureController c=new AdventureController(owner,assetDirectory,true))
                 {
-                    c.timer.Stop(); c.enabled = true; c.area = new Rectangle(-24000, -24000, 1600, 1000); c.PositionLandmark(); c.x = -23600; c.y = -23500; c.ClampHero();
-                    CleanupBatch first = batch("one", 15 * MiB), second = batch("two", 20 * MiB), backlog = batch("old-backlog", 30 * MiB);
-                    c.resourceWaves.ObserveMemory(40, true);
-                    c.ApplyInventory(inventory(100 * MiB, new[] { first, second }), false);
-                    check(c.battle.Enemies.Count == 2 && c.candidateBytes == 35 * MiB && c.resourceWaves.WaveNumber == 1, "initial file wave owns exactly its safe batches");
-                    c.ApplyInventory(inventory(100 * MiB, new[] { second, backlog }), false);
-                    check(c.battle.Enemies.Count == 2 && c.battle.Enemies.Any(e => e.Id == first.Id) && c.candidateBytes == 35 * MiB, "background scan cannot replace live wave or inflate castle bytes");
-                    TaskCompletionSource<CleanupResult> delayed = new TaskCompletionSource<CleanupResult>(); int starts = 0;
-                    c.simulatedCleaner = delegate(CleanupBatch ignored, CancellationToken token) { starts++; return delayed.Task; };
-                    AdventureEnemy enemy = c.battle.Enemies.First(e => e.Id == first.Id); c.battle.Authorize(enemy); enemy.Health = 1; c.battle.Strike(enemy); c.BeginCleanup(enemy); c.PumpCleanup();
-                    c.battle.Tick(.31); c.RenderWorld(true);
-                    check(starts == 1 && !c.enemyWindows.ContainsKey(enemy.Id) && c.candidateBytes == 35 * MiB && c.battle.Progress.FreedBytes == 0, "visual death precedes pending real-result accounting");
-                    delayed.SetResult(new CleanupResult { FreedBytes = 15 * MiB, DeletedFiles = 1 }); c.DrainCleanup();
-                    check(c.candidateBytes == 20 * MiB && c.resourceWaves.BaselineTempBytes == 85 * MiB && c.lastLandmarkPaint < 0, "successful result immediately reduces castle and census baseline");
-                    check(!c.diskSnapshot.Available, "file logical bytes cannot fabricate a disk free-space sample");
-                    c.ApplyInventory(inventory(85 * MiB, new[] { second, backlog }), false);
-                    check(c.candidateBytes == 20 * MiB && c.resourceWaves.WaveNumber == 1 && !c.battle.Enemies.Any(e => e.Id == backlog.Id), "post-cleanup old backlog is not new growth");
-                    c.simulatedCleaner = delegate(CleanupBatch item, CancellationToken token) { return Task.FromResult(new CleanupResult { FreedBytes = item.Bytes, DeletedFiles = item.FilesCount }); };
-                    enemy = c.battle.Enemies.First(e => e.Id == second.Id); c.battle.Authorize(enemy); enemy.Health = 1; c.battle.Cooldown = 0; c.battle.Strike(enemy); c.BeginCleanup(enemy); c.PumpCleanup(); c.DrainCleanup();
-                    check(c.candidateBytes == 0 && !c.resourceWaves.WaveActive && c.battle.Progress.FreedBytes == 35 * MiB, "cleared wave settles once and castle reaches zero");
-                    for (int i = 0; i < 5; i++) c.ApplyInventory(inventory(65 * MiB, new[] { backlog }), false);
-                    check(c.resourceWaves.WaveNumber == 1 && !c.battle.Enemies.Any(e => !e.Defeated), "five unchanged resource scans cannot refill a cleared field");
-                    CleanupSnapshot partial = inventory(200 * MiB, new[] { backlog }); partial.InventoryComplete = false; c.ApplyInventory(partial, false);
-                    check(c.resourceWaves.WaveNumber == 1, "partial census cannot manufacture temporary-file growth");
-                    c.ApplyInventory(inventory(67 * MiB, new[] { backlog }), false);
-                    check(c.resourceWaves.WaveNumber == 2 && c.candidateBytes == 30 * MiB && c.battle.Enemies.Count == 1, "trusted new temporary-file growth admits one new finite wave");
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, GiB), 1);
-                    check(!c.battle.Enemies.Any(e => e.IsDiskBoss), "one GiB exactly does not satisfy less-than threshold");
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, GiB / 2), 2);
-                    AdventureEnemy boss = c.battle.Enemies.Single(e => e.IsDiskBoss);
-                    check(boss.IsBoss && boss.Batch != null && boss.Bytes == 30 * MiB && !c.battle.Enemies.Any(e => !e.IsBoss), "low-disk boss takes exclusive ownership of current safe C-drive file batches");
-                    check(c.candidateBytes == 30 * MiB && c.DiskSnapshot.AvailableBytes == GiB / 2, "boss transfer neither changes castle total nor invents free space");
-                    c.ApplyInventory(inventory(67 * MiB, new[] { backlog }), true);
-                    check(c.battle.Enemies.Single() == boss && boss.Batch != null && boss.Bytes == 30 * MiB, "manual rescan preserves a low-disk boss and rebinds candidates without duplication");
-                    delayed = new TaskCompletionSource<CleanupResult>();
-                    c.simulatedCleaner = delegate(CleanupBatch item, CancellationToken token) { starts++; return delayed.Task; };
-                    long freedBeforeBoss = c.battle.Progress.FreedBytes; int scoreBeforeBoss = c.battle.Progress.Score, xpBeforeBoss = c.battle.Progress.Experience;
-                    c.battle.Authorize(boss); boss.Health = 1; c.battle.Cooldown = 0; c.battle.Strike(boss); c.BeginCleanup(boss); c.PumpCleanup(); c.battle.Tick(.31); c.RenderWorld(true);
-                    bool bossPending = c.cleanupTask == delayed.Task && boss.Cleaning && !c.enemyWindows.ContainsKey(boss.Id) && c.battle.Progress.Score == scoreBeforeBoss + boss.KillExperience * 5;
-                    delayed.SetResult(new CleanupResult { FreedBytes = 30 * MiB, DeletedFiles = 1 }); c.DrainCleanup();
-                    check(bossPending, "disk boss pays only kill XP while real deletion remains pending");
-                    check(c.candidateBytes == 0 && c.battle.Progress.FreedBytes == freedBeforeBoss + 30 * MiB && c.battle.Progress.Score == scoreBeforeBoss + 100 + boss.KillExperience * 5 && c.battle.Progress.Experience == xpBeforeBoss + boss.KillExperience, "disk-boss real deletion reduces castle and awards combat score once without duplicate XP");
-                    check(c.DiskSnapshot.AvailableBytes == GiB / 2 && c.lastDisk < 0, "free-space bar awaits fresh filesystem sample after cleanup");
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, GiB / 2 + 12 * MiB), 3);
-                    check(c.DiskSnapshot.AvailableBytes == GiB / 2 + 12 * MiB && !c.battle.Enemies.Any(e => e.IsDiskBoss && !e.Defeated), "reported capacity uses new measurement; continuous low space cannot farm bosses");
-                    c.ApplyInventory(inventory(37 * MiB, new[] { first }), false);
-                    check(!c.battle.Enemies.Any(e => !e.Defeated) && c.candidateBytes == 0, "boss defeat does not replenish old files");
-                    c.resourceWaves.ObserveMemory(45, true); c.ApplyInventory(inventory(37 * MiB, new[] { first }), false);
-                    check(c.battle.Enemies.Count == 1 && c.candidateBytes == first.Bytes, "five-point RAM rise admits a finite real-file wave");
-                    c.ApplyInventory(inventory(37 * MiB, new CleanupBatch[0]), true);
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, 2 * GiB), 200);
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, GiB / 2), 201);
-                    boss = c.battle.Enemies.Single(e => e.IsDiskBoss && !e.Defeated);
-                    double bossX = boss.X, bossY = boss.Y; c.AdvanceEnemyPatrol(boss, true, .2);
-                    check(boss.IsDiskWarning && !c.battle.Authorize(boss) && c.battle.ClearFieldSnapshot().Count == 0 && boss.X == bossX && boss.Y == bossY, "no-candidate warning boss is passive and cannot authorize fake cleanup");
-                    c.ObserveDisk(DiskSpaceSnapshot.Unavailable("synthetic failure"), 202);
-                    check(!c.DiskSnapshot.Available && c.battle.Enemies.Contains(boss), "unavailable capacity is not zero and does not invent recovery");
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, 2 * GiB), 203);
-                    check(!c.battle.Enemies.Contains(boss), "passive warning disappears after measured disk recovery");
-                    CleanupBatch[] dozen = Enumerable.Range(0, 12).Select(i => new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"D:\KnightAssistantSynthetic\budget-" + i + ".tmp", Length = (i + 1) * MiB, IndexLow = (uint)(i + 1), Written = 100 + i } }, i + 1)).ToArray();
-                    c.ApplyInventory(inventory(200 * MiB, dozen), true); c.RenderWorld(true);
-                    check(c.battle.Enemies.Count == 6 && c.enemyWindows.Count == 6 && c.candidateBytes == dozen.Sum(b => b.Bytes), "twelve scan batches occupy six ordinary windows with unchanged total bytes");
-                    List<CleanupCandidate> fieldFiles = c.battle.Enemies.SelectMany(e => e.Batch.Candidates).ToList();
-                    check(fieldFiles.Count == 12 && fieldFiles.Distinct().Count() == 12 && dozen.All(b => fieldFiles.Contains(b.Candidates[0])), "controller coalescing retains every original candidate object exactly once");
-                    AdventureEnemy memoryBoss = new AdventureEnemy { Id = "budget-memory-boss", IsBoss = true, MonsterKind = "boss", MaxHealth = 600, Health = 600 };
-                    c.Spawn(memoryBoss); c.battle.Enemies.Add(memoryBoss);
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, GiB / 2), 403); c.RenderWorld(true);
-                    check(c.battle.Enemies.Count == 8 && c.enemyWindows.Count == 8 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies), "six ordinary monsters plus memory and passive disk bosses never exceed eight actors");
-                    for (int repeat = 0; repeat < 4; repeat++) { c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, GiB / 2), 404 + repeat); c.RenderWorld(true); }
-                    check(c.battle.Enemies.Count == 8 && c.enemyWindows.Count == 8, "repeated low-space observations cannot append duplicate bosses");
-                    KnightLayeredWindow[] oldOrdinaryWindows = c.battle.Enemies.Where(e => !e.IsBoss).Select(e => c.enemyWindows[e.Id]).ToArray();
-                    int replacementHighWater = c.enemyWindows.Count, retiredWindows = 0;
-                    foreach (KnightLayeredWindow oldWindow in oldOrdinaryWindows) oldWindow.Disposed += delegate { retiredWindows++; replacementHighWater = Math.Max(replacementHighWater, c.enemyWindows.Count); };
-                    CleanupBatch[] replacement = Enumerable.Range(0, 12).Select(i => new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"D:\KnightAssistantSynthetic\replacement-" + i + ".tmp", Length = MiB, IndexLow = (uint)(i + 101), Written = 500 + i } }, i + 1)).ToArray();
-                    c.ApplyInventory(inventory(220 * MiB, replacement), true); c.RenderWorld(true);
-                    check(retiredWindows == 6 && oldOrdinaryWindows.All(w => w.IsDisposed) && replacementHighWater <= 8 && c.enemyWindows.Count == 8 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies), "same-frame rescan disposes old windows before creating their six replacements");
-                    AdventureEnemy fading = c.battle.Enemies.First(e => !e.IsBoss); c.battle.Authorize(fading); fading.Health = 1; c.battle.Cooldown = 0; c.battle.Strike(fading);
-                    delayed = new TaskCompletionSource<CleanupResult>();
-                    c.simulatedCleaner = delegate(CleanupBatch item, CancellationToken token) { return delayed.Task; };
-                    c.BeginCleanup(fading); c.battle.Tick(.31); c.RenderWorld(false);
-                    c.ApplyInventory(inventory(230 * MiB, dozen), true);
-                    bool delayedBudget = c.battle.Enemies.Count == 8 && c.enemyWindows.Count == 7 && !EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies) && c.cleanupTask == delayed.Task;
-                    delayed.SetResult(new CleanupResult { Message = "synthetic locked residue", RemainingCandidates = fading.Batch.Candidates.ToList() }); c.DrainCleanup(); c.RenderWorld(false);
-                    check(delayedBudget, "an invisible in-flight death still owns its slot and blocks scan replacement");
-                    check(fading.Defeated && fading.IsVisuallyHidden && c.recheckFiles == fading.Batch.FilesCount && c.recheckBytes == fading.Bytes && c.enemyWindows.Count == 7 && c.battle.Enemies.Count == 8, "failed residue stays in explicit rescan accounting without creating or reviving an enemy");
-                    c.ObserveDisk(DiskSpaceSnapshot.FromValues(100 * GiB, 2 * GiB), 500); c.RenderWorld(true);
-                    check(c.battle.Enemies.Count == 7 && c.enemyWindows.Count == 6 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies), "disk warning recovery frees its own slot while the fading ordinary object stays counted");
-                    int unresolvedCount = c.recheckFiles; long unresolvedBytes = c.recheckBytes;
-                    CleanupSnapshot incompleteRescan = inventory(0, new CleanupBatch[0]); incompleteRescan.InventoryComplete = false; incompleteRescan.ObservedPathsAvailable = true;
-                    c.ApplyInventory(incompleteRescan, true);
-                    check(c.recheckFiles == unresolvedCount && c.recheckBytes == unresolvedBytes && c.candidateBytes == unresolvedBytes, "incomplete empty scan preserves unverified failed-file accounting without respawning a monster");
-                    CleanupSnapshot knownPresent = inventory(unresolvedBytes, new CleanupBatch[0]); knownPresent.ObservedPathsAvailable = true;
-                    foreach (CleanupCandidate file in fading.Batch.Candidates) knownPresent.ObservedPaths.Add(file.Path);
-                    c.ApplyInventory(knownPresent, true);
-                    check(c.recheckFiles == unresolvedCount && !c.battle.Enemies.Any(e => !e.IsBoss), "complete scan retains known-existing residue that is not yet a safe candidate");
-                    CleanupSnapshot knownAbsent = inventory(0, new CleanupBatch[0]); knownAbsent.ObservedPathsAvailable = true;
-                    c.ApplyInventory(knownAbsent, true);
-                    check(c.recheckFiles == 0 && c.recheckBytes == 0 && c.candidateBytes == 0, "only a complete path census can retire externally removed pending files");
-                    c.RecordRecheck(first.Candidates); c.ApplyInventory(inventory(first.Bytes, new[] { first }), true);
-                    check(c.recheckFiles == 0 && c.candidateBytes == first.Bytes && c.battle.Enemies.Single(e => !e.IsBoss).Batch == first, "revalidated candidate transfers out of pending accounting exactly once");
-                    check(c.connectivity == null && !c.scanBusy && c.region.Mode == "OFF", "resource smoke never starts real network or file services");
+                    c.timer.Stop(); c.enabled=true; c.area=new Rectangle(-24000,-24000,1600,1000); c.PositionLandmark(); c.x=-23600; c.y=-23500;
+                    CleanupCandidate a=file("a",4096,true), b=file("new",0,false);
+                    c.ApplyInventory(snap(new[]{a}),false); AdventureEnemy first=c.battle.Enemies.Single();
+                    check(c.candidateBytes==4096 && c.liveTemp.EligibleFiles==1,"live processable count and bytes");
+                    int oldMax=first.MaxHealth; first.Health=oldMax/2; c.battle.Progress.Level=5; c.ScaleOrdinaryEnemies();
+                    check(first.MaxHealth>oldMax && first.Health<first.MaxHealth*.52 && first.Health>first.MaxHealth*.48,"living ordinary HP scales with hero while preserving damage ratio");
+                    c.battle.Authorize(first); c.ApplyInventory(snap(new[]{a,b}),false);
+                    check(c.battle.Enemies.Count==2 && c.battle.Enemies.Contains(first) && first.Authorized,"new zero-byte file spawns during an authorized queue");
+                    check(c.candidateBytes==4096 && c.liveTemp.TotalFiles==2,"recent file not mislabeled as safe cleanup");
+                    c.ApplyInventory(snap(new[]{a,b}),false); check(c.battle.Enemies.Count==2,"unchanged notifications never duplicate actors");
+                    c.battle.CancelQueue(); c.ApplyInventory(snap(new[]{b}),false);
+                    check(c.battle.Enemies.Count==1 && c.candidateBytes==0,"external deletion immediately updates castle and retires unselected actor");
+                    c.simulatedCleaner=delegate(CleanupBatch batch,CancellationToken token) { return Task.FromResult(new CleanupResult {SkippedFiles=batch.FilesCount,RemainingCandidates=batch.Candidates.ToList(),Message="recent: retained"}); };
+                    AdventureEnemy recent=c.battle.Enemies.Single(); c.battle.Authorize(recent); recent.Health=1; c.battle.Cooldown=0; c.battle.Strike(recent); c.BeginCleanup(recent); c.DrainCleanup(); c.battle.Tick(.31); c.battle.Enemies.Remove(recent);
+                    c.ApplyInventory(snap(new[]{b}),false); check(c.battle.Enemies.Count==0 && c.recheckFiles==1,"killed recent file stays pending and never respawns unchanged");
+                    CleanupCandidate grown=file("new",1,false); c.ApplyInventory(snap(new[]{grown}),false); check(c.battle.Enemies.Count==1,"one-byte growth immediately creates new actor");
+                    c.battle.Enemies.Clear(); CleanupCandidate[] many=Enumerable.Range(0,200).Select(i=>file("many"+i,1024,true)).ToArray(); c.ApplyInventory(snap(many),true);
+                    check(c.battle.Enemies.Count==9 && c.candidateBytes==200*1024,"nine ordinary slots without truncating live totals");
+                    AdventureEnemy boss=EnemyBalance.MemoryBoss(c.battle.Progress,c.battle.Weapon,new Random(5)); c.Spawn(boss); c.battle.Enemies.Add(boss);
+                    AdventureEnemy disk=new AdventureEnemy {Id="warning",IsBoss=true,IsDiskBoss=true,Health=700,MaxHealth=700}; c.Spawn(disk); c.battle.Enemies.Add(disk); c.RenderWorld(true);
+                    check(c.enemyWindows.Count==11 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies),"eleven actors including both bosses");
+                    List<AdventureEnemy> clear=c.battle.ClearFieldSnapshot(); check(!clear.Contains(boss) && !boss.Defeated && boss.Health==boss.MaxHealth,"memory boss cannot be bypassed by one-click clear");
+                    foreach(AdventureEnemy target in clear) { target.Defeated=true; target.Cleaning=false; }
+                    c.battle.CancelQueue(); c.battle.Enemies.RemoveAll(e=>!e.IsBoss);
+                    int calls=0; c.simulatedMemoryReclaimer=delegate(CancellationToken token) { calls++; return Task.FromResult(new MemoryReclaimResult {Before=new MemorySnapshot{Available=true,UsedPercent=75},After=new MemorySnapshot{Available=true,UsedPercent=73},Trimmed=2,WorkingSetReduction=1024*1024}); };
+                    c.battle.Authorize(boss); boss.Health=1; c.battle.Cooldown=0; c.battle.Strike(boss); c.BeginCleanup(boss); c.BeginCleanup(boss); c.DrainMemoryReclaim();
+                    check(calls==1 && boss.Defeated && c.memoryPercent==73 && c.battle.LastReward.Contains("75.0% → 73.0%"),"boss death triggers one measured reclaim and cannot duplicate it");
+                    check(c.battle.Progress.FreedBytes==0 && c.connectivity==null && c.tempWatcher==null,"memory tests never fake disk bytes or open actual services");
+                    c.battle.Enemies.Clear();
+                    AdventureEnemy mixed=new AdventureEnemy {Id="mixed",Batch=new CleanupBatch(new List<CleanupCandidate>{a,b},1),Health=100,MaxHealth=100};
+                    disk=new AdventureEnemy {Id="mixed-disk",IsBoss=true,IsDiskBoss=true,Health=700,MaxHealth=700};c.battle.Enemies.Add(mixed);c.battle.Enemies.Add(disk);c.BindDiskBossCandidates();
+                    check(disk.Batch.FilesCount==1 && disk.Batch.Candidates[0]==a && mixed.Batch.FilesCount==1 && mixed.Batch.Candidates[0]==b,"disk boss takes only safe subset without losing recent-file actor ownership");
+                    string fixtureRoot=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"watcher-fixture-"+Guid.NewGuid().ToString("N"));
+                    string fixtureFile=Path.Combine(fixtureRoot,"created.tmp"); Directory.CreateDirectory(fixtureRoot);
+                    try
+                    {
+                        c.InstallTempWatcher(fixtureRoot); int version=c.tempChangeVersion; File.WriteAllText(fixtureFile,"new file");
+                        Stopwatch wait=Stopwatch.StartNew(); while(c.tempChangeVersion==version && wait.ElapsedMilliseconds<3000) Thread.Sleep(10);
+                        check(c.tempChangeVersion!=version,"native creation notification reaches the same immediate-scan trigger");
+                        version=c.tempChangeVersion; File.AppendAllText(fixtureFile,"growth"); wait.Restart(); while(c.tempChangeVersion==version && wait.ElapsedMilliseconds<3000)Thread.Sleep(10);
+                        check(c.tempChangeVersion!=version,"native growth notification reaches immediate-scan trigger");
+                    }
+                    finally { if(c.tempWatcher!=null){c.tempWatcher.Dispose();c.tempWatcher=null;} if(File.Exists(fixtureFile))File.Delete(fixtureFile);Directory.Delete(fixtureRoot,false); }
                 }
             }
-            return "Adventure resource smoke: " + count + " checks passed (synthetic inventories, disk samples and cleanup results only).";
+            return "Live field integration: "+n+" checks passed (synthetic files and memory reclaim).";
+        }
+        private static string TacticsSmoke(string assetDirectory)
+        {
+            int checks = 0;
+            Action<bool, string> check = delegate(bool okay, string label) { if (!okay) throw new InvalidOperationException("Automatic combat integration: " + label); checks++; };
+            using (Form owner = new Form())
+            {
+                IntPtr handle = owner.Handle;
+                using (AdventureController c = new AdventureController(owner, assetDirectory, true))
+                {
+                    c.timer.Stop(); c.area = new Rectangle(-24000, -24000, 1600, 1000);
+                    foreach (AdventureWeapon weapon in AdventureWeapon.All)
+                    {
+                        c.battle.CancelQueue(); c.battle.Enemies.Clear(); c.combatTactics.Reset(); c.effects.Clear();
+                        c.battle.Progress.WeaponId = weapon.Id; c.battle.Progress.Health = c.battle.Progress.MaxHealth;
+                        c.battle.Cooldown = 0; c.x = -23700; c.y = -23550; c.ClampHero();
+                        AdventureEnemy target = new AdventureEnemy { Id = "tactics-" + weapon.Id, MonsterKind = "skeleton", Health = 100000, MaxHealth = 100000 };
+                        target.X = c.x + c.HeroSize.Width / 2.0 + 60 - c.EnemySize(target).Width / 2.0;
+                        target.Y = c.y + c.HeroSize.Height - c.EnemySize(target).Height;
+                        AdventureEnemy bystander = new AdventureEnemy { Id = "not-selected", MonsterKind = "slime", Health = 200, MaxHealth = 200, X = target.X + 25, Y = target.Y };
+                        c.battle.Enemies.Add(target); c.battle.Enemies.Add(bystander); c.battle.Authorize(target); c.battle.Automatic = true;
+                        c.AdvanceAutomaticCombat(target, 0, .05);
+                        check(target.Health < 100000 && c.battle.Cooldown > 0, weapon.Id + " attacks from valid feet-anchor range");
+                        double before = c.EnemyHeroDistance(target); c.AdvanceAutomaticCombat(target, .05, .05);
+                        check(c.EnemyHeroDistance(target) > before && c.tacticalStatus == "拉开距离", weapon.Id + " opens space during cooldown");
+                        int hits = 1, priorHealth = target.Health;
+                        for (int frame = 1; frame <= 600 && hits < 3; frame++)
+                        {
+                            c.battle.Tick(.05); c.AdvanceEnemyPatrol(target, true, .05); c.AdvanceAutomaticCombat(target, (frame + 1) * .05, .05);
+                            if (target.Health < priorHealth) hits++;
+                            priorHealth = target.Health;
+                        }
+                        check(hits >= 3 && bystander.Health == 200 && !bystander.Authorized && c.cleanupTask == null, weapon.Id + " repeatedly counterattacks without authorizing bystander cleanup");
+                    }
+                    check(c.connectivity == null && !c.scanBusy && c.battle.Progress.FreedBytes == 0, "tactics simulation cannot touch network, files, or saved progress");
+                }
+            }
+            return "Automatic combat integration: " + checks + " checks passed (seven weapons, synthetic enemies, no real cleanup or progress writes).";
         }
         public static void ExportEquipmentPreview(string assetDirectory, string output)
         {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,8 +9,8 @@ namespace NetBunny
     // actor removal, or window creation occurs here; those remain controller decisions.
     internal static class EnemyFieldBudget
     {
-        internal const int MaxEnemies = 8;
-        internal const int MaxOrdinaryEnemies = 6;
+        internal const int MaxEnemies = 11;
+        internal const int MaxOrdinaryEnemies = 9;
         internal const int ReservedBossSlots = 2;
 
         private struct Usage
@@ -177,7 +177,7 @@ namespace NetBunny
             check(CoalesceBatches(originals.AsEnumerable().Reverse(), 6).Select(batch => batch.Id).SequenceEqual(packed.Select(batch => batch.Id)), "grouping stable when input order changes");
             List<CleanupBatch> narrow = CoalesceBatches(originals, 2);
             check(narrow.Count == 2 && narrow.Sum(batch => batch.FilesCount) == originalFiles.Count, "recovery with two slots retains all files");
-            check(CoalesceBatches(originals, 99).Count == 6, "caller cannot exceed fixed ordinary budget");
+            check(CoalesceBatches(originals, 99).Count == 9, "caller cannot exceed fixed ordinary budget");
             check(CoalesceBatches(originals.Take(1), 6).Count == 1, "one source batch is not split into extra monsters");
             check(CoalesceBatches(originals.Take(2), 6).SequenceEqual(originals.Take(2)), "sufficient slots preserve original batch objects, IDs and order");
             check(CoalesceBatches(new CleanupBatch[0], 0).Count == 0, "empty input needs no slots");
@@ -203,19 +203,20 @@ namespace NetBunny
             check(CoalesceBatches(zeros, 6).Count == 6 && CoalesceBatches(zeros, 6).All(batch => batch.FilesCount == 2), "zero-byte batches balanced without loss");
 
             List<AdventureEnemy> enemies = new List<AdventureEnemy>();
-            check(IsWithinBudget(enemies) && AvailableOrdinarySlots(enemies) == 6, "empty field reserves two boss slots");
-            for (int i = 0; i < 6; i++) enemies.Add(new AdventureEnemy { Id = "ordinary-" + i, Batch = packed[i] });
-            check(IsWithinBudget(enemies) && !CanAddOrdinary(enemies), "ordinary monsters stop at six even when total below eight");
+            List<CleanupBatch> budgetPacked = CoalesceBatches(originals, MaxOrdinaryEnemies);
+            check(IsWithinBudget(enemies) && AvailableOrdinarySlots(enemies) == 9, "empty field reserves two boss slots");
+            for (int i = 0; i < 9; i++) enemies.Add(new AdventureEnemy { Id = "ordinary-" + i, Batch = budgetPacked[i] });
+            check(IsWithinBudget(enemies) && !CanAddOrdinary(enemies), "ordinary monsters stop at nine even when total below eleven");
             check(CanAddBoss(enemies, false) && CanAddBoss(enemies, true), "two distinct boss roles remain available");
             AdventureEnemy memory = new AdventureEnemy { Id = "memory", IsBoss = true };
             enemies.Add(memory);
             check(IsWithinBudget(enemies) && !CanAddBoss(enemies, false) && CanAddBoss(enemies, true), "existing memory boss only leaves disk boss slot");
             AdventureEnemy disk = new AdventureEnemy { Id = "disk", IsBoss = true, IsDiskBoss = true };
             enemies.Add(disk);
-            check(IsWithinBudget(enemies) && CountEnemies(enemies) == 8 && CountBosses(enemies) == 2, "six ordinary plus both bosses fills exactly eight slots");
+            check(IsWithinBudget(enemies) && CountEnemies(enemies) == 11 && CountBosses(enemies) == 2, "nine ordinary plus both bosses fills exactly eleven slots");
             check(!CanAddBoss(enemies, false) && !CanAddBoss(enemies, true) && !CanAddOrdinary(enemies), "full field admits no further enemy");
             enemies[0].StartShatter(); enemies[0].DeathElapsed = 1; enemies[0].Cleaning = enemies[0].Authorized = true;
-            check(CountOrdinary(enemies) == 6 && AvailableOrdinarySlots(enemies) == 0, "hidden in-flight monster still occupies a logical slot");
+            check(CountOrdinary(enemies) == 9 && AvailableOrdinarySlots(enemies) == 0, "hidden in-flight monster still occupies a logical slot");
             enemies[0].Defeated = true; enemies[0].Cleaning = false;
             check(!CanAddOrdinary(enemies), "settled but retained corpse still occupies a slot");
             enemies.RemoveAt(0);
@@ -223,13 +224,13 @@ namespace NetBunny
             List<CleanupBatch> recovered = CoalesceBatches(originals, AvailableOrdinarySlots(enemies));
             check(recovered.Count == 1 && recovered.Sum(batch => batch.FilesCount) == 24, "single recovery slot packages all residue without truncation");
             enemies.Add(new AdventureEnemy { Id = "residue", Batch = recovered[0] });
-            check(IsWithinBudget(enemies) && CountEnemies(enemies) == 8, "replacement rather than append preserves total limit");
+            check(IsWithinBudget(enemies) && CountEnemies(enemies) == 11, "replacement rather than append preserves total limit");
             memory.Defeated = true; memory.StartShatter();
             check(!CanAddBoss(enemies, false), "fading boss blocks same-role replacement until retirement");
             enemies.Remove(memory);
             check(CanAddBoss(enemies, false) && !CanAddBoss(enemies, true), "retired memory boss releases only its own role");
             enemies.Add(new AdventureEnemy { Id = "invalid-extra-ordinary" });
-            check(!IsWithinBudget(enemies) && !CanAddBoss(enemies, false), "seventh ordinary is invalid even with no memory boss");
+            check(!IsWithinBudget(enemies) && !CanAddBoss(enemies, false), "tenth ordinary is invalid even with no memory boss");
             enemies.RemoveAt(enemies.Count - 1);
             enemies.Add(new AdventureEnemy { Id = "duplicate-disk", IsBoss = true, IsDiskBoss = true });
             check(!IsWithinBudget(enemies) && AvailableOrdinarySlots(enemies) == 0, "duplicate boss role cannot disguise an invalid field");

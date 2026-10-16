@@ -1,0 +1,8 @@
+spear: average=120.8s range=113.7–123.7s HP=4128
+greatsword: average=121.2s range=115.7–123.8s HP=4248
+wave: average=120.9s range=120.9–120.9s HP=4320
+laser: average=119.7s range=119.7–119.7s HP=7125
+boomerang: average=119.2s range=119.2–119.2s HP=4800
+blackhole: average=119.6s range=119.6–119.6s HP=6045
+automaton: average=119.6s range=119.6–119.6s HP=6000
+V5.4 balance/visual checks: 74 passed. Simulated combat only; no real cleanup, memory trim or persistence.

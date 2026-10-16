@@ -40,6 +40,10 @@ namespace NetBunny
         public HashSet<string> ObservedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public bool ObservedPathsAvailable;
         public bool InventoryComplete;
+        public List<CleanupCandidate> ObservedFiles = new List<CleanupCandidate>();
+        public bool ObservedFilesAvailable;
+        public long EligibleBytes;
+        public int EligibleFiles;
         public string Message = "";
         public DateTime CapturedUtc = DateTime.UtcNow;
     }
@@ -68,6 +72,7 @@ namespace NetBunny
         internal string Path;
         internal long Length, Written, Created;
         internal uint Volume, IndexHigh, IndexLow;
+        internal bool EligibleForCleanup;
     }
 
     // No timer and no implicit deletion. The game must explicitly call Clean after a user attack.
@@ -91,13 +96,15 @@ namespace NetBunny
 
         public CleanupSnapshot Scan(CancellationToken token)
         {
-            lock (gate)
+            // Read-only census may overlap cleanup; handle checks tolerate disappearance.
+            // The controller rejects a census that overlaps a completed mutation epoch.
             {
                 CleanupSnapshot result = new CleanupSnapshot();
                 if (token.IsCancellationRequested) { result.Message = "扫描已取消"; return result; }
                 string reason;
                 if (!CheckRoot(out reason)) { result.Message = reason; return result; }
                 result.ObservedPathsAvailable = true;
+                result.ObservedFilesAvailable = true;
                 result.InventoryComplete = true;
                 Stopwatch elapsed = Stopwatch.StartNew();
                 Stack<string> directories = new Stack<string>(); directories.Push(root);
@@ -132,10 +139,13 @@ namespace NetBunny
                                     continue;
                                 }
                                 long observedBytes;
-                                CleanupCandidate candidate = ReadCandidate(path, out observedBytes);
+                                CleanupCandidate observed;
+                                CleanupCandidate candidate = ReadCandidate(path, out observedBytes, out observed);
                                 if (observedBytes >= 0) { result.ObservedTempBytes += observedBytes; result.ObservedTempFiles++; result.ObservedPaths.Add(path); }
                                 else result.InventoryComplete = false;
+                                if (observed != null) result.ObservedFiles.Add(observed);
                                 if (candidate == null) continue;
+                                result.EligibleBytes += candidate.Length; result.EligibleFiles++;
                                 if (result.Batches.Count >= MaxBatches) { result.Truncated = true; continue; }
                                 batch.Add(candidate); batchBytes += candidate.Length;
                                 if (batchBytes >= BatchTarget || batch.Count >= MaxFilesPerBatch)
@@ -210,8 +220,10 @@ namespace NetBunny
         CleanupCandidate ReadCandidate(string path)
         { long ignored; return ReadCandidate(path, out ignored); }
         CleanupCandidate ReadCandidate(string path, out long observedBytes)
+        { CleanupCandidate ignored; return ReadCandidate(path, out observedBytes, out ignored); }
+        CleanupCandidate ReadCandidate(string path, out long observedBytes, out CleanupCandidate observed)
         {
-            observedBytes = -1;
+            observedBytes = -1; observed = null;
             try
             {
                 using (SafeFileHandle handle = CreateFile(path, ReadAttributes, ShareAll, IntPtr.Zero, OpenExisting, OpenReparse, IntPtr.Zero))
@@ -221,8 +233,9 @@ namespace NetBunny
                     string final = FinalPath(handle);
                     if (!WithinRoot(final) || !String.Equals(final, path, StringComparison.OrdinalIgnoreCase)) return null;
                     if ((info.Attributes & (Reparse | DirectoryFlag)) == 0 && info.Links == 1) observedBytes = Length(info);
-                    if (!AcceptFile(info)) return null;
-                    return new CleanupCandidate { Path = path, Length = Length(info), Written = Stamp(info.Write), Created = Stamp(info.Creation), Volume = info.Volume, IndexHigh = info.IndexHigh, IndexLow = info.IndexLow };
+                    if (observedBytes < 0) return null;
+                    observed = new CleanupCandidate { Path = path, Length = Length(info), Written = Stamp(info.Write), Created = Stamp(info.Creation), Volume = info.Volume, IndexHigh = info.IndexHigh, IndexLow = info.IndexLow, EligibleForCleanup = AcceptFile(info) };
+                    return observed.EligibleForCleanup ? observed : null;
                 }
             }
             catch { return null; }
@@ -472,6 +485,9 @@ namespace NetBunny
                 CleanupService inventoryService = new CleanupService(inventoryArea); CleanupSnapshot inventoryScan = inventoryService.Scan(CancellationToken.None);
                 assert(inventoryScan.Batches.Count == MaxBatches && inventoryScan.CandidateFiles == MaxBatches * MaxFilesPerBatch && inventoryScan.CandidateBytes == 3L * MaxBatches * MaxFilesPerBatch, "candidate batches remain capped at twelve while census continues");
                 assert(inventoryScan.InventoryComplete && inventoryScan.Truncated && inventoryScan.ObservedTempFiles == inventoryOldCount + 1 && inventoryScan.ObservedTempBytes == 3L * inventoryOldCount + 11, "complete census counts old files beyond all twelve batches and marks only candidate selection truncated");
+                assert(inventoryScan.ObservedFilesAvailable && inventoryScan.ObservedFiles.Count == inventoryOldCount + 1, "live population includes recent files beyond displayed batch budget");
+                assert(inventoryScan.EligibleFiles == inventoryOldCount && inventoryScan.EligibleBytes == 3L * inventoryOldCount, "live processable totals do not stop at twelve batches");
+                assert(inventoryScan.ObservedFiles.FindAll(f => !f.EligibleForCleanup).Count == 1, "recent file is visible but never mislabeled safe");
                 bool everyOldPathObserved = true; for (int i = 0; i < inventoryOldCount; i++) everyOldPathObserved &= inventoryScan.ObservedPaths.Contains(Path.Combine(inventoryArea, "old-" + i.ToString("D4") + ".bin"));
                 assert(inventoryScan.ObservedPathsAvailable && inventoryScan.ObservedPaths.Count == inventoryOldCount + 1 && everyOldPathObserved && inventoryScan.ObservedPaths.Contains(inventoryRecent), "path census includes all 1666 old and recent files, including old entries beyond the twelve-batch candidate cap");
                 assert(inventoryScan.ObservedPaths.Contains(inventoryRecent.ToUpperInvariant()), "path census membership follows Windows case-insensitive path semantics");

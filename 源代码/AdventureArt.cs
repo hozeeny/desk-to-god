@@ -20,6 +20,8 @@ namespace NetBunny
         internal double DiskFreeRatio = -1;
         internal string DiskLabel;
         internal bool DiskCritical;
+        internal string GrowthLabel;
+        internal double GrowthRatio = -1;
     }
 
     // Every joint is evaluated from a continuous cycle. There is no finite running sprite frame list.
@@ -74,8 +76,10 @@ namespace NetBunny
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic; g.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 string kind = (s.Kind ?? "Hero").ToLowerInvariant();
                 bool diskLandmark = (kind == "landmark" || kind == "castle") && !String.IsNullOrEmpty(s.DiskLabel);
-                g.ScaleTransform(size.Width / 220f, size.Height / (diskLandmark ? 250f : 220f));
+                bool growthLandmark = (kind == "landmark" || kind == "castle") && !String.IsNullOrEmpty(s.GrowthLabel);
+                g.ScaleTransform(size.Width / 220f, size.Height / (growthLandmark ? 280f : diskLandmark ? 250f : 220f));
                 if (kind == "landmark" || kind == "castle") DrawLandmark(g, s);
+                else if (kind == "evilboss") DrawEvilBoss(g, s);
                 else if (kind == "skeleton" || kind == "monster" || kind == "boss") DrawSkeleton(g, s, kind == "boss");
                 else if (kind == "effect") DrawEffect(g, s);
                 else if (kind == "loot") DrawLoot(g, s);
@@ -388,6 +392,37 @@ namespace NetBunny
         }
         private static void DrawEarth(Graphics g, float x, float y)
         { Ellipse(g, x - 50, y - 11, 100, 15, Color.FromArgb(84, 65, 72), Ink, 2); for (int i = 0; i < 7; i++) Ellipse(g, x - 45 + i * 13, y - 6 - i % 2 * 3, 14, 8, i % 2 == 0 ? Color.FromArgb(138, 110, 103) : Color.FromArgb(106, 85, 90), Ink, 1); }
+        private void DrawEvilBoss(Graphics g, AdventureRenderState s)
+        {
+            bool dying = s.Phase == "shatter" || s.Phase == "defeated";
+            float alpha = (float)(dying ? 1-Clamp(s.DeathProgress) : 1);
+            if (alpha <= 0) return;
+            using (Bitmap body = new Bitmap(220,220,PixelFormat.Format32bppPArgb))
+            {
+                using (Graphics pose = Graphics.FromImage(body))
+                {
+                    pose.SmoothingMode=SmoothingMode.AntiAlias; pose.InterpolationMode=InterpolationMode.HighQualityBicubic;
+                    raster.DrawHero(pose,s);
+                }
+                using (Pen aura = new Pen(Color.FromArgb((int)(alpha*145),203,43,91), 4))
+                { g.DrawEllipse(aura,35,36,151,158); g.DrawArc(aura,24,100,172,83,(float)(s.Time*80),245); }
+                using (ImageAttributes tint = new ImageAttributes())
+                {
+                    ColorMatrix matrix = new ColorMatrix(new float[][] {
+                        new float[]{.63f,0,0,0,0}, new float[]{0,.36f,0,0,0}, new float[]{0,0,.70f,0,0},
+                        new float[]{0,0,0,alpha,0},new float[]{.11f,.015f,.08f,0,1}});
+                    tint.SetColorMatrix(matrix);
+                    g.DrawImage(body,new Rectangle(0,(int)(dying?s.DeathProgress*16:0),220,220),0,0,220,220,GraphicsUnit.Pixel,tint);
+                }
+            }
+            if (!dying)
+            {
+                DrawStar(g,110,37,8,Color.FromArgb(235,255,67,104));
+                MonsterHealth(g,s,true,26);
+                DrawLabel(g,String.IsNullOrEmpty(s.Label)?"邪恶分身 BOSS":s.Label,110,13,Color.FromArgb(255,144,173),caption);
+                if(s.AttackProgress>0) DrawAttack(g,s);
+            }
+        }
         private void DrawSkeleton(Graphics g, AdventureRenderState s, bool boss)
         {
             string phase = (s.Phase ?? "walk").ToLowerInvariant();
@@ -478,11 +513,18 @@ namespace NetBunny
             else DrawVectorLandmark(g, theme);
             for (int i = 0; i < 3; i++) { double a = s.Time * .7 + i * 2.1; DrawStar(g, (float)(110 + Math.Cos(a) * 77), (float)(89 + Math.Sin(a) * 54), 2.8f, Color.FromArgb(160, theme == "JP" ? Color.FromArgb(255, 184, 197) : Color.FromArgb(185, 157, 242))); }
             DrawLabel(g, String.IsNullOrEmpty(s.Label) ? new[] { "幽影古堡", "九霄妖塔", "月影神龛", "自由之光", "旧日小屋", "九龙城寨" }[index] : s.Label, 110, 208, Color.FromArgb(249, 230, 185), caption);
+            bool hasGrowth = !String.IsNullOrEmpty(s.GrowthLabel);
+            if (hasGrowth)
+            {
+                Color growthColor = s.GrowthRatio >= 1 ? Color.FromArgb(255, 201, 113) : Color.FromArgb(193, 172, 255);
+                DrawLabel(g, s.GrowthLabel, 110, 225, growthColor, caption);
+                HealthBar(g, 29, 241, 162, 5, s.GrowthRatio < 0 ? 0 : s.GrowthRatio, growthColor);
+            }
             if (!String.IsNullOrEmpty(s.DiskLabel))
             {
                 Color diskColor = s.DiskCritical ? Color.FromArgb(255, 113, 128) : Color.FromArgb(133, 235, 196);
-                DrawLabel(g, s.DiskLabel, 110, 225, diskColor, caption);
-                HealthBar(g, 29, 241, 162, 5, s.DiskFreeRatio < 0 ? 0 : s.DiskFreeRatio, diskColor);
+                DrawLabel(g, s.DiskLabel, 110, hasGrowth ? 255 : 225, diskColor, caption);
+                HealthBar(g, 29, hasGrowth ? 271 : 241, 162, 5, s.DiskFreeRatio < 0 ? 0 : s.DiskFreeRatio, diskColor);
             }
         }
         private void DrawVectorLandmark(Graphics g, string theme)

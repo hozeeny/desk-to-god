@@ -1,2 +1,3 @@
 Adventure native smoke: 44 checks passed; no real cleanup, network query, or progress save.
-Adventure resource smoke: 36 checks passed (synthetic inventories, disk samples and cleanup results only).
+Live field integration: 16 checks passed (synthetic files and memory reclaim).
+Automatic combat integration: 22 checks passed (seven weapons, synthetic enemies, no real cleanup or progress writes).

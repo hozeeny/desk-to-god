@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -42,12 +42,13 @@ namespace NetBunny
             new AdventureMonster("mushroom", "魔法蘑菇怪", 1.08, 58, 5, 2.7)
         };
         internal static AdventureMonster Find(string id) { return All.FirstOrDefault(m => m.Id == id) ?? All[0]; }
-        internal static AdventureEnemy Create(CleanupBatch batch, Random random)
+        internal static AdventureEnemy Create(CleanupBatch batch, Random random, int level = 1)
         {
             if (batch == null) throw new ArgumentNullException("batch");
             AdventureMonster type = All[random.Next(All.Length)];
             AdventureEnemy enemy = new AdventureEnemy { Id = batch.Id, Batch = batch, MonsterKind = type.Id };
-            enemy.MaxHealth = Math.Max(20, (int)((45 + Math.Min(140, batch.Bytes / (12 * 1024 * 1024))) * type.HealthFactor));
+            enemy.SpawnLevel = level;
+            enemy.MaxHealth = EnemyBalance.OrdinaryHealth(level, type.HealthFactor, batch.Bytes);
             enemy.Health = enemy.MaxHealth; return enemy;
         }
     }
@@ -63,6 +64,9 @@ namespace NetBunny
         internal double DeathElapsed, MoveSpeed;
         internal int PatrolSector = -1;
         internal string MonsterKind = "skeleton";
+        internal string EvilTheme, BossWeapon;
+        internal int SpawnLevel = 1;
+        internal double AttackFlash;
         internal AdventureAuthorization Authorization;
         internal int MaxHealth, Health, QueueNumber;
         internal double X, Y, TargetX, TargetY, AnimationTime, AttackTime, VanishTime, HitFlash, WaitingSeconds;
@@ -166,8 +170,7 @@ namespace NetBunny
         internal string LastReward = "点击怪物依次出击，或在装备栏选择自动规划 / 一键清场";
         internal bool Automatic;
         private readonly Random killRandom;
-        private bool pressureArmed = true;
-        private double pressureSeconds, lastBossAt = -1000;
+        private double lastBossAt = -1000;
         internal AdventureBattle(AdventureProgress progress, Random killRandom = null) { Progress = progress; this.killRandom = killRandom ?? new Random(); }
         internal AdventureWeapon Weapon { get { return AdventureWeapon.Find(Progress.WeaponId); } }
         internal AdventureEnemy Target { get { return queue.FirstOrDefault(e => !e.Defeated && !e.Cleaning && !e.Failed && !e.IsDiskWarning); } }
@@ -231,7 +234,7 @@ namespace NetBunny
             Automatic = false; // This action authorizes one fixed snapshot, never future spawns.
             foreach (AdventureEnemy enemy in Enemies.ToArray())
             {
-                if (enemy.Defeated || enemy.Failed) continue;
+                if (enemy.Defeated || enemy.Failed || (enemy.IsBoss && !enemy.IsDiskBoss && !String.IsNullOrEmpty(enemy.EvilTheme))) continue;
                 if (enemy.IsDiskWarning) { LastReward = DiskWarningMessage; continue; }
                 if (enemy.Cleaning) { if (enemy.Authorized) enemy.Authorization = AdventureAuthorization.ClearField; continue; }
                 if (!enemy.Authorized) Authorize(enemy, AdventureAuthorization.ClearField);
@@ -303,7 +306,7 @@ namespace NetBunny
             if (enemy.IsBoss && !enemy.IsDiskBoss)
             {
                 enemy.Defeated = true; enemy.Health = 0; enemy.StartShatter(); Progress.Score += 100;
-                LastReward = "击败内存压力 Boss +100 战斗分；系统内存不会因此被清空"; Renumber(); return;
+                LastReward = "击败内存压力 Boss +100 战斗分；正在准备回收后台工作集"; Renumber(); return;
             }
             if (enemy.IsDiskBoss && deletedFiles <= 0) freedBytes = 0;
             if (freedBytes == 0 && deletedFiles > 0)
@@ -349,15 +352,15 @@ namespace NetBunny
             {
                 e.AnimationTime += dt; if (!e.Authorized && !e.Defeated && !e.Failed) e.WaitingSeconds += Math.Max(0, dt);
                 e.HitFlash = Math.Max(0, e.HitFlash - dt);
+                e.AttackFlash = Math.Max(0, e.AttackFlash - dt * 3);
                 if (e.VisualDefeated) { e.DeathElapsed += Math.Max(0, dt); e.VanishTime = Math.Max(0, AdventureEnemy.ShatterSeconds - e.DeathElapsed); }
             }
         }
         internal bool ObserveMemory(double percent, double dt, double now)
         {
-            if (percent < 78) { pressureArmed = true; pressureSeconds = 0; }
-            else if (percent >= 85) pressureSeconds += Math.Max(0, Math.Min(10, dt)); else pressureSeconds = 0;
-            if (pressureArmed && pressureSeconds >= 12 && now - lastBossAt >= 180 && !Enemies.Any(e => e.IsBoss && !e.IsDiskBoss && !e.Defeated))
-            { pressureArmed = false; lastBossAt = now; pressureSeconds = 0; return true; }
+            if (Double.IsNaN(percent) || Double.IsInfinity(percent) || percent > 100 || percent <= 70) return false;
+            if (now - lastBossAt >= 150 && !Enemies.Any(e => e.IsBoss && !e.IsDiskBoss && !e.Defeated))
+            { lastBossAt = now; return true; }
             return false;
         }
         internal static double AdvanceCycle(double phase, double dt, double speed) { return speed <= 0 ? phase : (phase + Math.Max(0, Math.Min(.1, dt)) * (.65 + Math.Min(2.6, speed / 90))) % 1; }
@@ -398,9 +401,10 @@ namespace NetBunny
             emptyBattle.Complete(noDeletion, 0, 0, "nothing deleted", 0);
             check(noDeletion.Failed && noDeletion.Defeated && noDeletion.Health == 0 && emptyProgress.Experience == emptyKillXP, "zero bytes with zero deleted files retires the defeated monster as an unrewarded cleanup failure");
             m.Damage(10000); check(p.Dead && p.Health == 0 && !m.Automatic, "combat death stops automation"); m.Tick(10); check(p.Dead, "time and connection cannot revive combat death"); m.Revive(); check(!p.Dead && p.Health == p.MaxHealth, "explicit revival");
-            bool boss = false; for (int i = 0; i < 3; i++) boss |= m.ObserveMemory(90, 5, 200 + i * 5); check(boss, "sustained RAM pressure boss");
-            check(!m.ObserveMemory(95, 10, 500), "continued pressure does not repeatedly spawn"); m.ObserveMemory(60, 5, 501);
-            check(!m.ObserveMemory(90, 5, 502), "recovery hysteresis resets accumulation"); m.ObserveMemory(90, 5, 507); check(m.ObserveMemory(90, 5, 512), "new sustained pressure permits later boss");
+            check(!m.ObserveMemory(70,1,200), "exactly seventy percent does not trigger");
+            check(m.ObserveMemory(70.01,1,201), "over seventy triggers immediately without twelve-second accumulation");
+            check(!m.ObserveMemory(95,1,202), "same pressure interval cannot duplicate a boss");
+            check(m.ObserveMemory(95,1,351), "persistent pressure can return after finite retry interval");
             m.Authorize(c); m.CancelQueue(); check(m.QueueCount == 0 && !c.Authorized, "cancel clears pending authorization");
             AdventureProgress fallen = new AdventureProgress { Dead = true, Health = 0, Experience = 58 }; AdventureBattle postDeath = new AdventureBattle(fallen);
             AdventureEnemy pending = new AdventureEnemy { Cleaning = true, Authorized = true };

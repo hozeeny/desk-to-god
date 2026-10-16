@@ -1,1 +1,0 @@
-﻿Adventure model: 84 assertions passed (synthetic combat plus isolated save fixture; user Temp and real progress untouched).

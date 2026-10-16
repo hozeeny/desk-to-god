@@ -1,1 +1,0 @@
-V5 visuals: 38 checks passed; isolated offscreen windows, no cleanup or network changes.

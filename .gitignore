@@ -13,6 +13,8 @@ Thumbs.db
 # Generated top-level distribution and validation executables
 /骑士助手-*.zip
 /MonsterDirectionValidation.exe
+/界面验证/**/*.exe
+/内存验证/**/*.exe
 
 # Local credentials and environment configuration
 .env

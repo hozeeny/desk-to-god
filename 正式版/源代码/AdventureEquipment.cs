@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -10,6 +10,7 @@ namespace NetBunny
         private readonly AdventureController controller;
         private readonly Label stats = new Label(), reward = new Label(), detail = new Label();
         private readonly DiskSpaceBar diskSpace = new DiskSpaceBar();
+        private readonly ResourceGrowthCard resourceGrowth = new ResourceGrowthCard();
         private readonly ListBox weapons = new ListBox();
         private readonly RadioButton automatic = new RadioButton(), manual = new RadioButton();
         private readonly CheckBox roam = new CheckBox();
@@ -30,6 +31,7 @@ namespace NetBunny
             Label title = TextLine("装备栏 · 你的桌面冒险", 48); title.Font = new Font(Font.FontFamily, 19, FontStyle.Bold); title.ForeColor = Color.FromArgb(73, 49, 132); content.Controls.Add(title);
             stats.Width = 640; stats.Height = 108; stats.BackColor = Color.White; stats.Padding = new Padding(12); stats.BorderStyle = BorderStyle.FixedSingle; stats.Font = new Font(Font.FontFamily, 12, FontStyle.Bold); content.Controls.Add(stats);
             diskSpace.Width = 640; diskSpace.Height = 95; diskSpace.BackColor = BackColor; diskSpace.Margin = new Padding(0, 7, 0, 7); content.Controls.Add(diskSpace);
+            resourceGrowth.Width = 640; resourceGrowth.Margin = new Padding(0, 0, 0, 7); content.Controls.Add(resourceGrowth);
             reward.Width = 640; reward.Height = 52; reward.ForeColor = Color.FromArgb(104, 64, 181); content.Controls.Add(reward);
             content.Controls.Add(TextLine("武器背包（升级必得新武器，也有 28% 清理掉落机会）", 26));
             weapons.Width = 640; weapons.Height = 139; weapons.IntegralHeight = false; weapons.HorizontalScrollbar = true; weapons.Font = Font; content.Controls.Add(weapons);
@@ -42,11 +44,13 @@ namespace NetBunny
             manual.CheckedChanged += delegate { if (!updating && manual.Checked) controller.SetAutoPlan(false); };
             automatic.CheckedChanged += delegate { if (!updating && automatic.Checked) controller.SetAutoPlan(true); };
             modes.Controls.AddRange(new Control[] { manual, automatic }); content.Controls.Add(modes);
+            content.Controls.Add(TextLine("自动模式会利用攻击冷却退避、侧移，并根据武器射程反击。", 30));
             content.Controls.Add(TextLine("每击杀一只怪物随机获得 2～3 经验，只结算一次。怪物空血后立即碎裂消失；临时文件在后台清理，占用或失败的文件记为待重扫，不会让死怪复活。", 56));
             FlowLayoutPanel clear = Row(); Configure(blackhole, "一键清场并清理本批临时文件", 300, delegate { controller.ClearField(); RefreshData(); }); Configure(cancel, "取消待办清理", 155, delegate { controller.CancelPending(); RefreshData(); }); clear.Controls.AddRange(new Control[] { blackhole, cancel }); content.Controls.Add(clear);
-            content.Controls.Add(TextLine("无需解锁武器：清场锁定眼前这批怪物，每只获得 2～3 经验并逐批安全清理。取消不回滚已得击杀经验；只有真正删除的文件计入释放空间。", 56));
+            content.Controls.Add(TextLine("一键清场处理眼前的文件怪，邪恶分身 Boss 需正常战斗。每只击杀仍得 2～3 经验；文件占用或近期文件会跳过，只有实际删除计入磁盘释放。", 56));
             FlowLayoutPanel queue = Row(); Configure(rescan, "重新扫描临时文件", 175, delegate { controller.RefreshWorld(); RefreshData(); }); Configure(demo, "播放安全演示", 155, delegate { if (controller.IsDemo) controller.StopDemo(); else controller.PlayDemo(); RefreshData(); }); queue.Controls.AddRange(new Control[] { rescan, demo }); content.Controls.Add(queue);
-            content.Controls.Add(TextLine("桌面敌人总数最多 8 个（含 Boss），普通文件怪最多 6 个。活着的敌人会面向移动方向主动追击、攻击主角；击杀后不补旧怪，资源增长或手动重扫才开启下一轮。", 56));
+            content.Controls.Add(TextLine("敌人总数最多 11 个（含 Boss），普通文件怪最多 9 个。新增临时文件立即触发复核，有空位就补充；普通怪血量随主角等级提高，保持已损失的血量比例。", 56));
+            content.Controls.Add(TextLine("文件变化约 0.35 秒合并后立即扫描，另每 2 秒复核；不再等待资源阈值或休整。城堡显示实测可处理项数/大小。近期文件也会产生怪物，击败后仍须满足超过 24 小时、未占用等检查才会删除。", 76));
             content.Controls.Add(TextLine("地区皮肤与地标", 26));
             themes.DropDownStyle = ComboBoxStyle.DropDownList; themes.Width = 640; themes.Items.AddRange(new object[] { "自动 · 按 VPN / 代理出口地区", "关闭自动识别 · 保留当前造型", "中国 · 剑修与妖塔", "日本 · 武士与鸟居神龛", "美国 · 牛仔与自由女神像", "台湾 · 青蛙与旧屋", "香港 · 街头小弟与九龙城寨", "其他地区 · 骑士与恶魔古堡" });
             themes.SelectedIndexChanged += delegate { if (!updating && themes.SelectedIndex >= 0) controller.ChooseTheme(ThemeCodes[themes.SelectedIndex]); }; content.Controls.Add(themes);
@@ -57,7 +61,7 @@ namespace NetBunny
             monitors.DropDownStyle = ComboBoxStyle.DropDownList; monitors.Width = 190; int n = 0; foreach (Screen screen in Screen.AllScreens) monitors.Items.Add("屏幕 " + (++n) + (screen.Primary ? "（主屏）" : "")); monitors.SelectedIndex = Math.Max(0, Array.FindIndex(Screen.AllScreens, screen => screen.WorkingArea == controller.WorkingArea)); monitors.SelectedIndexChanged += delegate { if (!updating && monitors.SelectedIndex >= 0) controller.ChangeScreen(Screen.AllScreens[monitors.SelectedIndex]); }; display.Controls.Add(monitors);
             Button hide = new Button(); Configure(hide, "隐藏桌面角色", 160, delegate { controller.Enabled = false; }); display.Controls.Add(hide); content.Controls.Add(display);
             content.Controls.Add(TextLine("C 盘剩余不足 1 GiB 时出现磁盘危机 Boss，只清理它绑定的已扫描临时文件，释放量按实际结果计算；当前没有安全候选时只提示，不扩大清理范围。", 56));
-            content.Controls.Add(TextLine("临时文件清理释放磁盘空间（MiB / GiB）。内存持续 ≥85% 会出现内存压力 Boss；击败内存 Boss 不会强制清空 RAM。", 50));
+            content.Controls.Add(TextLine("RAM 每秒采样，超过 70% 出现随机邪恶皮肤/武器的 Boss，普通战斗按约 2 分钟调校。击败后回收同会话后台应用的工作集，显示实测前后占用；应用再次访问时占用可能回升。", 50));
             detail.Width = 640; detail.Height = 100; detail.AutoSize = true; detail.MaximumSize = new Size(640, 0); detail.ForeColor = Color.FromArgb(100, 99, 121); content.Controls.Add(detail);
                         Action fit = delegate {
                 int width = Math.Max(460, content.ClientSize.Width - content.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8);
@@ -81,6 +85,7 @@ namespace NetBunny
             {
                 AdventureBattle battle = controller.Battle; AdventureProgress p = battle.Progress;
                 diskSpace.SetSnapshot(controller.DiskSnapshot); hints.SetToolTip(diskSpace, diskSpace.Summary);
+                resourceGrowth.SetStatus(controller.ResourceGrowthText, controller.ResourceGrowthRatio); hints.SetToolTip(resourceGrowth, resourceGrowth.Summary);
                 stats.Text = "Lv." + p.Level + "   经验 " + p.Experience + " / " + p.NextLevelExperience + "   生命 " + p.Health + " / " + p.MaxHealth + "   RAM " + controller.MemoryText + "\r\n战斗分 " + p.Score + "   累计实际清理 " + AdventureBattle.FormatBytes(p.FreedBytes) + "   排队 " + battle.QueueCount + "\r\n" + (controller.IsDemo ? "纯演示：本页不改变真实进度，不会清理文件" : controller.StateText);
                 reward.Text = battle.LastReward;
                 string key = String.Join(",", p.Inventory.ToArray()) + ":" + p.WeaponId;
@@ -107,6 +112,53 @@ namespace NetBunny
         protected override void OnFormClosing(FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } base.OnFormClosing(e); }
         protected override void Dispose(bool disposing) { if (disposing) { refresh.Stop(); refresh.Dispose(); hints.Dispose(); } base.Dispose(disposing); }
         private sealed class WeaponEntry { internal string Id, Text; public override string ToString() { return Text; } }
+    }
+
+    // Multiline status stays in its own measured card instead of overfilling the level/health label.
+    internal sealed class ResourceGrowthCard : Control
+    {
+        private string summary = "等待资源采样";
+        private double ratio = -1;
+        internal string Summary { get { return summary; } }
+        internal double Ratio { get { return ratio; } }
+        internal Rectangle TextBounds { get { return new Rectangle(16, 35, Math.Max(1, Width - 32), Math.Max(1, Height - 58)); } }
+        internal ResourceGrowthCard()
+        {
+            DoubleBuffered = true; BackColor = Color.White; Font = new Font("Microsoft YaHei UI", 9);
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+            AccessibleName = "城堡实时监测与敌人数量"; AccessibleRole = AccessibleRole.ProgressBar; TabStop = false;
+            Width = 640; FitText();
+        }
+        internal void SetStatus(string text, double progress)
+        {
+            string next = String.IsNullOrEmpty(text) ? "等待资源采样" : text;
+            double nextRatio = Double.IsNaN(progress) || Double.IsInfinity(progress) ? -1 : Math.Max(-1, Math.Min(1, progress));
+            if (next == summary && nextRatio == ratio) return;
+            summary = next; ratio = nextRatio; AccessibleDescription = summary; FitText(); Invalidate();
+        }
+        private void FitText()
+        {
+            Size measured = TextRenderer.MeasureText(summary, Font, new Size(Math.Max(1, Width - 32), Int32.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl | TextFormatFlags.NoPadding);
+            Height = Math.Max(110, measured.Height + 63);
+        }
+        protected override void OnSizeChanged(EventArgs e) { base.OnSizeChanged(e); FitText(); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e); Graphics g = e.Graphics; g.Clear(Color.FromArgb(245, 244, 251)); g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            Art.Fill(g, new Rectangle(0, 0, Width - 1, Height - 1), 16, Color.White);
+            Color accent = ratio >= 1 ? Color.FromArgb(173, 113, 37) : Color.FromArgb(115, 78, 191);
+            using (Font heading = new Font(Font.FontFamily, 10, FontStyle.Bold))
+                TextRenderer.DrawText(g, "城堡实时监测 · 战场容量", heading, new Rectangle(16, 10, Width - 32, 22), accent, TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, summary, Font, TextBounds, Color.FromArgb(91, 87, 107), TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl | TextFormatFlags.NoPadding);
+            Rectangle track = new Rectangle(16, Height - 16, Math.Max(1, Width - 32), 6);
+            Art.Fill(g, track, 3, Color.FromArgb(235, 230, 244));
+            if (ratio > 0)
+            {
+                int fill = Math.Max(1, (int)Math.Round(track.Width * ratio));
+                if (fill < 6) using (Brush brush = new SolidBrush(accent)) g.FillRectangle(brush, track.X, track.Y, fill, track.Height);
+                else Art.Fill(g, new Rectangle(track.X, track.Y, fill, track.Height), 3, accent);
+            }
+        }
     }
 }
 

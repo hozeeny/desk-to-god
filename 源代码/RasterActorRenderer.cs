@@ -69,15 +69,14 @@ namespace NetBunny
             g.Restore(body);
             DrawLeg(g, rig, anchors, pose.FarFoot, true);
             body = g.Save(); ApplyBody(g, pose);
+            DrawNeckConnector(g, s.ThemeCode);
             rig.Draw(g, 1, new RectangleF(85, 103, 55, 53));
             g.Restore(body);
             // The near thigh is in front of the skirt plates, while the far leg remains behind.
             DrawLeg(g, rig, anchors, pose.NearFoot, false);
             body = g.Save(); ApplyBody(g, pose);
             Segment(g, rig, 2, anchors[2].Start, anchors[2].End, pose.NearShoulder, pose.NearElbow, null);
-            GraphicsState head = g.Save(); g.TranslateTransform(111, 109); g.RotateTransform((float)(pant ? 8 + Math.Sin(s.Time * 6) * 1.4 : -pose.Lean * .55 + Math.Sin(a) * .65)); g.TranslateTransform(-111, -109);
-            Rectangle hb = rig.Bounds[0]; float headHeight = 91, headWidth = Math.Min(118, headHeight * hb.Width / hb.Height);
-            rig.Draw(g, 0, new RectangleF(111 - headWidth * .57f, 20, headWidth, headHeight)); g.Restore(head);
+            DrawAttachedHead(g, rig, pose, s.ThemeCode);
             DrawWeapon(g, s.WeaponId, pose.NearHand.X, pose.NearHand.Y, (float)pose.WeaponAngle, s.Time, s.AttackProgress);
             // Both gripping hands and forearms are foreground layers, never buried under the torso.
             Segment(g, rig, 5, anchors[5].Start, anchors[5].End, pose.FarElbow, pose.FarHand, null);
@@ -86,9 +85,51 @@ namespace NetBunny
             if (revive && Grave != null) Grave.DrawFit(g, 2, new RectangleF(58, 167, 113, 30));
             return true;
         }
-        private static void ApplyBody(Graphics g, HeroPose pose)
+        internal static void ApplyBody(Graphics g, HeroPose pose)
         {
             g.TranslateTransform((float)(-8 * pose.Attack), 0); g.TranslateTransform(110, (float)(143 + pose.Bob)); g.RotateTransform((float)pose.Lean); g.TranslateTransform(-110, -143);
+        }
+        internal static PointF HeadSourceAnchor(string theme)
+        {
+            // Locate the actual jaw/helmet base, not the lowest cape, ribbon or hair pixel.
+            // In particular the cowboy bandana and frog scarf extend below the chin.
+            switch ((theme ?? "OTHER").ToUpperInvariant())
+            {
+                case "CN": return new PointF(.64f, .92f);
+                case "JP": return new PointF(.64f, .94f);
+                case "US": return new PointF(.66f, .87f);
+                case "TW": return new PointF(.66f, .76f);
+                case "HK": return new PointF(.66f, .94f);
+                default: return new PointF(.69f, .89f);
+            }
+        }
+        internal static PointF NeckAnchor(string theme)
+        {
+            switch ((theme ?? "OTHER").ToUpperInvariant())
+            {
+                case "CN": return new PointF(115, 111);
+                case "TW": return new PointF(118, 110);
+                case "HK": return new PointF(117, 114);
+                case "US": return new PointF(117, 111);
+                default: return new PointF(117, 110);
+            }
+        }
+        internal static void DrawAttachedHead(Graphics g, RasterAtlas rig, HeroPose pose, string theme)
+        {
+            PointF neck = NeckAnchor(theme), source = HeadSourceAnchor(theme);
+            GraphicsState head = g.Save(); g.TranslateTransform(neck.X, neck.Y); g.RotateTransform((float)pose.HeadTilt);
+            Rectangle bounds = rig.Bounds[0]; float height = 91, width = Math.Min(118, height * bounds.Width / bounds.Height);
+            rig.Draw(g, 0, new RectangleF(-source.X * width, -source.Y * height, width, height)); g.Restore(head);
+        }
+        internal static void DrawNeckConnector(Graphics g, string theme)
+        {
+            PointF neck = NeckAnchor(theme);
+            string code = (theme ?? "OTHER").ToUpperInvariant();
+            Color skin = code == "OTHER" ? Color.FromArgb(112, 136, 160) : code == "TW" ? Color.FromArgb(123, 190, 58) : Color.FromArgb(237, 175, 129);
+            // Behind both head and collar: close rotation seams without painting skin
+            // over a scarf/armour. The face remains rigid and its nod remains continuous.
+            using (Brush edge = new SolidBrush(Color.FromArgb(48, 43, 46))) g.FillEllipse(edge, neck.X - 6, neck.Y - 5, 12, 13);
+            using (Brush fill = new SolidBrush(skin)) g.FillEllipse(fill, neck.X - 4.5f, neck.Y - 4, 9, 10);
         }
         private static PartAnchors[] BuildAnchors(RasterAtlas rig)
         {

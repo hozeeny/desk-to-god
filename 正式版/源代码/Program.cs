@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -26,7 +26,7 @@ namespace NetBunny
             ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
             if (args.Length > 0 && args[0] == "--selftest")
             {
-                try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(ResourceWaveState.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
+                try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(LiveTempPopulation.SelfTest()); Console.WriteLine(EnemyBalance.SelfTest()); Console.WriteLine(MemoryReclaimer.SelfTest()); Console.WriteLine(CombatTactics.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
                 catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
                 return;
             }
@@ -170,7 +170,7 @@ namespace NetBunny
             KnightBrand.DrawHelmet(g,new Rectangle(Width-183,1,111,111));
             using(Font title=Art.Font(23,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Ink)) g.DrawString("骑士助手",title,b,26,17);
             using(Font sub=Art.Font(10)) using(Brush b=new SolidBrush(Color.FromArgb(107,92,156))) g.DrawString("守护网络，清理临时文件，开启骑士冒险。",sub,b,29,64);
-            using(Font small=Art.Font(9,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Purple)) g.DrawString("KNIGHT  /  05.2",small,b,Width-355,45);
+            using(Font small=Art.Font(9,FontStyle.Bold)) using(Brush b=new SolidBrush(Art.Purple)) g.DrawString("KNIGHT  /  05.4",small,b,Width-355,45);
         }
     }
 

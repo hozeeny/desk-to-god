@@ -1,2 +1,0 @@
-Enemy budget stress: 3600 invariants passed across 1200 seeded transitions; maximum retained actors 7.
-Synthetic cleaner outcomes: 126 success, 123 failure, 132 cancellation. No real files, network, disk samples, or progress writes.
