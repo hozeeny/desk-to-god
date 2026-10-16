@@ -18,6 +18,22 @@ namespace NetBunny
     internal sealed class MaintenanceConsentStore
     {
         internal bool CleanupEnabled, MemoryEnabled;
+        // Unattended real maintenance is a THIRD, separately confirmed permission:
+        // without it, automatic battle only ever settles virtual rewards, even when
+        // the cleanup/memory scopes above are on. Legacy consent files never grant
+        // it — migration must not silently widen real maintenance into automation.
+        internal bool AutoMaintenanceEnabled;
+
+        private bool Get(int scope)
+        {
+            return scope == 0 ? CleanupEnabled : scope == 1 ? MemoryEnabled : AutoMaintenanceEnabled;
+        }
+        private void Set(int scope, bool value)
+        {
+            if (scope == 0) CleanupEnabled = value;
+            else if (scope == 1) MemoryEnabled = value;
+            else AutoMaintenanceEnabled = value;
+        }
 
         internal static MaintenanceConsentStore Load(string path)
         {
@@ -31,7 +47,9 @@ namespace NetBunny
                     string key = line.Substring(0, equals).Trim(), value = line.Substring(equals + 1).Trim();
                     if (key == "cleanup" && value == "1") store.CleanupEnabled = true;
                     else if (key == "memory" && value == "1") store.MemoryEnabled = true;
-                    // First-stage single-scope archives upgrade to both scopes on read.
+                    else if (key == "automaint" && value == "1") store.AutoMaintenanceEnabled = true;
+                    // First-stage single-scope archives upgrade to the two attended
+                    // scopes only; unattended auto maintenance stays off (conservative).
                     else if (key == "consent" && value == "1") { store.CleanupEnabled = true; store.MemoryEnabled = true; }
                 }
             }
@@ -49,7 +67,9 @@ namespace NetBunny
                 if (!String.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
                 string temporary = path + ".new";
                 File.WriteAllText(temporary,
-                    "cleanup=" + (CleanupEnabled ? "1" : "0") + "\nmemory=" + (MemoryEnabled ? "1" : "0") + "\n",
+                    "cleanup=" + (CleanupEnabled ? "1" : "0") +
+                    "\nmemory=" + (MemoryEnabled ? "1" : "0") +
+                    "\nautomaint=" + (AutoMaintenanceEnabled ? "1" : "0") + "\n",
                     new UTF8Encoding(false));
                 if (File.Exists(path)) File.Replace(temporary, path, path + ".bak");
                 else File.Move(temporary, path);
@@ -58,19 +78,19 @@ namespace NetBunny
             catch (Exception e) { error = e.Message; return false; }
         }
 
-        private bool Enable(string path, bool cleanupScope, out string error)
+        private bool Enable(string path, int scope, out string error)
         {
-            if (cleanupScope) { if (CleanupEnabled) { error = null; return true; } CleanupEnabled = true; }
-            else { if (MemoryEnabled) { error = null; return true; } MemoryEnabled = true; }
+            if (Get(scope)) { error = null; return true; }
+            Set(scope, true);
             if (Persist(path, out error)) return true;
             // Fail-closed: roll the in-memory flag back so consent stays off.
-            if (cleanupScope) CleanupEnabled = false; else MemoryEnabled = false;
+            Set(scope, false);
             return false;
         }
 
-        private bool Disable(string path, bool cleanupScope, out string error)
+        private bool Disable(string path, int scope, out string error)
         {
-            if (cleanupScope) CleanupEnabled = false; else MemoryEnabled = false;
+            Set(scope, false);
             if (Persist(path, out error)) return true;
             // Never leave a stale file that would resurrect consent on next launch.
             try
@@ -84,11 +104,15 @@ namespace NetBunny
 
         internal bool SetCleanup(string path, bool enabled, out string error)
         {
-            return enabled ? Enable(path, true, out error) : Disable(path, true, out error);
+            return enabled ? Enable(path, 0, out error) : Disable(path, 0, out error);
         }
         internal bool SetMemory(string path, bool enabled, out string error)
         {
-            return enabled ? Enable(path, false, out error) : Disable(path, false, out error);
+            return enabled ? Enable(path, 1, out error) : Disable(path, 1, out error);
+        }
+        internal bool SetAutoMaintenance(string path, bool enabled, out string error)
+        {
+            return enabled ? Enable(path, 2, out error) : Disable(path, 2, out error);
         }
 
         internal static string SelfTest()
@@ -108,10 +132,10 @@ namespace NetBunny
                 Directory.CreateDirectory(fixture);
                 File.WriteAllText(file, "consent=1\n", new UTF8Encoding(false));
                 MaintenanceConsentStore legacy = MaintenanceConsentStore.Load(file);
-                check(legacy.CleanupEnabled && legacy.MemoryEnabled, "first-stage single consent upgrades to both scopes");
+                check(legacy.CleanupEnabled && legacy.MemoryEnabled && !legacy.AutoMaintenanceEnabled, "first-stage single consent upgrades to both attended scopes but never to unattended maintenance");
                 File.WriteAllText(file, "cleanup=1\nmemory=0\n", new UTF8Encoding(false));
                 MaintenanceConsentStore split = MaintenanceConsentStore.Load(file);
-                check(split.CleanupEnabled && !split.MemoryEnabled, "scopes load independently");
+                check(split.CleanupEnabled && !split.MemoryEnabled && !split.AutoMaintenanceEnabled, "scopes load independently and unattended maintenance defaults off");
                 File.WriteAllText(file, "not-a-consent-file", new UTF8Encoding(false));
                 MaintenanceConsentStore corrupt = MaintenanceConsentStore.Load(file);
                 check(!corrupt.CleanupEnabled && !corrupt.MemoryEnabled, "a corrupt file fails closed");
@@ -127,6 +151,11 @@ namespace NetBunny
                 check(both.CleanupEnabled && both.MemoryEnabled, "both scopes persist side by side");
                 check(store.SetCleanup(file, false, out error) && !store.CleanupEnabled && store.MemoryEnabled, "disabling cleanup keeps memory consent");
                 check(!MaintenanceConsentStore.Load(file).CleanupEnabled && MaintenanceConsentStore.Load(file).MemoryEnabled, "partial disable persists");
+                check(store.SetAutoMaintenance(file, true, out error) && store.AutoMaintenanceEnabled, "unattended maintenance enables only on its own explicit action");
+                MaintenanceConsentStore withAuto = MaintenanceConsentStore.Load(file);
+                check(!withAuto.CleanupEnabled && withAuto.MemoryEnabled && withAuto.AutoMaintenanceEnabled, "automaint persists alongside the attended scopes");
+                check(store.SetAutoMaintenance(file, false, out error) && !store.AutoMaintenanceEnabled, "automaint disables independently");
+                check(!MaintenanceConsentStore.Load(file).AutoMaintenanceEnabled && MaintenanceConsentStore.Load(file).MemoryEnabled, "automaint disable persists without touching memory scope");
 
                 // A path that names an existing directory cannot be written or replaced.
                 string blocked = Path.Combine(fixture, "blocked-dir");
@@ -134,6 +163,7 @@ namespace NetBunny
                 MaintenanceConsentStore failing = new MaintenanceConsentStore();
                 check(!failing.SetCleanup(blocked, true, out error) && error != null && !failing.CleanupEnabled, "a failed save never enables cleanup consent, not even in memory");
                 check(!failing.SetMemory(blocked, true, out error) && error != null && !failing.MemoryEnabled, "a failed save never enables memory consent, not even in memory");
+                check(!failing.SetAutoMaintenance(blocked, true, out error) && error != null && !failing.AutoMaintenanceEnabled, "a failed save never enables unattended maintenance, not even in memory");
                 check(failing.SetCleanup(blocked, false, out error) && !failing.CleanupEnabled, "disable against an unwritable path succeeds because no stale grant can exist there");
 
                 // A file locked by another handle can neither be replaced nor deleted.

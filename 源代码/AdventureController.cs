@@ -136,9 +136,17 @@ namespace NetBunny
             set
             {
                 if (disposed) return; if (!value) CancelPending(); if (enabled == value) return; enabled = value;
-                if (enabled) { failure = null; lastTick = clock.Elapsed.TotalSeconds; RenderWorld(true); if (!scanBusy && demoStarted < 0 && !demonstrationOnly) RefreshWorld(false); }
+                if (enabled) { failure = null; lastTick = clock.Elapsed.TotalSeconds; RestoreAutoBattlePreference(); RenderWorld(true); if (!scanBusy && demoStarted < 0 && !demonstrationOnly) RefreshWorld(false); }
                 else { effects.Clear(); ClearLoot(); heroWindow.Hide(); landmarkWindow.Hide(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Hide(); }
             }
+        }
+        // Hiding, demos and combat death all switch the runtime flag off; the
+        // persisted unattended-battle preference is re-applied whenever normal
+        // play resumes, so a single hide never silently disables auto battle.
+        private void RestoreAutoBattlePreference()
+        {
+            if (demoStarted >= 0 || demoPending) return;
+            battle.SetAutomatic(cultivation.AutoBattle && !battle.Progress.Dead);
         }
         public bool Roaming { get { return roaming; } set { roaming = value; if (value) PickTarget(); } }
         public bool AutoPlanning { get { return battle.Automatic; } }
@@ -167,50 +175,111 @@ namespace NetBunny
         }
         // Fail-closed enable: the store applies the flag only after a durable
         // write; on failure consent stays off and the checkbox reverts.
+        // Disable ALWAYS applies in memory and cancels in-flight work first —
+        // a persistence failure must never skip the cancellation — and the
+        // stale grant file is retried until removed so a restart cannot
+        // resurrect the authorization.
+        private bool consentRetryCleanup, consentRetryMemory;
+        private double consentRetryAt = -1;
         internal bool SetCleanupConsent(bool value)
         {
             if (disposed) return false;
             string error;
-            if (!consent.SetCleanup(demonstrationOnly ? null : consentPath, value, out error))
-            {
-                scanStatus = "授权状态暂未保存：" + error;
-                battle.LastReward = value
-                    ? "授权文件写入失败，为安全起见文件清理授权保持关闭"
-                    : "文件清理授权已在本机立即关闭，但授权文件未能更新或删除；若重启后仍显示已授权，请手动删除 " + consentPath;
-                return false;
-            }
+            bool persisted = consent.SetCleanup(ConsentWritePath, value, out error);
+            if (!persisted) scanStatus = "授权状态暂未保存：" + error;
             if (!value)
             {
                 // Not-yet-started file cleanups return to a pure virtual state;
                 // the in-flight worker gets a cancellation request and reports
                 // its actual result as soon as it stops.
                 CancelCleanupWork("文件清理授权已关闭 · 清理未执行");
-                battle.LastReward = "文件清理授权已关闭：未开始的清理已撤销，进行中的任务已请求取消并尽快汇报实际结果；此后击败文件怪只结算虚拟奖励";
+                if (persisted) { consentRetryCleanup = false; battle.LastReward = "文件清理授权已关闭：未开始的清理已撤销，进行中的任务已请求取消并尽快汇报实际结果；此后击败文件怪只结算虚拟奖励"; }
+                else
+                {
+                    consentRetryCleanup = true; consentRetryAt = clock.Elapsed.TotalSeconds;
+                    battle.LastReward = "文件清理授权已在本机立即关闭并取消任务，但授权文件未能更新；将自动重试清除，若重启后仍显示已授权请手动删除 " + consentPath;
+                }
+                return persisted;
             }
-            else battle.LastReward = "文件清理授权已开启：击败文件怪将安全清理其绑定的、超过 24 小时的本用户临时文件";
+            if (!persisted) { battle.LastReward = "授权文件写入失败，为安全起见文件清理授权保持关闭"; return false; }
+            battle.LastReward = "文件清理授权已开启：击败文件怪将安全清理其绑定的、超过 24 小时的本用户临时文件";
             return true;
         }
         internal bool SetMemoryConsent(bool value)
         {
             if (disposed) return false;
             string error;
-            if (!consent.SetMemory(demonstrationOnly ? null : consentPath, value, out error))
-            {
-                scanStatus = "授权状态暂未保存：" + error;
-                battle.LastReward = value
-                    ? "授权文件写入失败，为安全起见内存维护授权保持关闭"
-                    : "内存维护授权已在本机立即关闭，但授权文件未能更新或删除；若重启后仍显示已授权，请手动删除 " + consentPath;
-                return false;
-            }
+            bool persisted = consent.SetMemory(ConsentWritePath, value, out error);
+            if (!persisted) scanStatus = "授权状态暂未保存：" + error;
             if (!value)
             {
                 // Memory reclaim only starts at a boss kill, so future reclaim is
                 // gated by the flag itself; the in-flight task is cancelled here.
                 if (memoryReclaimCancellation != null) memoryReclaimCancellation.Cancel();
-                battle.LastReward = "内存维护授权已关闭：未开始的工作集回收不会执行，进行中的回收已请求取消；此后击败内存 Boss 只结算虚拟奖励";
+                if (persisted) { consentRetryMemory = false; battle.LastReward = "内存维护授权已关闭：未开始的工作集回收不会执行，进行中的回收已请求取消；此后击败内存 Boss 只结算虚拟奖励"; }
+                else
+                {
+                    consentRetryMemory = true; consentRetryAt = clock.Elapsed.TotalSeconds;
+                    battle.LastReward = "内存维护授权已在本机立即关闭并取消任务，但授权文件未能更新；将自动重试清除，若重启后仍显示已授权请手动删除 " + consentPath;
+                }
+                return persisted;
             }
-            else battle.LastReward = "内存维护授权已开启：击败内存 Boss 将尝试回收同会话后台进程的工作集";
+            if (!persisted) { battle.LastReward = "授权文件写入失败，为安全起见内存维护授权保持关闭"; return false; }
+            battle.LastReward = "内存维护授权已开启：击败内存 Boss 将尝试回收同会话后台进程的工作集";
             return true;
+        }
+        // Third, separately confirmed permission: unattended real maintenance.
+        // Auto battle without it fights virtually even where a scope consent is on.
+        internal bool MaintenanceConsentAutoMaintenance { get { return consent.AutoMaintenanceEnabled; } }
+        internal bool SetAutoMaintenanceConsent(bool value)
+        {
+            if (disposed) return false;
+            string error;
+            bool persisted = consent.SetAutoMaintenance(ConsentWritePath, value, out error);
+            if (!persisted)
+            {
+                scanStatus = "授权状态暂未保存：" + error;
+                battle.LastReward = value ? "授权文件写入失败，为安全起见无人值守自动维护保持关闭" : "无人值守自动维护已在本机关闭，但授权文件未能更新；若重启后仍显示已授权请手动删除 " + consentPath;
+                if (!value) RetireAutomaticRealEffectJobs();
+                return false;
+            }
+            if (!value)
+            {
+                // Queued-but-unstarted automatic targets with real effects retire;
+                // auto battle itself continues against virtual fiends.
+                RetireAutomaticRealEffectJobs();
+                battle.LastReward = "无人值守自动维护已关闭：自动作战继续，但只结算虚拟奖励；真实清理/回收需要手动击杀或重新开启";
+            }
+            else battle.LastReward = "无人值守自动维护已开启：自动作战击败文件怪/内存 Boss 时将执行对应的真实清理或回收（仍须对应授权保持开启）";
+            return true;
+        }
+        private void RetireAutomaticRealEffectJobs()
+        {
+            // Cycle automatic mode: unstarted automatic targets (including defeated
+            // ones awaiting the cleanup worker) are retired; manual orders survive.
+            bool resume = battle.Automatic || cultivation.AutoBattle;
+            battle.SetAutomatic(false); RemoveCancelledAutomaticJobs();
+            if (resume) battle.SetAutomatic(!battle.Progress.Dead);
+        }
+        // Automatic planning must never start unattended real maintenance on its
+        // own: real-effect targets require the separate auto-maintenance consent.
+        private bool AutoMaintenanceEligibility(AdventureEnemy enemy)
+        {
+            if (enemy.IsVirtual) return true; // pure combat, never any real effect
+            bool memoryBoss = enemy.IsBoss && !enemy.IsDiskBoss;
+            if (memoryBoss) return !consent.MemoryEnabled || consent.AutoMaintenanceEnabled;
+            return !consent.CleanupEnabled || consent.AutoMaintenanceEnabled;
+        }
+        private string ConsentWritePath { get { return consentPathOverride ?? (demonstrationOnly ? null : consentPath); } }
+        // Test hook: force consent persistence failures in smoke; null in production.
+        private string consentPathOverride;
+        private void TryFlushConsentRevocation()
+        {
+            if (!consentRetryCleanup && !consentRetryMemory) return;
+            string ignored;
+            if (consentRetryCleanup && consent.SetCleanup(ConsentWritePath, false, out ignored)) consentRetryCleanup = false;
+            if (consentRetryMemory && consent.SetMemory(ConsentWritePath, false, out ignored)) consentRetryMemory = false;
+            if (!consentRetryCleanup && !consentRetryMemory) scanStatus = "授权关闭状态已重试保存成功";
         }
         private void CancelCleanupWork(string notice)
         {
@@ -308,7 +377,8 @@ namespace NetBunny
         public void PlayDemo()
         {
             if (disposed) return;
-            // Preview must not silently resume an automatic deletion mode afterwards.
+            // The demo pauses auto battle; afterwards the persisted unattended
+            // preference is restored (auto battle alone never deletes anything).
             resumeAutomaticAfterDemo = false; battle.SetAutomatic(false); RemoveCancelledAutomaticJobs();
             if (workCancellation != null) workCancellation.Cancel(); demoPending = true;
             if (memoryReclaimCancellation != null) memoryReclaimCancellation.Cancel();
@@ -317,7 +387,7 @@ namespace NetBunny
         private void StartDemo()
         {
             demoPending = false; effects.Clear(); ClearLoot(); demoStarted = clock.Elapsed.TotalSeconds; Enabled = true; RenderWorld(true);
-        }        internal void StopDemo() { if (demonstrationOnly) return; effects.Clear(); demoStarted = -1; demoPending = false; battle.Automatic = resumeAutomaticAfterDemo && !battle.Progress.Dead; resumeAutomaticAfterDemo = false; lastTick = clock.Elapsed.TotalSeconds; RenderWorld(true); }
+        }        internal void StopDemo() { if (demonstrationOnly) return; effects.Clear(); demoStarted = -1; demoPending = false; resumeAutomaticAfterDemo = false; RestoreAutoBattlePreference(); lastTick = clock.Elapsed.TotalSeconds; RenderWorld(true); }
         public void ShowSettings() { OpenEquipment(); }
         public void OpenEquipment()
         {
@@ -476,6 +546,9 @@ namespace NetBunny
             double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
             // Cultivation uses the raw elapsed time, never the render-clamped dt.
             AdvanceCultivation(now);
+            // A consent revocation whose file update failed is retried until the
+            // stale grant is gone — even while the pet is hidden.
+            if ((consentRetryCleanup || consentRetryMemory) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
             DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
             if (!demonstrationOnly && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
             if (!enabled) return; effects.Tick(dt);
@@ -511,7 +584,7 @@ namespace NetBunny
                 if (canFight && EnemyFieldBudget.AvailableOrdinarySlots(battle.Enemies) > 0) SpawnVirtualFiend();
                 else encounters.Postpone();
             }
-            if (canFight && battle.Automatic) battle.PlanNext(x, y);
+            if (canFight && battle.Automatic) battle.PlanNext(x, y, AutoMaintenanceEligibility);
             AdventureEnemy target = canFight ? battle.Target : null;
             if (target == null || !battle.Automatic) { combatTactics.Reset(); tacticalStatus = ""; }
             double moveStartX = x, moveStartY = y;
@@ -910,6 +983,9 @@ namespace NetBunny
         {
             if (disposed) return;
             timer.Stop(); CancelPending(); cancellation.Cancel();
+            // Final best-effort flush of any consent revocation whose file update
+            // failed during the session, so a restart cannot resurrect it.
+            if (consentRetryCleanup || consentRetryMemory) TryFlushConsentRevocation();
             if (tempWatcher != null) { tempWatcher.Dispose(); tempWatcher = null; }
             if (memoryReclaimTask != null) { try { memoryReclaimTask.Wait(6000); DrainMemoryReclaim(); } catch { } }
             // Clean only works under the local temporary directory and checks the
@@ -937,7 +1013,11 @@ namespace NetBunny
             // The unattended-battle preference persists independently from both
             // real maintenance consents; it is honored again after every rest.
             cultivation.AutoBattle = value; Save();
-            battle.LastReward = battle.Automatic ? (consent.CleanupEnabled ? "自动规划已开启：优先处理近处、残血与高威胁怪物，手动点击始终优先；会清理对应临时文件" : "自动规划已开启：自动索敌战斗并获得修为经验；未授权文件清理，不会删除文件") : "自动规划已关闭；未开始的自动目标已撤销，手动队列保留；力竭调息后将保持手动待机";
+            battle.LastReward = battle.Automatic
+                ? (consent.CleanupEnabled || consent.MemoryEnabled)
+                    ? (consent.AutoMaintenanceEnabled ? "自动作战已开启：击败授权范围内的怪物将执行对应真实维护；手动点击始终优先" : "自动作战已开启：自动索敌战斗并获得修为经验；真实维护授权已开启，但无人值守自动维护未开——真实清理/回收只在你手动击杀时执行")
+                    : "自动作战已开启：自动索敌战斗并获得修为经验；未授权真实维护，不会删除文件或回收内存"
+                : "自动作战已关闭；未开始的自动目标已撤销，手动队列保留；力竭调息后将保持手动待机";
             if (enabled) RenderWorld(true);
         }
         private void RemoveCancelledAutomaticJobs()
@@ -1127,6 +1207,55 @@ namespace NetBunny
                     c.actualMoveSpeed = 0; c.attackAnimation = 0; check(c.HeroVisual(0).Phase != "run" && c.HeroVisual(0).MoveSpeed == 0, "waiting next to a selected target does not animate an in-place run");
                     c.actualMoveSpeed = 80 * c.displayScale; check(c.HeroVisual(0).Phase == "run" && c.HeroVisual(0).MoveSpeed == 80, "walking animation receives actual reference-space movement speed");
                     c.CancelPending(); c.actualMoveSpeed = 0;
+                    // Auto battle is filtered away from real-effect targets unless the
+                    // separate unattended-maintenance consent is explicitly on.
+                    c.consent.CleanupEnabled = true; c.consent.AutoMaintenanceEnabled = false;
+                    c.battle.Enemies.Clear(); c.battle.CancelQueue(); c.battle.SetAutomatic(true);
+                    AdventureEnemy gatedFile = new AdventureEnemy { Id = "gated-file", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\gated.tmp", Length = 512 } }, 1), Health = 5, MaxHealth = 100, X = c.x + 100, Y = c.y };
+                    AdventureEnemy freeFiend = new AdventureEnemy { Id = "free-fiend", IsVirtual = true, MonsterKind = "bat", Health = 90, MaxHealth = 100, X = c.x + 800, Y = c.y };
+                    c.battle.Enemies.Add(gatedFile); c.battle.Enemies.Add(freeFiend);
+                    AdventureEnemy autoPick = c.battle.PlanNext(c.x, c.y, c.AutoMaintenanceEligibility);
+                    check(autoPick == freeFiend && !gatedFile.Authorized, "cleanup consent alone never unleashes unattended real deletion");
+                    c.consent.AutoMaintenanceEnabled = true; c.battle.CancelQueue(); c.battle.SetAutomatic(true);
+                    check(c.battle.PlanNext(c.x, c.y, c.AutoMaintenanceEligibility) == gatedFile, "explicit unattended-maintenance consent admits real-effect targets");
+                    check(c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && !gatedFile.Authorized && c.battle.Automatic, "revoking unattended maintenance retires its queued automatic targets but keeps auto battle");
+                    c.battle.CancelQueue(); c.battle.Enemies.Remove(gatedFile); c.battle.Enemies.Remove(freeFiend);
+                    // A failed revocation write still applies in memory, cancels the
+                    // in-flight worker at once, and retries the stale grant removal.
+                    string blockedConsent = Path.Combine(Path.GetTempPath(), "consent-blocked-" + Guid.NewGuid().ToString("N") + ".txt");
+                    File.WriteAllText(blockedConsent, "cleanup=1\nmemory=1\nautomaint=0\n", new UTF8Encoding(false));
+                    FileStream consentLock = new FileStream(blockedConsent, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                    try
+                    {
+                        c.consentPathOverride = blockedConsent;
+                        TaskCompletionSource<CleanupResult> hangingCleanup = new TaskCompletionSource<CleanupResult>();
+                        c.simulatedCleaner = delegate(CleanupBatch ignoredBatch, CancellationToken token) { token.Register(delegate { hangingCleanup.TrySetResult(new CleanupResult { Cancelled = true, Message = "清理已取消" }); }); return hangingCleanup.Task; };
+                        c.consent.CleanupEnabled = true;
+                        AdventureEnemy inFlight = new AdventureEnemy { Id = "in-flight-revoke", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\inflight.tmp", Length = 777 } }, 1), Health = 1, MaxHealth = 1 };
+                        c.battle.Enemies.Add(inFlight); c.Spawn(inFlight); c.battle.Authorize(inFlight); c.battle.Cooldown = 0; c.battle.Strike(inFlight); c.BeginCleanup(inFlight);
+                        check(c.cleanupTask != null && c.workCancellation != null, "in-flight cleanup worker started for the revocation-failure test");
+                        check(!c.SetCleanupConsent(false) && !c.consent.CleanupEnabled && c.consentRetryCleanup, "failed revocation write reports failure yet still applies in memory and schedules a retry");
+                        check(c.workCancellation.IsCancellationRequested, "in-flight cleanup is cancelled even when the consent file update fails");
+                        c.DrainCleanup();
+                        check(inFlight.Failed && c.battle.Progress.FreedBytes == freed && c.battle.LastReward.Contains("取消"), "cancelled worker reports its actual result without inventing freed bytes");
+                    }
+                    finally
+                    {
+                        c.consentPathOverride = null; c.simulatedCleaner = null;
+                        consentLock.Dispose();
+                        try { File.Delete(blockedConsent); } catch { }
+                    }
+                    c.TryFlushConsentRevocation();
+                    check(!c.consentRetryCleanup, "stale consent removal is retried until the file can no longer resurrect it");
+                    // Hide/show and demo transitions never detach runtime state from
+                    // the persisted unattended-battle preference.
+                    c.cultivation.AutoBattle = true; c.battle.SetAutomatic(true);
+                    c.Enabled = false; check(!c.battle.Automatic, "hiding stops runtime auto battle");
+                    c.Enabled = true; check(c.battle.Automatic, "showing restores the persisted auto-battle preference");
+                    c.cultivation.AutoBattle = false; c.Enabled = false; c.Enabled = true;
+                    check(!c.battle.Automatic, "a saved manual preference survives hide/show too");
+                    c.cultivation.AutoBattle = true; c.RestoreAutoBattlePreference(); c.battle.CancelQueue();
+                    c.consent.CleanupEnabled = false;
                     // Unattended recovery: a defeated cultivator always rests back.
                     c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;

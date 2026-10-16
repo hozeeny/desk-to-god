@@ -15,7 +15,7 @@ namespace NetBunny
         private readonly CultivationCard cultivation = new CultivationCard();
         private readonly ComboBox techniques = new ComboBox();
         private readonly Button breakthrough = new Button(), pauseCultivation = new Button();
-        private readonly CheckBox cleanupConsent = new CheckBox(), memoryConsent = new CheckBox();
+        private readonly CheckBox cleanupConsent = new CheckBox(), memoryConsent = new CheckBox(), autoMaintenanceConsent = new CheckBox();
         private readonly ListBox weapons = new ListBox();
         private readonly RadioButton automatic = new RadioButton(), manual = new RadioButton();
         private readonly CheckBox roam = new CheckBox();
@@ -86,6 +86,23 @@ namespace NetBunny
                 RefreshData();
             };
             memoryConsentRow.Controls.Add(memoryConsent); content.Controls.Add(memoryConsentRow);
+            FlowLayoutPanel autoMaintenanceRow = Row();
+            autoMaintenanceConsent.Text = "授权无人值守自动维护：自动作战击败授权范围内的怪物时也执行真实清理/回收";
+            autoMaintenanceConsent.Width = 470; autoMaintenanceConsent.Height = 30; autoMaintenanceConsent.BackColor = Color.Transparent;
+            autoMaintenanceConsent.CheckedChanged += delegate
+            {
+                if (updating) return;
+                if (autoMaintenanceConsent.Checked)
+                {
+                    DialogResult answer = MessageBox.Show(this,
+                        "默认情况下自动作战只结算虚拟奖励，真实清理/回收只在你手动击杀时执行。\n\n开启本授权后，只要上方对应授权处于开启状态，自动作战在你不操作电脑时也会真实删除临时文件、回收后台工作集。\n\n不开本授权则自动作战永远是纯战斗。确认开启无人值守自动维护吗？",
+                        "无人值守自动维护授权", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                    if (answer != DialogResult.OK) { updating = true; autoMaintenanceConsent.Checked = false; updating = false; return; }
+                }
+                if (!controller.SetAutoMaintenanceConsent(autoMaintenanceConsent.Checked)) { updating = true; autoMaintenanceConsent.Checked = controller.MaintenanceConsentAutoMaintenance; updating = false; }
+                RefreshData();
+            };
+            autoMaintenanceRow.Controls.Add(autoMaintenanceConsent); content.Controls.Add(autoMaintenanceRow);
             content.Controls.Add(TextLine("默认纯修仙模式：修炼、战斗、修为与境界成长都不依赖真实文件；未开启授权时，击败任何妖物只结算虚拟奖励，不会删除文件或回收内存。", 50));
             stats.Width = 640; stats.Height = 108; stats.BackColor = Color.White; stats.Padding = new Padding(12); stats.BorderStyle = BorderStyle.FixedSingle; stats.Font = new Font(Font.FontFamily, 12, FontStyle.Bold); content.Controls.Add(stats);
             diskSpace.Width = 640; diskSpace.Height = 95; diskSpace.BackColor = BackColor; diskSpace.Margin = new Padding(0, 7, 0, 7); content.Controls.Add(diskSpace);
@@ -102,7 +119,7 @@ namespace NetBunny
             manual.CheckedChanged += delegate { if (!updating && manual.Checked) controller.SetAutoPlan(false); };
             automatic.CheckedChanged += delegate { if (!updating && automatic.Checked) controller.SetAutoPlan(true); };
             modes.Controls.AddRange(new Control[] { manual, automatic }); content.Controls.Add(modes);
-            content.Controls.Add(TextLine("自动模式会利用攻击冷却退避、侧移，并根据武器射程反击。自动作战是独立于两项真实维护授权的偏好；力竭后修士入定调息约一分钟自行恢复，无需定时上线。", 44));
+            content.Controls.Add(TextLine("自动模式会利用攻击冷却退避、侧移，并根据武器射程反击。自动作战是独立于真实维护授权的偏好；即使文件清理/内存维护授权已开，自动作战也只在另开「无人值守自动维护」后才执行真实操作，否则只结算虚拟奖励。力竭后修士入定调息约一分钟自行恢复，无需定时上线。", 58));
             content.Controls.Add(TextLine("每击杀一只怪物随机获得 2～3 经验，只结算一次。怪物空血后立即碎裂消失；临时文件在后台清理，占用或失败的文件记为待重扫，不会让死怪复活。", 56));
             FlowLayoutPanel clear = Row(); Configure(blackhole, "一键清场并清理本批临时文件", 300, delegate { controller.ClearField(); RefreshData(); }); Configure(cancel, "取消待办清理", 155, delegate { controller.CancelPending(); RefreshData(); }); clear.Controls.AddRange(new Control[] { blackhole, cancel }); content.Controls.Add(clear);
             content.Controls.Add(TextLine("一键清场处理眼前的文件怪，邪恶分身 Boss 需正常战斗。每只击杀仍得 2～3 经验；文件占用或近期文件会跳过，只有实际删除计入磁盘释放。", 56));
@@ -161,6 +178,7 @@ namespace NetBunny
                     pauseCultivation.Text = controller.CultivationPaused ? "恢复修炼" : "暂停修炼";
                     cleanupConsent.Checked = controller.MaintenanceConsentCleanup;
                     memoryConsent.Checked = controller.MaintenanceConsentMemory;
+                    autoMaintenanceConsent.Checked = controller.MaintenanceConsentAutoMaintenance;
                 }
                 diskSpace.SetSnapshot(controller.DiskSnapshot); hints.SetToolTip(diskSpace, diskSpace.Summary);
                 resourceGrowth.SetStatus(controller.ResourceGrowthText, controller.ResourceGrowthRatio); hints.SetToolTip(resourceGrowth, resourceGrowth.Summary);

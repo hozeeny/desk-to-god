@@ -228,11 +228,11 @@ namespace NetBunny
             if (retired) LastReward = "自动清理已取消；已击败的怪物继续消散，未执行文件清理，剩余文件待重新扫描";
             Renumber();
         }
-        internal AdventureEnemy PlanNext(double heroX, double heroY)
+        internal AdventureEnemy PlanNext(double heroX, double heroY, Func<AdventureEnemy, bool> eligible = null)
         {
             // A live target stays selected until it finishes or the user gives a manual order.
             if (!Automatic || Progress.Dead || Target != null || queue.Any(e => e.Cleaning && !e.Defeated && !e.Failed)) return Target;
-            AdventureEnemy next = Enemies.Where(e => !e.Authorized && !e.Failed && !e.Defeated && !e.Cleaning && !e.IsDiskWarning)
+            AdventureEnemy next = Enemies.Where(e => !e.Authorized && !e.Failed && !e.Defeated && !e.Cleaning && !e.IsDiskWarning && (eligible == null || eligible(e)))
                 .OrderBy(e => PlanScore(e, heroX, heroY)).ThenBy(e => e.Id, StringComparer.Ordinal).FirstOrDefault();
             if (next != null) Authorize(next, AdventureAuthorization.Automatic);
             else if (Enemies.Any(e => e.IsDiskWarning && !e.Defeated)) LastReward = DiskWarningMessage;
@@ -472,6 +472,14 @@ namespace NetBunny
             AdventureBattle ties = new AdventureBattle(new AdventureProgress());
             AdventureEnemy tieZ = new AdventureEnemy { Id = "z", Health = 20, MaxHealth = 20, X = 60 }, tieA = new AdventureEnemy { Id = "a", Health = 20, MaxHealth = 20, X = 60 };
             ties.Enemies.AddRange(new[] { tieZ, tieA }); ties.SetAutomatic(true); check(ties.PlanNext(0, 0) == tieA, "planning tie-break is deterministic");
+            AdventureBattle filtered = new AdventureBattle(new AdventureProgress());
+            CleanupBatch filterBatch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\filter.tmp", Length = 512 } }, 1);
+            AdventureEnemy fileBacked = new AdventureEnemy { Id = "file-backed", Batch = filterBatch, Health = 5, MaxHealth = 100, X = 10 };
+            AdventureEnemy pureVirtual = new AdventureEnemy { Id = "pure-virtual", IsVirtual = true, Health = 90, MaxHealth = 100, X = 500 };
+            filtered.Enemies.AddRange(new[] { fileBacked, pureVirtual }); filtered.SetAutomatic(true);
+            check(filtered.PlanNext(0, 0, e => e.IsVirtual) == pureVirtual && !fileBacked.Authorized && pureVirtual.Authorization == AdventureAuthorization.Automatic, "automatic planning skips consent-gated real-effect targets and still fights virtual fiends");
+            filtered.CancelQueue(); filtered.SetAutomatic(true);
+            check(filtered.PlanNext(0, 0) == fileBacked, "without a filter the planner admits the same target (attended default unchanged)");
             AdventureBattle sweep = new AdventureBattle(new AdventureProgress());
             AdventureEnemy sweepA = new AdventureEnemy { Id = "sweep-a", Health = 80, MaxHealth = 80 }, sweepB = new AdventureEnemy { Id = "sweep-b", Health = 80, MaxHealth = 80 }, sweepBoss = new AdventureEnemy { Id = "sweep-boss", IsBoss = true, MonsterKind = "boss", Health = 900, MaxHealth = 900 };
             sweep.Enemies.AddRange(new[] { sweepA, sweepB, sweepBoss }); sweep.SetAutomatic(true);
