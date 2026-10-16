@@ -1,0 +1,16 @@
+素材工具：内置 image_gen，未使用 CLI，未用图像脚本修改生成图片。
+
+已采用文件（均位于 Assets）：
+rig-US.png：1448 × 1086，12 个独立 alpha 连通组件，牛仔分件。
+rig-TW.png：1448 × 1086，12 个独立 alpha 连通组件，青蛙分件。
+rig-HK.png：1448 × 1086，12 个独立 alpha 连通组件，黑发墨镜小弟分件。
+monsters-v5.png：1536 × 1024，6 个独立 alpha 连通组件。
+
+所有文件均有对应 .rects，使用 AtlasInspect.exe 分析 alpha 后输出。顺序目视复核正确。
+怪物顺序：骷髅兵、史莱姆、小恶魔、蝙蝠、蘑菇怪、骷髅王 Boss。
+怪物图的 RGB 通道包含彩色光晕，但透明通道已将背景置零；已采样检查多个图格间背景点，alpha 均为 0。渲染必须保留 alpha，不能将图转换为不透明格式。
+大头和蝙蝠翼等会超出均匀等分网格，应按 .rects 中的完整组件矩形绘制。
+
+未采用修订：额外请求了去背景版本，但核对原图 alpha 之后确认原图已经透明。修订原稿仍保留于生成目录 exec-b45f68f7-cb86-47d2-9885-2fca91c85154.png，不作为应用资源。
+未采用修订提示词：
+Use case: background-extraction. EDIT TARGET is this six-monster sprite atlas. Preserve the six individual monsters EXACTLY: same hand-painted designs, faces, colors, materials, poses, orientation, outlines and positions. Remove ALL the background, ALL colored glows/halos outside the characters, and ALL ground shadows so every pixel that is not part of a monster has genuine zero-opacity TRANSPARENT ALPHA. It must be a production cutout sprite atlas, not an illustration on black and not on colored gradients. There are six separate isolated sprite silhouettes: skeleton soldier top left, slime top center, imp top right, bat bottom left, mushroom bottom center, skeleton king bottom right. Each silhouette must be completely surrounded by transparent pixels. Please slightly shrink each monster around its own center if necessary to ensure a transparent gutter between all characters and around the outer canvas edges. Keep a 3-column by 2-row layout. Absolutely no backdrop, no checkered pattern, no black fill, no opaque color haze, no glow outside the hard character silhouette, no text.

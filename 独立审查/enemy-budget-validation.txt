@@ -1,0 +1,35 @@
+v5.2 enemy field budget validation
+Source: D:\骑士助手-v5.2\源代码
+Synthetic validation only; production v5.1 process was not touched.
+
+BudgetNativeReview.exe (full source compilation, 2026-10-16):
+Enemy field budget: 36 assertions passed (synthetic data only; no filesystem, cleanup, network, or progress operations).
+Adventure model: 84 assertions passed (synthetic combat plus isolated save fixture; user Temp and real progress untouched).
+Adventure native smoke: 44 checks passed; no real cleanup, network query, or progress save.
+Adventure resource smoke: 32 checks passed (synthetic inventories, disk samples and cleanup results only).
+
+EnemyBudgetStress.exe (seed 52016, 2026-10-16):
+Enemy budget stress: 3600 invariants passed across 1200 seeded transitions; maximum retained actors 7.
+Synthetic cleaner outcomes: 126 success, 123 failure, 132 cancellation. No real files, network, disk samples, or progress writes.
+
+Coverage:
+- 12 scanned batches become at most 6 ordinary monsters, with every original candidate reference and total byte retained.
+- Existing batches and IDs stay unchanged when already within the available budget.
+- Exact duplicate snapshots are counted once; changed file identity is rejected rather than merged into authorization.
+- 6 ordinary + memory boss + disk boss = 8 logical objects and native windows.
+- Retained hidden/defeated objects continue to consume their budget until retirement.
+- Same-frame manual scan retires six old native windows before showing replacements; observed window high-water <= 8.
+- Background scans cannot replace live authorization; repeated low-disk measurements cannot add duplicate boss roles.
+- Delayed cleanup leaves killed sprite hidden; failure and queued cancellation add explicit recheck accounting without respawn.
+- Kill XP is 2 or 3, paid once before cleanup results; freed bytes remain based on the real-result contract.
+- Already defeated work starts while hero is dead; workers remain serialized.
+- Unauthorized monsters approach and damage hero without authorizing filesystem work.
+- Direction reversal dirties the sprite and redraws immediately outside round-robin budget.
+- Seeded stress checks retained budget, exclusive candidate ownership and non-revival after every transition.
+
+Read-only production integration review:
+ApplyInventory removes the prior unqueued ordinary wave before allocating slots.
+BindDiskBossCandidates transfers unqueued C-drive batches exclusively and removes donor objects.
+ObserveDisk respects one boss per role; recovery preserves the original candidate references.
+RenderWorld disposes old windows before creating replacements and independently caps visible actor windows at 8.
+No additional production defect found in the reviewed budget/ownership paths.

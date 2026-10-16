@@ -1,0 +1,2 @@
+Adventure native smoke: 44 checks passed; no real cleanup, network query, or progress save.
+Adventure resource smoke: 36 checks passed (synthetic inventories, disk samples and cleanup results only).

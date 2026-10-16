@@ -1,0 +1,115 @@
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace NetBunny
+{
+    internal sealed class AdventureEquipmentForm : Form
+    {
+        private readonly AdventureController controller;
+        private readonly Label stats = new Label(), reward = new Label(), detail = new Label();
+        private readonly DiskSpaceBar diskSpace = new DiskSpaceBar();
+        private readonly ListBox weapons = new ListBox();
+        private readonly RadioButton automatic = new RadioButton(), manual = new RadioButton();
+        private readonly CheckBox roam = new CheckBox();
+        private readonly ComboBox themes = new ComboBox(), sizes = new ComboBox(), monitors = new ComboBox();
+        private readonly Button equip = new Button(), revive = new Button(), blackhole = new Button(), rescan = new Button(), demo = new Button(), cancel = new Button();
+        private readonly System.Windows.Forms.Timer refresh = new System.Windows.Forms.Timer();
+        private readonly ToolTip hints = new ToolTip { ShowAlways = true, AutoPopDelay = 10000 };
+        private bool updating;
+        private string inventoryKey = "";
+        private static readonly string[] ThemeCodes = { "AUTO", "OFF", "CN", "JP", "US", "TW", "HK", "OTHER" };
+        internal AdventureEquipmentForm(AdventureController controller)
+        {
+            this.controller = controller; Text = "骑士助手 · 装备与冒险状态"; Rectangle workArea = Screen.FromPoint(Cursor.Position).WorkingArea; Width = Math.Min(760, workArea.Width - 24); Height = Math.Min(900, workArea.Height - 40); MinimumSize = new Size(Math.Min(650, workArea.Width - 24), Math.Min(540, workArea.Height - 40));
+            StartPosition = FormStartPosition.CenterScreen; BackColor = Color.FromArgb(245, 244, 251); Font = new Font("Microsoft YaHei UI", 10);
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            FlowLayoutPanel content = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(22), BackColor = BackColor };
+            Controls.Add(content);
+            Label title = TextLine("装备栏 · 你的桌面冒险", 48); title.Font = new Font(Font.FontFamily, 19, FontStyle.Bold); title.ForeColor = Color.FromArgb(73, 49, 132); content.Controls.Add(title);
+            stats.Width = 640; stats.Height = 108; stats.BackColor = Color.White; stats.Padding = new Padding(12); stats.BorderStyle = BorderStyle.FixedSingle; stats.Font = new Font(Font.FontFamily, 12, FontStyle.Bold); content.Controls.Add(stats);
+            diskSpace.Width = 640; diskSpace.Height = 95; diskSpace.BackColor = BackColor; diskSpace.Margin = new Padding(0, 7, 0, 7); content.Controls.Add(diskSpace);
+            reward.Width = 640; reward.Height = 52; reward.ForeColor = Color.FromArgb(104, 64, 181); content.Controls.Add(reward);
+            content.Controls.Add(TextLine("武器背包（升级必得新武器，也有 28% 清理掉落机会）", 26));
+            weapons.Width = 640; weapons.Height = 139; weapons.IntegralHeight = false; weapons.HorizontalScrollbar = true; weapons.Font = Font; content.Controls.Add(weapons);
+            FlowLayoutPanel actions = Row(); Configure(equip, "装备选中武器", 150, delegate { WeaponEntry item = weapons.SelectedItem as WeaponEntry; if (item != null) controller.ChooseWeapon(item.Id); RefreshData(); });
+            Configure(revive, "从墓碑复活", 130, delegate { controller.Resurrect(); RefreshData(); });
+            actions.Controls.AddRange(new Control[] { equip, revive }); content.Controls.Add(actions);
+            content.Controls.Add(TextLine("作战方式 · 骷髅 / 史莱姆 / 独眼恶魔 / 蝙蝠 / 蘑菇怪随机出现", 30));
+            FlowLayoutPanel modes = Row(); manual.Text = "手动点选（默认）"; manual.Width = 180; manual.Height = 34;
+            automatic.Text = "自动规划杀怪并清理"; automatic.Width = 250; automatic.Height = 34;
+            manual.CheckedChanged += delegate { if (!updating && manual.Checked) controller.SetAutoPlan(false); };
+            automatic.CheckedChanged += delegate { if (!updating && automatic.Checked) controller.SetAutoPlan(true); };
+            modes.Controls.AddRange(new Control[] { manual, automatic }); content.Controls.Add(modes);
+            content.Controls.Add(TextLine("每击杀一只怪物随机获得 2～3 经验，只结算一次。怪物空血后立即碎裂消失；临时文件在后台清理，占用或失败的文件记为待重扫，不会让死怪复活。", 56));
+            FlowLayoutPanel clear = Row(); Configure(blackhole, "一键清场并清理本批临时文件", 300, delegate { controller.ClearField(); RefreshData(); }); Configure(cancel, "取消待办清理", 155, delegate { controller.CancelPending(); RefreshData(); }); clear.Controls.AddRange(new Control[] { blackhole, cancel }); content.Controls.Add(clear);
+            content.Controls.Add(TextLine("无需解锁武器：清场锁定眼前这批怪物，每只获得 2～3 经验并逐批安全清理。取消不回滚已得击杀经验；只有真正删除的文件计入释放空间。", 56));
+            FlowLayoutPanel queue = Row(); Configure(rescan, "重新扫描临时文件", 175, delegate { controller.RefreshWorld(); RefreshData(); }); Configure(demo, "播放安全演示", 155, delegate { if (controller.IsDemo) controller.StopDemo(); else controller.PlayDemo(); RefreshData(); }); queue.Controls.AddRange(new Control[] { rescan, demo }); content.Controls.Add(queue);
+            content.Controls.Add(TextLine("桌面敌人总数最多 8 个（含 Boss），普通文件怪最多 6 个。活着的敌人会面向移动方向主动追击、攻击主角；击杀后不补旧怪，资源增长或手动重扫才开启下一轮。", 56));
+            content.Controls.Add(TextLine("地区皮肤与地标", 26));
+            themes.DropDownStyle = ComboBoxStyle.DropDownList; themes.Width = 640; themes.Items.AddRange(new object[] { "自动 · 按 VPN / 代理出口地区", "关闭自动识别 · 保留当前造型", "中国 · 剑修与妖塔", "日本 · 武士与鸟居神龛", "美国 · 牛仔与自由女神像", "台湾 · 青蛙与旧屋", "香港 · 街头小弟与九龙城寨", "其他地区 · 骑士与恶魔古堡" });
+            themes.SelectedIndexChanged += delegate { if (!updating && themes.SelectedIndex >= 0) controller.ChooseTheme(ThemeCodes[themes.SelectedIndex]); }; content.Controls.Add(themes);
+            Button refreshRegion = new Button(); Configure(refreshRegion, "刷新出口地区", 165, delegate { controller.RefreshRegion(); }); content.Controls.Add(refreshRegion);
+            content.Controls.Add(TextLine(RegionThemeService.PrivacyNote + " 所有皮肤共用武器和等级。", 64));
+            FlowLayoutPanel display = Row(); roam.Text = "骑士满屏漫游"; roam.Width = 150; roam.Height = 30; roam.Checked = controller.Roaming; roam.CheckedChanged += delegate { if (!updating) controller.Roaming = roam.Checked; }; hints.SetToolTip(roam, "只控制骑士空闲漫游。怪物主动追击和攻击，角色战死或断网时改为巡逻；警示Boss不攻击。"); display.Controls.Add(roam);
+            sizes.DropDownStyle = ComboBoxStyle.DropDownList; sizes.Width = 130; sizes.Items.AddRange(new object[] { "小 · 80%", "中 · 100%", "大 · 120%" }); sizes.SelectedIndex = 1; sizes.SelectedIndexChanged += delegate { if (!updating && sizes.SelectedIndex >= 0) controller.ChangeScale(new[] { .8f, 1f, 1.2f }[sizes.SelectedIndex]); }; display.Controls.Add(sizes);
+            monitors.DropDownStyle = ComboBoxStyle.DropDownList; monitors.Width = 190; int n = 0; foreach (Screen screen in Screen.AllScreens) monitors.Items.Add("屏幕 " + (++n) + (screen.Primary ? "（主屏）" : "")); monitors.SelectedIndex = Math.Max(0, Array.FindIndex(Screen.AllScreens, screen => screen.WorkingArea == controller.WorkingArea)); monitors.SelectedIndexChanged += delegate { if (!updating && monitors.SelectedIndex >= 0) controller.ChangeScreen(Screen.AllScreens[monitors.SelectedIndex]); }; display.Controls.Add(monitors);
+            Button hide = new Button(); Configure(hide, "隐藏桌面角色", 160, delegate { controller.Enabled = false; }); display.Controls.Add(hide); content.Controls.Add(display);
+            content.Controls.Add(TextLine("C 盘剩余不足 1 GiB 时出现磁盘危机 Boss，只清理它绑定的已扫描临时文件，释放量按实际结果计算；当前没有安全候选时只提示，不扩大清理范围。", 56));
+            content.Controls.Add(TextLine("临时文件清理释放磁盘空间（MiB / GiB）。内存持续 ≥85% 会出现内存压力 Boss；击败内存 Boss 不会强制清空 RAM。", 50));
+            detail.Width = 640; detail.Height = 100; detail.AutoSize = true; detail.MaximumSize = new Size(640, 0); detail.ForeColor = Color.FromArgb(100, 99, 121); content.Controls.Add(detail);
+                        Action fit = delegate {
+                int width = Math.Max(460, content.ClientSize.Width - content.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8);
+                foreach (Control control in content.Controls) {
+                    if (control is Button) continue;
+                    control.Width = width;
+                    Label label = control as Label; if (label != null && label != stats && label != reward) label.MaximumSize = new Size(width, 0);
+                }
+            };
+            content.SizeChanged += delegate { fit(); }; fit();
+            refresh.Interval = 350; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
+            Shown += delegate { RefreshData(); };
+        }
+        private Label TextLine(string text, int height) { return new Label { Text = text, Width = 640, Height = height, AutoSize = true, MaximumSize = new Size(640, 0), MinimumSize = new Size(0, height), Margin = new Padding(0, 4, 0, 4) }; }
+        private FlowLayoutPanel Row() { return new FlowLayoutPanel { Width = 650, Height = 43, AutoSize = true, MinimumSize = new Size(0, 43), WrapContents = true, Margin = new Padding(0, 3, 0, 3) }; }
+        private void Configure(Button button, string text, int width, Action action) { button.Text = text; button.Width = width; button.Height = 34; button.FlatStyle = FlatStyle.Flat; button.BackColor = Color.FromArgb(115, 78, 191); button.ForeColor = Color.White; button.FlatAppearance.BorderSize = 0; button.Cursor = Cursors.Hand; button.Click += delegate { action(); }; }
+        internal void RefreshData()
+        {
+            if (IsDisposed) return; updating = true;
+            try
+            {
+                AdventureBattle battle = controller.Battle; AdventureProgress p = battle.Progress;
+                diskSpace.SetSnapshot(controller.DiskSnapshot); hints.SetToolTip(diskSpace, diskSpace.Summary);
+                stats.Text = "Lv." + p.Level + "   经验 " + p.Experience + " / " + p.NextLevelExperience + "   生命 " + p.Health + " / " + p.MaxHealth + "   RAM " + controller.MemoryText + "\r\n战斗分 " + p.Score + "   累计实际清理 " + AdventureBattle.FormatBytes(p.FreedBytes) + "   排队 " + battle.QueueCount + "\r\n" + (controller.IsDemo ? "纯演示：本页不改变真实进度，不会清理文件" : controller.StateText);
+                reward.Text = battle.LastReward;
+                string key = String.Join(",", p.Inventory.ToArray()) + ":" + p.WeaponId;
+                if (key != inventoryKey)
+                {
+                    inventoryKey = key; weapons.Items.Clear();
+                    foreach (string id in p.Inventory) { AdventureWeapon w = AdventureWeapon.Find(id); weapons.Items.Add(new WeaponEntry { Id = id, Text = (id == p.WeaponId ? "✓ " : "   ") + w.Name + "  —  " + w.Description }); }
+                    for (int i = 0; i < weapons.Items.Count; i++) if (((WeaponEntry)weapons.Items[i]).Id == p.WeaponId) { weapons.SelectedIndex = i; break; }
+                }
+                equip.Enabled = !controller.IsDemo; revive.Enabled = p.Dead && !controller.IsDemo; blackhole.Enabled = controller.CanClearField;
+                automatic.Checked = battle.Automatic; manual.Checked = !battle.Automatic; automatic.Enabled = manual.Enabled = !p.Dead && !controller.IsDemo;
+                themes.SelectedIndex = Array.IndexOf(ThemeCodes, controller.ThemeMode); themes.Enabled = !controller.IsDemo;
+                roam.Checked = controller.Roaming; monitors.SelectedIndex = Math.Max(0, Array.FindIndex(Screen.AllScreens, screen => screen.WorkingArea == controller.WorkingArea));
+                bool queueBusy = battle.QueueCount > 0 || battle.Enemies.Any(enemy => enemy.CleanupStarted && enemy.Cleaning);
+                rescan.Enabled = !controller.IsScanning && !controller.IsDemo && !queueBusy;
+                rescan.Text = queueBusy ? "清理中 · 稍后扫描" : controller.IsScanning ? "正在扫描临时文件" : "重新扫描临时文件";
+                string scanHint = queueBusy ? "先完成或取消当前清理队列，再重新扫描；清理过程中不会替换已授权的文件批次。" : controller.IsScanning ? "正在读取临时文件清单，请等待扫描完成。" : controller.IsDemo ? "安全演示期间不扫描真实临时文件。" : "重新检查 24 小时以上的临时文件并更新怪物；扫描本身不删除文件。";
+                hints.SetToolTip(rescan, scanHint); if (rescan.Parent != null) hints.SetToolTip(rescan.Parent, scanHint);
+                cancel.Enabled = !controller.IsDemo;
+                demo.Text = controller.IsDemo ? "结束演示" : "播放安全演示"; detail.Text = controller.DetailText;
+            }
+            finally { updating = false; }
+        }
+        protected override void OnFormClosing(FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } base.OnFormClosing(e); }
+        protected override void Dispose(bool disposing) { if (disposing) { refresh.Stop(); refresh.Dispose(); hints.Dispose(); } base.Dispose(disposing); }
+        private sealed class WeaponEntry { internal string Id, Text; public override string ToString() { return Text; } }
+    }
+}
+
+
+
+

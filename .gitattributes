@@ -1,0 +1,7 @@
+* text=auto
+*.cs text eol=crlf
+*.ps1 text eol=crlf
+*.md text eol=lf
+
+# Preserve the packaged snapshot byte-for-byte for SHA256SUMS.txt.
+/正式版/** -text

@@ -1,0 +1,15 @@
+NetworkEngine: 24 deterministic checks passed (driver not opened).
+Firewall helpers: PASS (6 checks; no firewall changes)
+Knight pet: 213 deterministic assertions passed; no network settings changed.
+TrafficLedger: 20 deterministic checks passed (no network traffic or system setting changes).
+SpeedTest: 14 assertions passed (pure logic; no external traffic)
+NetworkTools: 22 checks passed
+Cleanup self-test: 54 passed (isolated fixtures only; user Temp untouched).
+Region theme self-test: 30 passed (no external query).
+Disk space: 35 assertions passed (synthetic snapshots only; no disk read or write).
+Resource waves: 33 assertions passed (pure state; no filesystem or network operations).
+Enemy field budget: 36 assertions passed (synthetic data only; no filesystem, cleanup, network, or progress operations).
+Grounded hero rig: 2430 assertions passed; constant world-space stance feet, horizontal contact, forward knees, fixed bone lengths, continuous recovery and stationary support.
+Adventure model: 84 assertions passed (synthetic combat plus isolated save fixture; user Temp and real progress untouched).
+Adventure art: 73 assertions passed; 60 distinct smooth run poses, seamless cycle, 6 skins, 6 buildings, 7 weapons, no GDI handle growth.
+V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership.

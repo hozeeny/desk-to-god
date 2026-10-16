@@ -1,0 +1,24 @@
+# Local build output and editor state
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.pdb
+*.tmp
+Thumbs.db
+.DS_Store
+
+# Generated top-level distribution and validation executables
+/骑士助手-*.zip
+/MonsterDirectionValidation.exe
+
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key

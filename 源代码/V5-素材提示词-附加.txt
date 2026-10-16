@@ -1,0 +1,82 @@
+工具：内置 image_gen。所有文件使用 Assets/style-reference.png 作为风格参考；transparent_background=true。
+生成原稿保留于 C:/Users/Administrator/.codex/generated_images/01a140e1-df34-70a3-95f4-6e4d3ad24894。
+
+rig-US.png
+
+Use case: stylized-concept. Create a production-ready TRANSPARENT 2D skeletal animation CUTOUT PARTS ATLAS for a Windows desktop RPG. Input image is a STYLE REFERENCE ONLY: match its polished hand-painted chibi fantasy game art, bold dark outlines, rich material gradients, bright edge highlights, charming huge head, tiny compact body. Do NOT copy its 4x4 layout. OUTPUT layout is exactly FOUR COLUMNS and THREE ROWS of equal square cells (12 cells), canvas 4:3 landscape. No words, numbers, borders, grid lines, scenery, or shadow behind the parts. Genuine transparent alpha everywhere outside the art. Each part isolated, centered within its cell, with a generous completely transparent gutter at least 12 percent of cell dimension on all sides. Never cross cell boundaries. Every part is viewed three-quarter facing RIGHT under one consistent upper-left light. This is a puppet rig: each limb is a separate segment with rounded joints, oriented vertically DOWNWARDS in neutral relaxed pose so it can be rotated in code. No attached neighbor limbs. Empty hands; no weapons or props.
+
+EXACT CELL ORDER, reading row major left to right:
+Row 1 cell 0 = entire oversized character HEAD only including hat/hair/face, no neck or body.
+Row 1 cell 1 = TORSO only including waist and belt, no head, arms or legs.
+Row 1 cell 2 = near upper arm only shoulder to elbow.
+Row 1 cell 3 = near forearm plus closed empty fist, elbow at top and fist at bottom.
+Row 2 cell 4 = far upper arm only shoulder to elbow.
+Row 2 cell 5 = far forearm plus closed empty fist, elbow at top and fist at bottom.
+Row 2 cell 6 = near thigh only hip to knee.
+Row 2 cell 7 = near lower leg and foot/shoe, knee at top and foot at bottom pointing right.
+Row 3 cell 8 = far thigh only hip to knee.
+Row 3 cell 9 = far lower leg and foot/shoe, knee at top and foot at bottom pointing right.
+Row 3 cell 10 = detached cloth accessory described below, free floating cape tail/scarf tail only, a flowing tapered shape downwards.
+Row 3 cell 11 = ONE complete assembled character as reference in neutral slightly forward-leaning pose facing right, arms low, empty hands. Must visibly use precisely the same anatomy, outfit, colors and head as the separate parts.
+Make each part fill about 65 percent of its own cell height; head fills 72 percent of its own cell. Full reference fills 75 percent of its own cell. Clear professional game art, not vector symbols.
+CHARACTER: a playful chibi western COWBOY with a huge worn brown wide-brimmed hat tilted up so the friendly determined face is readable, warm tan skin, expressive dark eyebrows and two glowing amber eyes, short dark hair, brown leather vest over ivory shirt, brass belt buckle, blue denim trousers, detailed brown leather cowboy boots, brown fingerless gloves. Detached cloth accessory: one rich rust-red neckerchief scarf tail. Silver buttons and fine seams. Render completely safe fantasy adventurer, no guns in this sheet. Head should read as cowboy at tiny size.
+
+---------------------------------
+
+rig-TW.png
+
+Use case: stylized-concept. Create a production-ready TRANSPARENT 2D skeletal animation CUTOUT PARTS ATLAS for a Windows desktop RPG. Input image is a STYLE REFERENCE ONLY: match its polished hand-painted chibi fantasy game art, bold dark outlines, rich material gradients, bright edge highlights, charming huge head, tiny compact body. Do NOT copy its 4x4 layout. OUTPUT layout is exactly FOUR COLUMNS and THREE ROWS of equal square cells (12 cells), canvas 4:3 landscape. No words, numbers, borders, grid lines, scenery, or shadow behind the parts. Genuine transparent alpha everywhere outside the art. Each part isolated, centered within its cell, with a generous completely transparent gutter at least 12 percent of cell dimension on all sides. Never cross cell boundaries. Every part is viewed three-quarter facing RIGHT under one consistent upper-left light. This is a puppet rig: each limb is a separate segment with rounded joints, oriented vertically DOWNWARDS in neutral relaxed pose so it can be rotated in code. No attached neighbor limbs. Empty hands; no weapons or props.
+
+EXACT CELL ORDER, reading row major left to right:
+Row 1 cell 0 = entire oversized character HEAD only including hat/hair/face, no neck or body.
+Row 1 cell 1 = TORSO only including waist and belt, no head, arms or legs.
+Row 1 cell 2 = near upper arm only shoulder to elbow.
+Row 1 cell 3 = near forearm plus closed empty fist, elbow at top and fist at bottom.
+Row 2 cell 4 = far upper arm only shoulder to elbow.
+Row 2 cell 5 = far forearm plus closed empty fist, elbow at top and fist at bottom.
+Row 2 cell 6 = near thigh only hip to knee.
+Row 2 cell 7 = near lower leg and foot/shoe, knee at top and foot at bottom pointing right.
+Row 3 cell 8 = far thigh only hip to knee.
+Row 3 cell 9 = far lower leg and foot/shoe, knee at top and foot at bottom pointing right.
+Row 3 cell 10 = detached cloth accessory described below, free floating cape tail/scarf tail only, a flowing tapered shape downwards.
+Row 3 cell 11 = ONE complete assembled character as reference in neutral slightly forward-leaning pose facing right, arms low, empty hands. Must visibly use precisely the same anatomy, outfit, colors and head as the separate parts.
+Make each part fill about 65 percent of its own cell height; head fills 72 percent of its own cell. Full reference fills 75 percent of its own cell. Clear professional game art, not vector symbols.
+CHARACTER: a cute heroic GREEN FROG adventurer with an enormous rounded green frog HEAD, wide pale cream muzzle and two golden expressive frog eyes, no human hair. Glossy emerald and lime green skin with attractive painted highlights. Small compact frog body wearing dark teal adventurer tunic and bronze belt, orange-red neckerchief, tiny brown shoulder armor, green frog arms and fists, short green thighs and chunky green frog feet with three rounded toes. Detached cloth accessory: one orange-red little scarf tail. Friendly determined face, charming not grotesque. All limbs clearly remain frog anatomy. Rounded hand-painted fantasy game aesthetic matching knight reference polish. No flags, no text.
+
+---------------------------------
+
+rig-HK.png
+
+Use case: stylized-concept. Create a production-ready TRANSPARENT 2D skeletal animation CUTOUT PARTS ATLAS for a Windows desktop RPG. Input image is a STYLE REFERENCE ONLY: match its polished hand-painted chibi fantasy game art, bold dark outlines, rich material gradients, bright edge highlights, charming huge head, tiny compact body. Do NOT copy its 4x4 layout. OUTPUT layout is exactly FOUR COLUMNS and THREE ROWS of equal square cells (12 cells), canvas 4:3 landscape. No words, numbers, borders, grid lines, scenery, or shadow behind the parts. Genuine transparent alpha everywhere outside the art. Each part isolated, centered within its cell, with a generous completely transparent gutter at least 12 percent of cell dimension on all sides. Never cross cell boundaries. Every part is viewed three-quarter facing RIGHT under one consistent upper-left light. This is a puppet rig: each limb is a separate segment with rounded joints, oriented vertically DOWNWARDS in neutral relaxed pose so it can be rotated in code. No attached neighbor limbs. Empty hands; no weapons or props.
+
+EXACT CELL ORDER, reading row major left to right:
+Row 1 cell 0 = entire oversized character HEAD only including hat/hair/face, no neck or body.
+Row 1 cell 1 = TORSO only including waist and belt, no head, arms or legs.
+Row 1 cell 2 = near upper arm only shoulder to elbow.
+Row 1 cell 3 = near forearm plus closed empty fist, elbow at top and fist at bottom.
+Row 2 cell 4 = far upper arm only shoulder to elbow.
+Row 2 cell 5 = far forearm plus closed empty fist, elbow at top and fist at bottom.
+Row 2 cell 6 = near thigh only hip to knee.
+Row 2 cell 7 = near lower leg and foot/shoe, knee at top and foot at bottom pointing right.
+Row 3 cell 8 = far thigh only hip to knee.
+Row 3 cell 9 = far lower leg and foot/shoe, knee at top and foot at bottom pointing right.
+Row 3 cell 10 = detached cloth accessory described below, free floating cape tail/scarf tail only, a flowing tapered shape downwards.
+Row 3 cell 11 = ONE complete assembled character as reference in neutral slightly forward-leaning pose facing right, arms low, empty hands. Must visibly use precisely the same anatomy, outfit, colors and head as the separate parts.
+Make each part fill about 65 percent of its own cell height; head fills 72 percent of its own cell. Full reference fills 75 percent of its own cell. Clear professional game art, not vector symbols.
+CHARACTER: a cute stylized chibi street GANGSTER SIDEKICK, oversized friendly determined head with glossy swept-back black hair, BLACK SUNGLASSES, warm light tan skin, tiny confident smile, black jacket with rich deep red satin lining over dark gray shirt, small gold chain, black tailored pants and glossy black ankle boots, black fingerless gloves. Tiny compact body, chunky toy-like proportions, shiny edge highlights like the knight reference. Detached cloth accessory: a single flowing short black coat-tail with dark RED lining visible. No guns, no cigarette, no insignias or text. Cool fictional game character, not a real person.
+
+---------------------------------
+
+monsters-v5.png
+
+Use case: stylized-concept. Create a new matching enemy sprite atlas for a desktop fantasy RPG. Input image is STYLE REFERENCE ONLY: use exactly its polished hand-painted chibi fantasy game style, thick clean dark outlines, rich glossy material gradients, very compact lovable proportions, bright upper-left light, handcrafted detailed 2.5D sprite polish. Do NOT use its 4x4 layout. OUTPUT is exactly THREE COLUMNS by TWO ROWS, six equally sized square cells, landscape aspect ratio 3:2, true TRANSPARENT alpha background. No labels, letters, grids, borders, background or scenery. Every cell contains exactly one complete small cute monster with its entire body, weapon if specified, tail and wings contained inside its cell with at least 12 percent completely transparent margin on all sides. All six monsters face three-quarter to the LEFT, ready to fight the knight. Distinct silhouettes readable at tiny size. Avoid gore. Character scale consistent, boss can be taller but still 12 percent margin.
+Top row left: cute little SKELETON SOLDIER, oversized ivory skull with glowing amber eye sockets, short skeletal body, little worn iron helmet with tiny red cloth plume, brown belt and small boots, short bone club held close to body.
+Top row middle: translucent aqua-green SLIME monster, plump jelly pear-shaped blob with two big glowing gold eyes, shiny wet highlights and subtle inner blue-green sparkles, tiny puddle-like feet, cute mischievous expression.
+Top row right: small crimson and purple IMP DEMON, oversized round head, one LARGE glowing orange central eye, two little curved charcoal horns, tiny purple bat wings folded partly open, red compact body with claw feet, curled pointed tail.
+Bottom row left: purple BAT monster, rounded chunky body, large triangular ears, big vivid orange eyes, small white fangs, symmetrical broad purple-magenta leathery wings spread partly open, entire wings inside cell.
+Bottom row middle: cute luminescent MUSHROOM monster, huge blue-violet mushroom cap with glowing cyan dots and gills, ivory short stalk face with two amber eyes, two short dark purple legs and tiny arms, no environment.
+Bottom row right: intimidating but cute SKELETON KING BOSS, huge ivory skull, glowing magenta eyes, jagged dark purple plate armor with gold trim, small violet crown-like helmet, short black-purple cape, a massive fantasy purple steel AXE held close at diagonal, complete bulky compact body. All characters have tiny soft oval ground shadow only if needed, alpha remains transparent elsewhere. No text.
+
+---------------------------------
+
+

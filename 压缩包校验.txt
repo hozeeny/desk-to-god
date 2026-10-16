@@ -1,0 +1,2 @@
+ZIP integrity verified: 128 files; all SHA-256 values match the release folder.
+D032699E825AB6036D2DB3998F03C6BBBF90CE88710B96DC8577942FF3EC4828

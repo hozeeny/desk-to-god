@@ -1,0 +1,14 @@
+skeleton left eye center X=78.4444444444444
+skeleton right eye center X=140.555555555556
+slime left eye center X=91.1730769230769
+slime right eye center X=127.826923076923
+imp left eye center X=69.0649819494585
+imp right eye center X=149.935018050542
+bat left eye center X=107.43023255814
+bat right eye center X=111.56976744186
+mushroom left eye center X=99.9411764705882
+mushroom right eye center X=119.058823529412
+boss left eye center X=72.2068965517241
+boss right eye center X=146.793103448276
+V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership.
+Six authored source silhouettes, both world facings and exact 1/900 HP exported. Source PNG files only read.

@@ -1,0 +1,1 @@
+Equipment rule preview: 19 checks passed at 760px and 650px; synthetic demonstration only, no real cleanup/network/progress writes.
