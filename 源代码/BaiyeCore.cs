@@ -206,6 +206,46 @@ namespace NetBunny
         }
     }
 
+    // 机缘奖励的跨存档幂等结算。协议：
+    //   1) 机缘解锁先持久化到百业存档（enc.<id>）；
+    //   2) 修为入账并把 grant.<id> 标记写进修仙存档；
+    //   3) 百业存档补 grant.<id> 完成标记。
+    // 任一窗口崩溃/断电，重启后用两份存档对账：
+    // 修仙侧已有标记 → 只补百业侧标记（不重复发放）；
+    // 两侧都无标记   → 重新发放（不永久丢失）。
+    internal static class BaiyeSettlement
+    {
+        internal static BaiyeEncounterDef FindEncounter(string id)
+        {
+            for (int i = 0; i < BaiyeEncounters.All.Length; i++) if (BaiyeEncounters.All[i].Id == id) return BaiyeEncounters.All[i];
+            return null;
+        }
+        // 修仙存档侧已有发放标记的机缘：补齐百业侧完成标记（含已下线机缘的封存）。
+        internal static bool SyncGranted(BaiyeProgress baiye, ISet<string> cultivationGrants, DateTime utc)
+        {
+            bool changed = false;
+            foreach (KeyValuePair<string, long> pair in baiye.EncounterUnlockedUtc)
+            {
+                if (baiye.RewardGrantedUtc.ContainsKey(pair.Key)) continue;
+                if (cultivationGrants.Contains(pair.Key) || FindEncounter(pair.Key) == null)
+                { baiye.RewardGrantedUtc[pair.Key] = utc.Ticks; changed = true; }
+            }
+            return changed;
+        }
+        // 需要发放的机缘：已解锁、两侧都没有完成标记、定义仍在线且有修为奖励。
+        internal static List<BaiyeEncounterDef> PendingRewards(BaiyeProgress baiye, ISet<string> cultivationGrants)
+        {
+            List<BaiyeEncounterDef> pending = new List<BaiyeEncounterDef>();
+            foreach (KeyValuePair<string, long> pair in baiye.EncounterUnlockedUtc)
+            {
+                if (baiye.RewardGrantedUtc.ContainsKey(pair.Key) || cultivationGrants.Contains(pair.Key)) continue;
+                BaiyeEncounterDef def = FindEncounter(pair.Key);
+                if (def != null && def.QiBonus > 0) pending.Add(def);
+            }
+            return pending;
+        }
+    }
+
     // 百业存档：独立文件 baiye-v1.txt，损坏时从 .bak 恢复，绝不覆盖修仙与战斗存档。
     internal sealed class BaiyeProgress
     {
@@ -219,6 +259,9 @@ namespace NetBunny
         internal readonly Dictionary<string, long> LastActiveUtcTicks = new Dictionary<string, long>(StringComparer.Ordinal);
         internal readonly List<BaiyeGainEntry> Log = new List<BaiyeGainEntry>();
         internal readonly Dictionary<string, long> EncounterUnlockedUtc = new Dictionary<string, long>(StringComparer.Ordinal);
+        // 机缘奖励发放台账：enc.<id> 记录解锁，grant.<id> 记录奖励已确实写入修仙存档。
+        // 两者分离 + 修仙存档侧的 ExternalGrants 标记，构成跨存档幂等结算。
+        internal readonly Dictionary<string, long> RewardGrantedUtc = new Dictionary<string, long>(StringComparer.Ordinal);
         internal readonly List<string> Heritages = new List<string>();
 
         internal double YunOf(string pathId)
@@ -241,6 +284,20 @@ namespace NetBunny
             if (!BaiyeCatalog.IsValidPath(pathId) || amount <= 0) return;
             Log.Add(new BaiyeGainEntry { UtcTicks = utc.Ticks, PathId = pathId, Amount = amount, Source = source });
             while (Log.Count > BaiyeCatalog.GainLogCapacity) Log.RemoveAt(0);
+        }
+        // 启动时对齐：崩溃丢失的片段会让道韵总量超过记录合计，
+        // 补一条「历史结算补记」，保证每份道韵都有合理的获取记录。
+        internal void ReconcileLog(DateTime utc)
+        {
+            Dictionary<string, double> logged = new Dictionary<string, double>(StringComparer.Ordinal);
+            foreach (BaiyeGainEntry entry in Log)
+                logged[entry.PathId] = (logged.ContainsKey(entry.PathId) ? logged[entry.PathId] : 0) + entry.Amount;
+            foreach (KeyValuePair<string, double> pair in Yun)
+            {
+                double recorded = logged.ContainsKey(pair.Key) ? logged[pair.Key] : 0;
+                double diff = pair.Value - recorded;
+                if (diff >= 1) AddLog(pair.Key, Math.Round(diff, 1), "历史结算补记", utc);
+            }
         }
 
         internal static BaiyeProgress Load(string path)
@@ -282,6 +339,12 @@ namespace NetBunny
                     {
                         if (l >= 0) next.EncounterUnlockedUtc[key.Substring(4)] = l;
                     }
+                    else if (key.StartsWith("grant.", StringComparison.Ordinal) && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out l))
+                    {
+                        string grantId = key.Substring(6);
+                        if (l >= 0 && grantId.Length > 0 && grantId.Length <= 40 && grantId.IndexOfAny(new[] { '\r', '\n', '=', '|' }) < 0)
+                            next.RewardGrantedUtc[grantId] = l;
+                    }
                     else if (key == "heritage" && value.Length > 0 && value.Length <= 40 && !next.Heritages.Contains(value)) next.Heritages.Add(value);
                     else if (key == "log")
                     {
@@ -316,6 +379,8 @@ namespace NetBunny
                 data.Append("last.").Append(pair.Key).Append('=').Append(pair.Value.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (KeyValuePair<string, long> pair in EncounterUnlockedUtc)
                 data.Append("enc.").Append(pair.Key).Append('=').Append(pair.Value.ToString(CultureInfo.InvariantCulture)).Append('\n');
+            foreach (KeyValuePair<string, long> pair in RewardGrantedUtc)
+                data.Append("grant.").Append(pair.Key).Append('=').Append(pair.Value.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (string heritage in Heritages) data.Append("heritage=").Append(heritage).Append('\n');
             foreach (BaiyeGainEntry entry in Log)
                 data.Append("log=").Append(entry.UtcTicks.ToString(CultureInfo.InvariantCulture)).Append('|')
@@ -387,9 +452,41 @@ namespace NetBunny
                 if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
                 BaiyeProgress sanitized = Load(file);
                 check(sanitized.ManualMarkId == "" && sanitized.Yun.Count == 0, "bogus marks and invalid gains are dropped on load");
+                File.WriteAllText(file, "version=1\nmode=7\nexplained=1\n", new UTF8Encoding(false));
+                if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
+                check(Load(file).Mode == 0, "an out-of-range recognition mode falls back to a fresh archive");
+                File.WriteAllText(file, "version=1\nmode=2\n", new UTF8Encoding(false));
+                if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
+                BaiyeProgress unexplainedLoad = Load(file);
+                check(unexplainedLoad.Mode == 2 && !unexplainedLoad.FirstRunExplained,
+                    "a crafted archive may claim a mode but the missing acknowledgement survives as false");
                 BaiyeProgress spam = new BaiyeProgress();
                 for (int i = 0; i < 60; i++) spam.AddLog("wen", 1, "自动识别", DateTime.UtcNow);
                 check(spam.Log.Count == BaiyeCatalog.GainLogCapacity, "gain log is bounded");
+                // 跨存档幂等结算：异常退出/断电不重复发放，也不永久丢失。
+                string cultFile = Path.Combine(folder, "cultivation-v2.txt");
+                BaiyeProgress baiyeA = new BaiyeProgress { Mode = 1, FirstRunExplained = true };
+                baiyeA.AddYun("zhen", 130, DateTime.UtcNow); baiyeA.AddYun("tianji", 130, DateTime.UtcNow);
+                check(BaiyeEncounters.Evaluate(baiyeA, DateTime.UtcNow).Count == 1, "setup: resonance unlocked");
+                // 窗口 a：解锁已落百业存档，进程在修为入账前崩溃 → 重启后补发且仅一次。
+                baiyeA.Save(file);
+                CultivationProgress cultA = new CultivationProgress(); cultA.EnsureIdentity(new Random(2)); cultA.Save(cultFile);
+                BaiyeProgress reloadB = Load(file); CultivationProgress reloadC = CultivationProgress.Load(cultFile);
+                check(!BaiyeSettlement.SyncGranted(reloadB, reloadC.ExternalGrants, DateTime.UtcNow), "fresh crash window has nothing to sync");
+                List<BaiyeEncounterDef> pending = BaiyeSettlement.PendingRewards(reloadB, reloadC.ExternalGrants);
+                check(pending.Count == 1 && pending[0].Id == "tianji-yansuan", "unpaid unlocked encounter is pending after restart");
+                reloadC.AddQi(pending[0].QiBonus); reloadC.ExternalGrants.Add(pending[0].Id); reloadC.Save(cultFile);
+                reloadB.RewardGrantedUtc[pending[0].Id] = DateTime.UtcNow.Ticks; reloadB.Save(file);
+                BaiyeProgress againB = Load(file); CultivationProgress againC = CultivationProgress.Load(cultFile);
+                check(BaiyeSettlement.PendingRewards(againB, againC.ExternalGrants).Count == 0, "a paid encounter never pays twice across restarts");
+                check(againC.LifetimeQi == 120 && againC.ExternalGrants.Contains("tianji-yansuan"), "exactly one payout is durable in the cultivation archive");
+                // 窗口 b：修仙侧标记已落地、百业侧完成标记丢失 → 只补标记，不重发。
+                File.WriteAllText(file, "version=1\nmode=1\nexplained=1\nenc.tianji-yansuan=100\n", new UTF8Encoding(false));
+                if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
+                BaiyeProgress desyncB = Load(file); CultivationProgress desyncC = CultivationProgress.Load(cultFile);
+                check(BaiyeSettlement.PendingRewards(desyncB, desyncC.ExternalGrants).Count == 0, "cultivation-side marker blocks any double payout");
+                check(BaiyeSettlement.SyncGranted(desyncB, desyncC.ExternalGrants, DateTime.UtcNow) && desyncB.RewardGrantedUtc.ContainsKey("tianji-yansuan"),
+                    "the missing baiye-side marker is rebuilt from the cultivation side");
             }
             finally
             {
@@ -407,9 +504,17 @@ namespace NetBunny
         internal Func<string> ForegroundProcessName = BaiyeSystemProbe.GetForegroundProcessName;
         internal Func<double> IdleSeconds = BaiyeSystemProbe.GetIdleSeconds;
         internal Func<DateTime> UtcNow = delegate { return DateTime.UtcNow; };
+        // 前台探测按固定节奏采样（默认 2 秒），绝不跟随绘制帧率；
+        // 两次探测之间沿用缓存状态结算，活动时长不受影响。
+        internal double ProbeIntervalSeconds = 2.0;
+        internal int ProbeCount; // 诊断/测试用：探测实际执行次数
         private double carry;
+        private double probeCountdown;
+        private bool probeIdle;
+        private string probePathId, probeLabel, probeSource;
         private string segmentPath, segmentSource;
         private double segmentYun;
+        private DateTime? manualSince;
         private string status = "百业识别未开启";
 
         internal BaiyeTracker(BaiyeProgress progress)
@@ -425,12 +530,33 @@ namespace NetBunny
         internal void Reset()
         {
             FlushSegment(UtcNow());
+            probeCountdown = 0; probePathId = null; probeLabel = null; probeSource = null; probeIdle = false; manualSince = null;
             status = progress.Mode == 0 ? "百业识别已关闭" : "等待识别前台活动";
         }
+        // 正常退出前封口：把尚未落记录的活动片段写进获取记录，
+        // 保证重启后每份道韵都有对应记录。
+        internal void Seal() { FlushSegment(UtcNow()); }
         private void FlushSegment(DateTime utc)
         {
             if (segmentPath != null && segmentYun > 0) progress.AddLog(segmentPath, Math.Round(segmentYun, 1), segmentSource, utc);
             segmentPath = null; segmentSource = null; segmentYun = 0;
+        }
+        // 唯一接触系统的位置。任何一步异常都按「不可结算」处理。
+        private void Probe()
+        {
+            ProbeCount++;
+            double idle = IdleSeconds();
+            if (Double.IsNaN(idle) || idle >= BaiyeCatalog.IdleLimitSeconds)
+            {
+                probeIdle = true; probePathId = null; probeLabel = null; probeSource = null;
+                return;
+            }
+            probeIdle = false;
+            BaiyeManualMark mark = progress.Mode == 2 ? BaiyeCatalog.FindManualMark(progress.ManualMarkId) : null;
+            if (mark != null) { probePathId = mark.PathId; probeLabel = mark.Label; probeSource = "手动标记"; return; }
+            BaiyeAppRule rule = BaiyeCatalog.Classify(ForegroundProcessName());
+            if (rule == null) { probePathId = null; probeLabel = null; probeSource = null; return; }
+            probePathId = rule.PathId; probeLabel = rule.ActivityLabel; probeSource = "自动识别";
         }
 
         // 每个控制器节拍调用一次，传入真实流逝秒数。
@@ -438,54 +564,57 @@ namespace NetBunny
         internal string Tick(double elapsedSeconds, out bool leveledUp)
         {
             leveledUp = false;
+            // 底层隐私约束：未完成首次功能说明确认时，无论存档里是什么模式，
+            // 都绝不读取前台应用信息、不发放道韵。
+            if (!progress.FirstRunExplained) { status = "待确认百业功能说明"; return null; }
             if (progress.Mode == 0) { FlushSegment(UtcNow()); status = "百业识别已关闭"; return null; }
             if (Double.IsNaN(elapsedSeconds) || Double.IsInfinity(elapsedSeconds) || elapsedSeconds <= 0) return null;
             double elapsed = Math.Min(BaiyeCatalog.MaxCreditSecondsPerTick, elapsedSeconds);
             DateTime utc = UtcNow();
+            // 按节奏探测前台状态；间隔期内沿用缓存，结算时长不受影响。
+            probeCountdown -= elapsedSeconds;
+            if (probeCountdown <= 0) { probeCountdown = BaiyeCatalogProbeInterval(); Probe(); }
             // 锁屏、长时间无人操作都不产生主动百业奖励。
-            double idle = IdleSeconds();
-            if (Double.IsNaN(idle) || idle >= BaiyeCatalog.IdleLimitSeconds)
+            if (probeIdle)
             {
-                FlushSegment(utc); status = "无人操作 · 道韵结算暂停";
+                FlushSegment(utc); manualSince = null; status = "无人操作 · 道韵结算暂停";
                 return null;
             }
-            // 手动标记（模式 2）优先；否则按前台进程名自动分类。
-            // 一次节拍只结算一种活动：多个进程并存不会重复累计。
-            string pathId = null, label = null, source = null;
-            BaiyeManualMark mark = progress.Mode == 2 ? BaiyeCatalog.FindManualMark(progress.ManualMarkId) : null;
-            if (mark != null) { pathId = mark.PathId; label = mark.Label; source = "手动标记"; }
-            else
+            if (probePathId == null)
             {
-                BaiyeAppRule rule = BaiyeCatalog.Classify(ForegroundProcessName());
-                if (rule != null) { pathId = rule.PathId; label = rule.ActivityLabel; source = "自动识别"; }
-            }
-            if (pathId == null)
-            {
-                FlushSegment(utc);
+                FlushSegment(utc); manualSince = null;
                 status = progress.Mode == 2 ? "未识别的前台应用 · 可在下方手动标记具体活动" : "未识别的前台应用";
                 return null;
             }
-            if (segmentPath != pathId || segmentSource != source) FlushSegment(utc);
-            segmentPath = pathId; segmentSource = source;
+            if (segmentPath != probePathId || segmentSource != probeSource) FlushSegment(utc);
+            segmentPath = probePathId; segmentSource = probeSource;
+            if (probeSource == "手动标记") { if (manualSince == null) manualSince = utc; } else manualSince = null;
             double credit = elapsed * BaiyeCatalog.DaoYunPerActiveSecond + carry;
             double whole = Math.Floor(credit);
             carry = credit - whole;
             string notice = null;
             if (whole > 0)
             {
-                leveledUp = progress.AddYun(pathId, whole, utc);
+                leveledUp = progress.AddYun(probePathId, whole, utc);
                 segmentYun += whole;
                 // 超长连续活动也定期落一条记录，保持获取记录可读。
                 if (segmentYun >= 60) FlushSegment(utc);
                 if (leveledUp)
                 {
-                    BaiyePathDef path = BaiyeCatalog.FindPath(pathId);
-                    notice = "道韵精进 · " + path.Name + "步入「" + BaiyeCatalog.LevelName(progress.LevelOf(pathId)) + "」";
+                    BaiyePathDef path = BaiyeCatalog.FindPath(probePathId);
+                    notice = "道韵精进 · " + path.Name + "步入「" + BaiyeCatalog.LevelName(progress.LevelOf(probePathId)) + "」";
                 }
             }
-            status = BaiyeCatalog.FindPath(pathId).Name + " · " + label + "（" + source + "）";
+            status = BaiyeCatalog.FindPath(probePathId).Name + " · " + probeLabel + "（" + probeSource + "）";
+            // 长期手动标记给出持续时长提示，避免误分类被遗忘。
+            if (probeSource == "手动标记" && manualSince.HasValue)
+            {
+                double minutes = (utc - manualSince.Value).TotalMinutes;
+                if (minutes >= 30) status += " · 手动标记已生效 " + ((int)minutes).ToString(CultureInfo.InvariantCulture) + " 分钟，不需要时可在道碑取消";
+            }
             return notice;
         }
+        private double BaiyeCatalogProbeInterval() { return ProbeIntervalSeconds > 0.05 ? ProbeIntervalSeconds : 2.0; }
 
         internal static string SelfTest()
         {
@@ -507,11 +636,19 @@ namespace NetBunny
             };
             bool leveled;
             // 关闭模式：完全不采样。
-            BaiyeProgress offProgress = new BaiyeProgress { Mode = 0 };
+            BaiyeProgress offProgress = new BaiyeProgress { Mode = 0, FirstRunExplained = true };
             BaiyeTracker off = new BaiyeTracker(offProgress);
             off.ForegroundProcessName = delegate { return "devenv"; };
             off.IdleSeconds = delegate { return 0; };
             check(off.Tick(1, out leveled) == null && offProgress.Yun.Count == 0, "mode off never samples");
+            // 底层隐私约束：未确认功能说明时，无论模式如何都绝不探测、不结算。
+            BaiyeProgress unexplained = new BaiyeProgress { Mode = 2, ManualMarkId = "manual-zhen" };
+            BaiyeTracker gated = new BaiyeTracker(unexplained);
+            bool probed = false;
+            gated.ForegroundProcessName = delegate { probed = true; return "devenv"; };
+            gated.IdleSeconds = delegate { probed = true; return 0; };
+            for (int i = 0; i < 30; i++) gated.Tick(1, out leveled);
+            check(!probed && unexplained.Yun.Count == 0 && gated.StatusText.Contains("说明"), "no probing and no gains before the first-run acknowledgement");
             // 正常积累：660 秒编程（220 × 3 秒节拍）≈ 66 道韵，升入初窥门径。
             BaiyeTracker coding = make();
             string notice = null;
@@ -525,15 +662,21 @@ namespace NetBunny
             idleTracker.IdleSeconds = delegate { return 600; };
             for (int i = 0; i < 300; i++) idleTracker.Tick(1, out leveled);
             check(ProgressOf(idleTracker).Yun.Count == 0 && idleTracker.StatusText.Contains("暂停"), "idle and lock screen never accrue");
-            // 同一时间窗口只结算一种活动：编程与浏览器交替出现，总收益等于实际时长。
+            // 同一时间窗口只结算一种活动：编程与浏览器按节拍交替，总收益等于实际时长。
             BaiyeTracker mixed = make();
             bool dev = true;
             mixed.ForegroundProcessName = delegate { return dev ? "devenv" : "chrome"; };
-            for (int i = 0; i < 660; i++) { dev = i % 2 == 0; mixed.Tick(1, out leveled); }
+            for (int i = 0; i < 220; i++) { dev = i % 2 == 0; mixed.Tick(3, out leveled); }
             BaiyeProgress mixedProgress = ProgressOf(mixed);
             check(mixedProgress.YunOf("zhen") + mixedProgress.YunOf("youli") >= 64.5 && mixedProgress.YunOf("zhen") + mixedProgress.YunOf("youli") <= 66.001,
                 "alternating processes split one time window without double counting");
+            check(mixedProgress.YunOf("zhen") >= 20 && mixedProgress.YunOf("youli") >= 20, "both alternating activities are credited");
             check(mixedProgress.Log.Count >= 2, "activity segments produce gain log entries");
+            // 探测降频：660 个 1 秒节拍只探测约 330 次，结算总量不受影响。
+            BaiyeTracker cadence = make();
+            for (int i = 0; i < 660; i++) cadence.Tick(1, out leveled);
+            check(cadence.ProbeCount >= 320 && cadence.ProbeCount <= 345, "foreground probing follows the sampling cadence, not the frame rate");
+            check(ProgressOf(cadence).YunOf("zhen") >= 64.5 && ProgressOf(cadence).YunOf("zhen") <= 66.001, "cadence caching keeps activity time exact");
             // 手动标记：模式 1 忽略标记，模式 2 手动优先于自动识别。
             BaiyeTracker manualIgnored = make();
             ProgressOf(manualIgnored).ManualMarkId = "manual-zhan";
@@ -557,6 +700,35 @@ namespace NetBunny
             unknown.ForegroundProcessName = delegate { return "mystery-app"; };
             unknown.Tick(1, out leveled);
             check(ProgressOf(unknown).Yun.Count == 0 && unknown.StatusText.Contains("未识别"), "unrecognized apps accrue nothing");
+            // 片段封口：未结束的活动片段在 Seal 后落记录，重启后道韵与记录对应。
+            BaiyeTracker sealing = make();
+            for (int i = 0; i < 40; i++) sealing.Tick(1, out leveled);
+            check(ProgressOf(sealing).Log.Count == 0, "an in-flight segment is not logged mid-way");
+            sealing.Seal();
+            check(ProgressOf(sealing).Log.Count == 1 && ProgressOf(sealing).Log[0].Amount >= 2.9, "Seal flushes the open segment into the gain log");
+            // 崩溃补记：道韵多于记录合计时启动对账补一条历史记录。
+            BaiyeProgress crashed = new BaiyeProgress();
+            crashed.AddYun("wen", 25, clock);
+            crashed.AddLog("wen", 6, "自动识别", clock);
+            crashed.ReconcileLog(clock);
+            check(crashed.Log.Count == 2 && crashed.Log[1].Source == "历史结算补记" && Math.Abs(crashed.Log[1].Amount - 19) < 0.2,
+                "crash-lost segments get a catch-up record on startup");
+            BaiyeProgress aligned = new BaiyeProgress();
+            aligned.AddYun("wen", 6, clock); aligned.AddLog("wen", 6, "自动识别", clock);
+            aligned.ReconcileLog(clock);
+            check(aligned.Log.Count == 1, "consistent archives gain no spurious records");
+            // 长期手动标记给出持续时长提示。
+            BaiyeProgress markedProgress = new BaiyeProgress { Mode = 2, FirstRunExplained = true, ManualMarkId = "manual-zhan" };
+            BaiyeTracker marked = new BaiyeTracker(markedProgress);
+            marked.ForegroundProcessName = delegate { return "chrome"; };
+            marked.IdleSeconds = delegate { return 0; };
+            DateTime manualClock = clock;
+            marked.UtcNow = delegate { return manualClock; };
+            marked.Tick(1, out leveled);
+            check(!marked.StatusText.Contains("取消"), "fresh manual marks show no nag");
+            manualClock = manualClock.AddMinutes(45);
+            marked.Tick(1, out leveled);
+            check(marked.StatusText.Contains("45") && marked.StatusText.Contains("取消"), "long-lived manual marks surface their duration and a cancel hint");
             return "Baiye tracker: " + n + " checks passed (synthetic foreground/idle sources; no system state read).";
         }
         private static BaiyeProgress ProgressOf(BaiyeTracker tracker)

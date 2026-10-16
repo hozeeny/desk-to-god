@@ -13,6 +13,7 @@ namespace NetBunny
         private readonly AdventureController controller;
         private readonly RadioButton modeOff = new RadioButton(), modeCategory = new RadioButton(), modeManual = new RadioButton();
         private readonly ComboBox manualMarks = new ComboBox();
+        private readonly Button cancelMark = new Button();
         private readonly Label activity = new Label(), notice = new Label();
         private readonly BaiyePathGrid grid = new BaiyePathGrid();
         private readonly ListBox gains = new ListBox(), encounters = new ListBox();
@@ -64,7 +65,9 @@ namespace NetBunny
                 RefreshData();
             };
             hints.SetToolTip(manualMarks, "识别不可靠或想指明具体活动时使用。手动标记同样只在你操作电脑时结算，锁屏与长时间无操作不产生道韵。");
-            markRow.Controls.Add(markLabel); markRow.Controls.Add(manualMarks); content.Controls.Add(markRow);
+            Configure(cancelMark, "取消标记", 100, delegate { controller.SetBaiyeManualMark(null); RefreshData(); });
+            hints.SetToolTip(cancelMark, "立即取消手动标记，回到自动识别。长时间挂着手动标记会导致道途误分类。");
+            markRow.Controls.Add(markLabel); markRow.Controls.Add(manualMarks); markRow.Controls.Add(cancelMark); content.Controls.Add(markRow);
 
             content.Controls.Add(Line("道途熟练度", 24));
             grid.Width = 640; grid.Height = 356; grid.Margin = new Padding(0, 2, 0, 7); content.Controls.Add(grid);
@@ -124,7 +127,9 @@ namespace NetBunny
                     for (int i = 1; i < manualMarks.Items.Count; i++)
                         if (((MarkEntry)manualMarks.Items[i]).Id == progress.ManualMarkId) { markIndex = i; break; }
                 if (manualMarks.SelectedIndex != markIndex) manualMarks.SelectedIndex = markIndex;
-                activity.Text = "当前活动：" + controller.BaiyeActivityText;
+                cancelMark.Enabled = progress.Mode == 2 && progress.ManualMarkId.Length > 0;
+                activity.Text = "当前活动：" + controller.BaiyeActivityText +
+                    (progress.Mode == 2 && progress.ManualMarkId.Length > 0 ? "　【手动标记生效中】" : "");
                 grid.SetProgress(progress, controller.BaiyeCurrentPathId);
                 notice.Text = controller.BaiyeNotice ?? "";
 

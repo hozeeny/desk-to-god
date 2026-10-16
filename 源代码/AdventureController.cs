@@ -112,6 +112,12 @@ namespace NetBunny
             baiye = demonstrationOnly ? new BaiyeProgress() : BaiyeProgress.Load(BaiyeWritePath);
             baiyeTracker = new BaiyeTracker(baiye);
             baiyeTracker.Reset();
+            if (!demonstrationOnly)
+            {
+                // 启动对账：补齐上次异常退出丢失的获取记录；机缘奖励按两份存档标记对账，不重发不丢失。
+                baiye.ReconcileLog(DateTime.UtcNow);
+                SettleBaiyeRewards();
+            }
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
             if (demonstrationOnly) { consent.CleanupEnabled = consent.MemoryEnabled = true; }
@@ -347,21 +353,50 @@ namespace NetBunny
             if (elapsed <= 0) return;
             AdvanceBaiyeCore(elapsed);
         }
-        // 结算 + 机缘评估 + 按需即时存档。机缘奖励的修为经由修仙主进度的
-        // 公开入口发放，百业模块本身不反向依赖 CultivationProgress。
+        // 结算 + 机缘评估 + 按需即时存档。机缘修为经幂等结算接口发放，
+        // 百业模块本身不反向依赖 CultivationProgress。
         private void AdvanceBaiyeCore(double elapsed)
         {
             bool leveledUp;
             string notice = baiyeTracker.Tick(elapsed, out leveledUp);
             if (notice != null) baiyeNotice = notice;
             List<BaiyeEncounterDef> unlocked = BaiyeEncounters.Evaluate(baiye, baiyeTracker.UtcNow());
-            foreach (BaiyeEncounterDef def in unlocked)
+            if (unlocked.Count > 0)
             {
-                if (!demonstrationOnly && def.QiBonus > 0) cultivation.AddQi(def.QiBonus);
-                baiyeNotice = "机缘 · " + def.Name + "：" + def.RewardText + (def.QiBonus > 0 ? "（修为 +" + def.QiBonus + "）" : "");
+                BaiyeEncounterDef def = unlocked[0];
+                baiyeNotice = "机缘 · " + def.Name + "：" + def.RewardText;
                 battle.LastReward = baiyeNotice;
+                Save(); // 先持久化解锁记录，再进入奖励结算
+                SettleBaiyeRewards();
             }
-            if (leveledUp || unlocked.Count > 0) Save();
+            if (leveledUp) Save();
+            if (baiyeRewardRetry) SettleBaiyeRewards(); // 上次写盘失败的机缘奖励持续补试
+        }
+        // 机缘奖励幂等结算：协议见 BaiyeSettlement 注释。
+        // 进程内入账集合防止单会话重复发放；跨会话由两份存档的标记对账保证。
+        private readonly HashSet<string> baiyeRewardApplied = new HashSet<string>(StringComparer.Ordinal);
+        private bool baiyeRewardRetry;
+        private void SettleBaiyeRewards()
+        {
+            if (demonstrationOnly || baiye == null || cultivation == null) return;
+            DateTime utc = DateTime.UtcNow;
+            bool changed = BaiyeSettlement.SyncGranted(baiye, cultivation.ExternalGrants, utc);
+            foreach (BaiyeEncounterDef def in BaiyeSettlement.PendingRewards(baiye, cultivation.ExternalGrants))
+            {
+                if (baiyeRewardApplied.Contains(def.Id)) continue; // 本进程已入账，等待存档对齐
+                cultivation.AddQi(def.QiBonus);
+                cultivation.ExternalGrants.Add(def.Id);
+                baiyeRewardApplied.Add(def.Id);
+                try
+                {
+                    cultivation.Save(cultivationPath); // 第二步：修仙存档带标记落地
+                    baiye.RewardGrantedUtc[def.Id] = utc.Ticks; // 第三步：百业侧完成标记（随 Save 落地）
+                    baiyeNotice = battle.LastReward = "机缘 · " + def.Name + "：" + def.RewardText + "（修为 +" + def.QiBonus + "）";
+                    baiyeRewardRetry = false; changed = true;
+                }
+                catch { baiyeRewardRetry = true; } // 修仙存档写失败：不标完成，下轮对账重试
+            }
+            if (changed) Save();
         }
         // Smoke hook: feed synthetic elapsed time through the real settlement path.
         internal void TickBaiyeForTest(double elapsedSeconds) { AdvanceBaiyeCore(elapsedSeconds); }
@@ -1077,7 +1112,10 @@ namespace NetBunny
             // Clean only works under the local temporary directory and checks the
             // token between files. Finish the active result before saving progress.
             if (cleanupTask != null) { try { cleanupTask.Wait(); DrainCleanup(); } catch { } }
-            demoStarted = -1; demoPending = false; Save(); disposed = true;
+            demoStarted = -1; demoPending = false;
+            // 退出前封口未落记录的活动片段，保证重启后道韵都有对应获取记录。
+            if (baiyeTracker != null) baiyeTracker.Seal();
+            Save(); disposed = true;
             timer.Dispose(); if (connectivity != null) connectivity.Dispose(); region.Changed -= RegionChanged; region.Dispose();
             if (equipment != null) equipment.Dispose(); if (stele != null) stele.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
         }        internal AdventureBattle Battle { get { return battle; } }
