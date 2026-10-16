@@ -6,6 +6,8 @@ V6.0 第一阶段加入：道号/灵根/境界/修为/功法的持续修仙体�
 
 V6.0 第二阶段加入「百业证道」：现实中的工作、学习、创作与娱乐化为八条后天道途（画境/文/游历/阵/天机/器/光影/战）。按前台应用类别识别活动（只读进程名类别，永不读取文档正文、代码、聊天、网页历史与屏幕画面），也可纯手动标记；有效活动时段积累各道途独立道韵与等级，同一时间窗口只结算一种活动，锁屏与长时间无人操作不产生道韵。新增「百业道碑」界面展示道途熟练度、当前活动、获取记录与机缘传承；第一条多道共鸣「阵道 + 天机道 → 天机演算」已实装并预留连续机缘/特殊 NPC/软件秘境的事件结构。识别默认关闭，首次启用有完整说明；百业数据独立存档（baiye-v1.txt），关闭识别立即停止采样，不影响基础挂机修炼。
 
+V6.0 第三阶段加入「软件灵域与机缘」：百业道途化作四座可探索灵域——千面蜃楼（浏览器）、天工机械城（建模）、文曲书院（办公文档）、万象天机楼（AI 工具），识别规则直接复用百业类别定义。进入条件双途径（道途等级或修仙境界），软件未运行也能凭境界进入。首座可玩秘境「千面蜃楼」：渡口/镜廊/雾径/回声壁/中庭节点探索，镜像宝箱、镜妖袭击、幻术迷雾等随机事件，机缘系统（灵根/境界/道途/探索进度门控 + 随机触发 + 玩家选择 + 连续机缘分支），秘境战斗只生成虚拟妖物、绝不触碰真实文件与进程；探索即时存档，支持暂离与中断重访。奖励统一幂等结算：材料/功法残卷/传承入灵域收藏，修为按跨存档协议入账不重发不丢失。灵域数据独立存档（lingyu-v1.txt），本阶段其余三座灵域为数据与接口预留。
+
 详细行为见 [使用说明](源代码/使用说明.txt)，设计依据见 [V6.0 开发基线](设计/V6.0-持续修仙桌宠-开发基线.md)。
 
 ## 目录
@@ -75,6 +77,6 @@ git switch -c feature/你的功能名
 
 每个功能或修复使用独立分支，通过 Pull Request 合并到 `main`。提交前完成构建和相关验证，PR 中写清修改内容、验证结果，界面变更附截图。开始新任务前先更新本地 `main`。
 
-个人冒险存档在 `%LOCALAPPDATA%/KnightAssistant/adventure-v1.txt`（运行时战斗档，v1 格式不变；首次启动 v6.0 会冻结备份为 `adventure-v1.txt.v54-backup` 供回退 v5.4 使用），修仙存档在 `%LOCALAPPDATA%/KnightAssistant/cultivation-v2.txt`（含 `.bak` 备份），百业道韵存档在 `%LOCALAPPDATA%/KnightAssistant/baiye-v1.txt`（含 `.bak` 备份），真实维护授权（文件清理 / 内存维护 / 无人值守自动维护三项独立）在 `%LOCALAPPDATA%/KnightAssistant/maintenance-consent.txt`，网络记录在 `%LOCALAPPDATA%/NetBunny/`，无需提交到仓库。
+个人冒险存档在 `%LOCALAPPDATA%/KnightAssistant/adventure-v1.txt`（运行时战斗档，v1 格式不变；首次启动 v6.0 会冻结备份为 `adventure-v1.txt.v54-backup` 供回退 v5.4 使用），修仙存档在 `%LOCALAPPDATA%/KnightAssistant/cultivation-v2.txt`（含 `.bak` 备份），百业道韵存档在 `%LOCALAPPDATA%/KnightAssistant/baiye-v1.txt`（含 `.bak` 备份），灵域历练存档在 `%LOCALAPPDATA%/KnightAssistant/lingyu-v1.txt`（含 `.bak` 备份），真实维护授权（文件清理 / 内存维护 / 无人值守自动维护三项独立）在 `%LOCALAPPDATA%/KnightAssistant/maintenance-consent.txt`，网络记录在 `%LOCALAPPDATA%/NetBunny/`，无需提交到仓库。
 
 WinDivert 的原始许可和源码包随 `正式版/第三方许可/` 保留。项目自身目前尚未指定开源许可证。
