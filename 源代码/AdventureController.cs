@@ -2222,6 +2222,28 @@ namespace NetBunny
                     int xpBeforeExit = c.battle.Progress.Experience;
                     c.Dispose(); check(c.battle.Progress.FreedBytes == freed + 1048576 && c.battle.Progress.Experience == xpBeforeExit, "exit drains real partial success without paying combat XP a second time");
                 }
+                using (AdventureController hanging = new AdventureController(owner, assetDirectory, true))
+                {
+                    // Exit with an in-flight background task: Dispose cancels the
+                    // worker and still returns promptly instead of blocking the
+                    // whole shutdown behind cleanupTask.Wait().
+                    hanging.simulatedCleaner = delegate(CleanupBatch ignoredBatch, CancellationToken token)
+                    {
+                        TaskCompletionSource<CleanupResult> tcs = new TaskCompletionSource<CleanupResult>();
+                        token.Register(delegate { tcs.TrySetResult(new CleanupResult { Cancelled = true, Message = "清理已取消" }); });
+                        return tcs.Task;
+                    };
+                    AdventureEnemy inFlight = new AdventureEnemy { Id = "dispose-in-flight", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\dispose.tmp", Length = 999 } }, 1), Health = 1, MaxHealth = 1 };
+                    hanging.enabled = true;
+                    hanging.battle.Enemies.Add(inFlight); hanging.Spawn(inFlight); hanging.battle.Authorize(inFlight); hanging.battle.Cooldown = 0; hanging.battle.Strike(inFlight); hanging.BeginCleanup(inFlight);
+                    CancellationTokenSource inFlightCancellation = hanging.workCancellation;
+                    check(hanging.cleanupTask != null && inFlightCancellation != null, "in-flight cleanup started for the dispose test");
+                    System.Diagnostics.Stopwatch exitWatch = System.Diagnostics.Stopwatch.StartNew();
+                    hanging.Dispose();
+                    exitWatch.Stop();
+                    check(inFlightCancellation.IsCancellationRequested && exitWatch.Elapsed.TotalSeconds < 10,
+                        "dispose with an in-flight task cancels the worker and returns promptly instead of blocking shutdown");
+                }
             }
             return "Adventure native smoke: " + count + " checks passed; no real cleanup, network query, or progress save.\r\n" + ResourceSmoke(assetDirectory);
         }
