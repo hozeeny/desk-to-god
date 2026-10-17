@@ -24,9 +24,15 @@ namespace NetBunny
         {
             // This process only: legacy csc builds otherwise negotiate obsolete TLS.
             ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
+            if (args.Length > 0 && args[0] == "--growth-sim")
+            {
+                try { Console.WriteLine(CultivationPacing.Report()); Environment.ExitCode = 0; }
+                catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
+                return;
+            }
             if (args.Length > 0 && args[0] == "--selftest")
             {
-                try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(LiveTempPopulation.SelfTest()); Console.WriteLine(EnemyBalance.SelfTest()); Console.WriteLine(MemoryReclaimer.SelfTest()); Console.WriteLine(CombatTactics.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(CultivationProgress.SelfTest()); Console.WriteLine(CultivationEncounterScheduler.SelfTest()); Console.WriteLine(BaiyeProgress.SelfTest()); Console.WriteLine(BaiyeTracker.SelfTest()); Console.WriteLine(LingyuSelfTest.Run()); Console.WriteLine(MaintenanceConsentStore.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
+                try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(LiveTempPopulation.SelfTest()); Console.WriteLine(EnemyBalance.SelfTest()); Console.WriteLine(MemoryReclaimer.SelfTest()); Console.WriteLine(CombatTactics.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(CultivationProgress.SelfTest()); Console.WriteLine(CultivationCombatPower.SelfTest()); Console.WriteLine(CultivationEncounterScheduler.SelfTest()); Console.WriteLine(CultivationPacing.SelfTest()); Console.WriteLine(BaiyeProgress.SelfTest()); Console.WriteLine(BaiyeTracker.SelfTest()); Console.WriteLine(LingyuSelfTest.Run()); Console.WriteLine(MaintenanceConsentStore.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
                 catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
                 return;
             }
@@ -54,10 +60,28 @@ namespace NetBunny
                 catch(Exception e) { Console.Error.WriteLine(e); Environment.ExitCode=1; }
                 return;
             }
+            if(args.Length>0 && args[0]=="--breakthrough-preview")
+            {
+                try { SetProcessDPIAware(); Application.EnableVisualStyles(); AdventureController.ExportBreakthroughPreview(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"),args.Length>1?args[1]:"breakthrough-preview.png"); }
+                catch(Exception e) { Console.Error.WriteLine(e); Environment.ExitCode=1; }
+                return;
+            }
             if(args.Length>0 && args[0]=="--adventure-smoke")
             {
                 try { SetProcessDPIAware(); Application.EnableVisualStyles(); Console.WriteLine(AdventureController.NativeSmoke(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); }
                 catch(Exception e) { Console.Error.WriteLine(e); Environment.ExitCode=1; }
+                return;
+            }
+            if (args.Length > 0 && args[0] == "--mortal-gui-accept")
+            {
+                // 凡人主动战斗真实 GUI 验收：生产控制器+真实窗口消息驱动；
+                // 请以隔离账户运行（存档随账户隔离），日志写到指定路径。
+                try
+                {
+                    SetProcessDPIAware(); Application.EnableVisualStyles();
+                    Environment.ExitCode = AdventureController.MortalGuiAccept(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets"), args.Length > 1 ? args[1] : "mortal-gui-accept.log");
+                }
+                catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
                 return;
             }
             if(args.Length>0 && args[0]=="--skins-preview")

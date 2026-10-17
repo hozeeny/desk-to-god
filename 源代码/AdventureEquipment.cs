@@ -14,7 +14,7 @@ namespace NetBunny
         private readonly ResourceGrowthCard resourceGrowth = new ResourceGrowthCard();
         private readonly CultivationCard cultivation = new CultivationCard();
         private readonly ComboBox techniques = new ComboBox();
-        private readonly Button breakthrough = new Button(), pauseCultivation = new Button(), baiyeStele = new Button(), lingyuStele = new Button();
+        private readonly Button awaken = new Button(), breakthrough = new Button(), pauseCultivation = new Button(), baiyeStele = new Button(), lingyuStele = new Button();
         private readonly CheckBox cleanupConsent = new CheckBox(), memoryConsent = new CheckBox(), autoMaintenanceConsent = new CheckBox();
         private readonly ListBox weapons = new ListBox();
         private readonly RadioButton automatic = new RadioButton(), manual = new RadioButton();
@@ -40,22 +40,31 @@ namespace NetBunny
             foreach (CultivationTechnique technique in CultivationTechnique.All) techniques.Items.Add(new TechniqueEntry { Id = technique.Id, Text = technique.Name + "（" + technique.School + "）" });
             techniques.SelectedIndexChanged += delegate { if (!updating) { TechniqueEntry entry = techniques.SelectedItem as TechniqueEntry; if (entry != null) controller.ChooseTechnique(entry.Id); } };
             hints.SetToolTip(techniques, "功法可自由改修，只影响修行速度的微小加成；灵根与路线都不会被锁死。");
-            Configure(breakthrough, "尝试破境", 130, delegate
+            Configure(awaken, "灵根觉醒", 110, delegate
             {
                 CultivationProgress progress = controller.Cultivation;
-                if (progress == null || controller.IsDemo) return;
-                string question = "当前境界：" + progress.RealmName + " · 第" + progress.Layer + "层\n本次破境成功率：" + progress.BreakthroughPercent + "%（第" + CultivationBalance.LayersPerRealm + "层时 100%）\n消耗灵气：" + progress.BreakthroughCost + "\n失败不会损失已积累的修为与根基。\n\n现在尝试破境吗？";
-                if (MessageBox.Show(this, question, "尝试破境", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
-                bool success = controller.TryBreakthrough();
-                MessageBox.Show(this, controller.Cultivation.LastNotice, success ? "破境成功" : "破境未成", MessageBoxButtons.OK, success ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+                if (progress == null || controller.IsDemo || !progress.CanAwaken) return;
+                DialogResult answer = MessageBox.Show(this,
+                    "十次红尘历练已满，凡躯灵明已足。\n觉醒仪式将测出你的先天灵根，并依灵根共鸣赐下初始修行倾向与基础功法；\n凡人期暂存的修为将在觉醒时一次转化。\n\n现在举行觉醒仪式吗？",
+                    "灵根觉醒", MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
+                if (answer != DialogResult.OK) return;
+                if (controller.AwakenSpiritRoot())
+                    MessageBox.Show(this, controller.Cultivation.LastNotice, "灵根觉醒", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 RefreshData();
             });
+            hints.SetToolTip(awaken, "凡人十次有效击杀后开启：测灵根、赐功法，正式踏入仙途。");
+            Configure(breakthrough, "破境仪式", 110, delegate
+            {
+                if (controller.IsDemo || controller.Cultivation == null || controller.Cultivation.Mortal) return;
+                controller.OpenBreakthrough();
+            });
+            hints.SetToolTip(breakthrough, "确认条件 → 查看契机 → 选择材料 → 发起突破；本境圆满且握有契机后可用。");
             Configure(pauseCultivation, "暂停修炼", 110, delegate { controller.SetCultivationPaused(!controller.CultivationPaused); RefreshData(); });
             Configure(baiyeStele, "百业道碑", 110, delegate { controller.OpenBaiyeStele(); });
             hints.SetToolTip(baiyeStele, "现实中的工作、学习、创作与娱乐化为后天道途；只识别应用类别，可随时关闭。");
             Configure(lingyuStele, "灵域历练", 110, delegate { controller.OpenLingyu(); });
             hints.SetToolTip(lingyuStele, "软件灵域探索与机缘：进入秘境只生成虚拟妖物，绝不触碰真实文件与进程；进度即时保存，可随时暂离。");
-            practice.Controls.AddRange(new Control[] { techniques, breakthrough, pauseCultivation, baiyeStele, lingyuStele }); content.Controls.Add(practice);
+            practice.Controls.AddRange(new Control[] { techniques, awaken, breakthrough, pauseCultivation, baiyeStele, lingyuStele }); content.Controls.Add(practice);
             FlowLayoutPanel consentRow = Row();
             cleanupConsent.Text = "授权文件清理：击败文件怪后，删除其绑定的、超过 24 小时的本用户临时文件";
             cleanupConsent.Width = 470; cleanupConsent.Height = 30; cleanupConsent.BackColor = Color.Transparent;
@@ -166,19 +175,32 @@ namespace NetBunny
                 CultivationProgress practice = controller.Cultivation;
                 if (practice != null)
                 {
-                    double ratio = practice.Layer >= CultivationBalance.LayersPerRealm ? 1 : practice.NextLayerCost <= 0 ? 0 : Math.Min(1, practice.Qi / (double)practice.NextLayerCost);
-                    string heading = (String.IsNullOrEmpty(practice.DaoTitle) ? "无名修士" : practice.DaoTitle) + " · " + practice.RealmName + " · 第" + practice.Layer + "层";
-                    string progressText = "灵根：" + practice.RootName + " · 路线：" + CultivationIdentity.PathName(practice.DaoPath) + " · 洞天：" + controller.CaveText +
-                        "\r\n功法：" + practice.Technique.Name + "（" + practice.Technique.School + " · 速率 ×" + practice.Technique.RateFactor.ToString("0.00", CultureInfo.InvariantCulture) + "）· " + (controller.CultivationPaused ? "已暂停" : "吐纳中") +
-                        "\r\n修为 " + practice.Qi + " / " + (practice.Layer >= CultivationBalance.LayersPerRealm ? "圆满" : practice.NextLayerCost.ToString(CultureInfo.InvariantCulture)) + " · 累计修为 " + practice.LifetimeQi + " · 已尝试破境 " + practice.BreakthroughAttempts + " 次" +
-                        "\r\n" + (practice.BreakthroughPercent > 0 ? "当前破境机会 " + practice.BreakthroughPercent + "% · " : "第" + CultivationBalance.BreakthroughOpenLayer + "层起可尝试破境 · ") + "下一妖物约 " + (int)Math.Ceiling(controller.NextEncounterSeconds) + " 秒后来访" +
-                        "\r\n" + practice.LastNotice;
+                    double ratio = practice.Mortal
+                        ? Math.Min(1, practice.MortalKills / (double)CultivationBalance.MortalAwakenKills)
+                        : practice.RealmComplete ? 1 : practice.NextLayerCost <= 0 || practice.NextLayerCost == Int32.MaxValue ? 0 : Math.Min(1, practice.Qi / (double)practice.NextLayerCost);
+                    string heading = practice.Mortal
+                        ? "凡俗少年 · 凡人 · 红尘历练 " + practice.MortalKills + "/" + CultivationBalance.MortalAwakenKills
+                        : (String.IsNullOrEmpty(practice.DaoTitle) ? "无名修士" : practice.DaoTitle) + " · " + practice.RealmName + " · 第" + practice.Layer + "层";
+                    string progressText = practice.Mortal
+                        ? "灵根：未觉醒 · 洞天：" + controller.CaveText +
+                            "\r\n击败妖物积累红尘历练，十次历练后举行觉醒仪式：测灵根、赐功法，正式踏入仙途。" +
+                            "\r\n凡人期收益暂存灵明 " + practice.DeferredQi + "（觉醒时一次转化） · 累计历练 " + practice.LifetimeQi +
+                            "\r\n下一妖物约 " + (int)Math.Ceiling(controller.NextEncounterSeconds) + " 秒后来访" +
+                            "\r\n" + practice.LastNotice
+                        : "灵根：" + practice.RootName + " · 路线：" + CultivationIdentity.PathName(practice.DaoPath) + " · 洞天：" + controller.CaveText +
+                            "\r\n功法：" + practice.Technique.Name + "（" + practice.Technique.School + " · 速率 ×" + practice.Technique.RateFactor.ToString("0.00", CultureInfo.InvariantCulture) + "）· " + (controller.CultivationPaused ? "已暂停" : "吐纳中") +
+                            "\r\n修为 " + practice.Qi + " / " + (practice.RealmComplete ? "圆满" : practice.NextLayerCost.ToString(CultureInfo.InvariantCulture)) + " · 累计修为 " + practice.LifetimeQi + " · 破境感悟 " + practice.BreakthroughInsight + " · 已尝试破境 " + practice.BreakthroughAttempts + " 次" +
+                            "\r\n" + (practice.IsFinalRealm ? "已至修行巅峰 · " : practice.CanAttemptBreakthrough ? "破境契机已至 · 可举行破境仪式 · " : practice.RealmComplete ? "本境圆满 · 尚缺破境契机（天材地宝 / 秘境寻宝 / 百业悟道 / 长期苦修）· " : "本境共 " + practice.LayersMax + " 层 · ") + "下一妖物约 " + (int)Math.Ceiling(controller.NextEncounterSeconds) + " 秒后来访" +
+                            "\r\n" + practice.LastNotice;
                     cultivation.SetProgress(heading, progressText, ratio);
                     hints.SetToolTip(cultivation, heading + "\n" + progressText);
                     int techniqueIndex = Array.FindIndex(CultivationTechnique.All, technique => technique.Id == practice.TechniqueId);
                     if (techniqueIndex >= 0 && techniques.SelectedIndex != techniqueIndex) techniques.SelectedIndex = techniqueIndex;
-                    breakthrough.Enabled = practice.CanBreakthrough && !controller.IsDemo;
-                    breakthrough.Text = practice.IsFinalRealm ? "已至巅峰" : "尝试破境（" + practice.BreakthroughPercent + "%）";
+                    awaken.Visible = practice.Mortal;
+                    awaken.Enabled = practice.CanAwaken && !controller.IsDemo;
+                    breakthrough.Visible = !practice.Mortal;
+                    breakthrough.Enabled = !practice.IsFinalRealm && !controller.IsDemo;
+                    breakthrough.Text = practice.IsFinalRealm ? "已至巅峰" : practice.CanAttemptBreakthrough ? "破境·契机已至" : "破境仪式";
                     pauseCultivation.Text = controller.CultivationPaused ? "恢复修炼" : "暂停修炼";
                     cleanupConsent.Checked = controller.MaintenanceConsentCleanup;
                     memoryConsent.Checked = controller.MaintenanceConsentMemory;
@@ -196,7 +218,9 @@ namespace NetBunny
                     for (int i = 0; i < weapons.Items.Count; i++) if (((WeaponEntry)weapons.Items[i]).Id == p.WeaponId) { weapons.SelectedIndex = i; break; }
                 }
                 equip.Enabled = !controller.IsDemo; revive.Enabled = p.Dead && !controller.IsDemo; blackhole.Enabled = controller.CanClearField;
-                automatic.Checked = battle.Automatic; manual.Checked = !battle.Automatic; automatic.Enabled = manual.Enabled = !p.Dead && !controller.IsDemo;
+                automatic.Text = controller.Cultivation.AutoBattleUnlocked ? "自动作战（灵根觉醒后默认开启）" : "自动作战（未解锁 · 灵根觉醒后开启）";
+                automatic.Checked = battle.Automatic; manual.Checked = !battle.Automatic;
+                automatic.Enabled = !p.Dead && !controller.IsDemo && controller.Cultivation.AutoBattleUnlocked; manual.Enabled = !p.Dead && !controller.IsDemo;
                 themes.SelectedIndex = Array.IndexOf(ThemeCodes, controller.ThemeMode); themes.Enabled = !controller.IsDemo;
                 roam.Checked = controller.Roaming; monitors.SelectedIndex = Math.Max(0, Array.FindIndex(Screen.AllScreens, screen => screen.WorkingArea == controller.WorkingArea));
                 bool queueBusy = battle.QueueCount > 0 || battle.Enemies.Any(enemy => enemy.CleanupStarted && enemy.Cleaning);
