@@ -359,6 +359,10 @@ namespace NetBunny
         // Unattended idle cultivation is the default; manual battle stays opt-in.
         // This toggle is independent from real maintenance consent.
         internal bool AutoBattle = true;
+        // 凡人期必须亲历战斗：自动作战在灵根觉醒前一律锁定（运行时任何路径
+        // 都不得仅凭偏好开启）；觉醒后解锁并默认开启。旧修士存档本就不是凡人，
+        // 其自动战斗偏好原样保留。
+        internal bool AutoBattleUnlocked { get { return !Mortal; } }
         // Idempotent external reward ledger (e.g. baiye resonance grants). Keys are
         // stored as grant.<id>=1 lines; older builds ignore them when reading.
         internal readonly HashSet<string> ExternalGrants = new HashSet<string>(StringComparer.Ordinal);
@@ -472,6 +476,7 @@ namespace NetBunny
             DaoPath = CultivationIdentity.PathForRoot(SpiritRoot);
             TechniqueId = CultivationIdentity.TechniqueForRoot(SpiritRoot);
             if (String.IsNullOrEmpty(DaoTitle)) DaoTitle = CultivationIdentity.GenerateDaoTitle(random);
+            AutoBattle = true; // 灵根觉醒：解锁并默认开启自动作战与自动吐纳
             RealmIndex = 0; Layer = 1; Qi = 0; FractionalQi = 0;
             long deferred = DeferredQi; DeferredQi = 0;
             LastNotice = "灵根觉醒：" + CultivationIdentity.RootName(SpiritRoot) + " · 共鸣" + CultivationIdentity.PathName(DaoPath) +
