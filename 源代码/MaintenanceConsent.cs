@@ -90,16 +90,20 @@ namespace NetBunny
         private static System.Collections.Generic.List<string> ReadRevoked(string revoked)
         {
             System.Collections.Generic.List<string> names = new System.Collections.Generic.List<string>();
+            if (revoked == null || !File.Exists(revoked)) return names;
             try
             {
-                if (revoked == null || !File.Exists(revoked)) return names;
                 foreach (string line in File.ReadAllLines(revoked, Encoding.UTF8))
                 {
                     string name = line.Trim();
                     if ((name == "cleanup" || name == "memory" || name == "automaint") && !names.Contains(name)) names.Add(name);
                 }
             }
-            catch { }
+            catch { names.Clear(); }
+            // The marker exists but is unreadable or holds no recognizable scope:
+            // the revocation state is uncertain, so fail closed on EVERY scope.
+            // Real maintenance never resurrects from a marker we cannot read.
+            if (names.Count == 0) { names.Add("cleanup"); names.Add("memory"); names.Add("automaint"); }
             return names;
         }
 
@@ -265,6 +269,43 @@ namespace NetBunny
                 check(healed.SetCleanup(file, true, out error) && MaintenanceConsentStore.Load(file).CleanupEnabled && !File.Exists(revokedFile),
                     "re-consenting after a revocation is a clean new grant with no marker left");
                 check(live.SetCleanup(file, false, out error) && !MaintenanceConsentStore.Load(file).CleanupEnabled, "ordinary disable still persists once handles are gone");
+
+                // Fault injection: a marker that exists but cannot be read must
+                // never be treated as absent — uncertain state fails fully closed.
+                File.WriteAllText(file, "cleanup=1\nmemory=1\nautomaint=1\n", new UTF8Encoding(false));
+                File.WriteAllText(revokedFile, "garbage-not-a-scope\r\n???\n", new UTF8Encoding(false));
+                MaintenanceConsentStore unreadable = MaintenanceConsentStore.Load(file);
+                check(!unreadable.CleanupEnabled && !unreadable.MemoryEnabled && !unreadable.AutoMaintenanceEnabled,
+                    "an unreadable revocation marker fails every scope closed instead of restoring the old grant");
+                check(!File.Exists(revokedFile) && !MaintenanceConsentStore.Load(file).CleanupEnabled,
+                    "the corrected all-closed state persists and the unreadable marker is retired");
+                File.WriteAllText(file, "cleanup=1\nmemory=1\n", new UTF8Encoding(false));
+                File.WriteAllText(revokedFile, "cleanup\n", new UTF8Encoding(false));
+                using (FileStream markerLock = new FileStream(revokedFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    MaintenanceConsentStore lockedMarker = MaintenanceConsentStore.Load(file);
+                    check(!lockedMarker.CleanupEnabled && !lockedMarker.MemoryEnabled && !lockedMarker.AutoMaintenanceEnabled,
+                        "a locked marker also fails closed on every scope rather than vanishing");
+                }
+                MaintenanceConsentStore afterLock = MaintenanceConsentStore.Load(file); // heals and retires the marker
+                check(!File.Exists(revokedFile) && !afterLock.CleanupEnabled && !afterLock.MemoryEnabled,
+                    "the healed all-closed state persists after the marker lock clears (uncertain state never re-opens any scope)");
+
+                // If the revocation itself cannot be persisted at all, the disable
+                // must report failure — never claim a reliable save.
+                File.WriteAllText(file, "cleanup=1\n", new UTF8Encoding(false));
+                Directory.CreateDirectory(revokedFile); // a directory blocks marker creation
+                MaintenanceConsentStore unpinnable = MaintenanceConsentStore.Load(file); // read before locking
+                check(unpinnable.CleanupEnabled, "grant loaded before the unpinnable-revocation test");
+                using (FileStream grantLock2 = new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    string pinError;
+                    check(!unpinnable.SetCleanup(file, false, out pinError) && pinError != null && !unpinnable.CleanupEnabled,
+                        "a revocation that cannot be persisted anywhere reports failure instead of claiming a reliable save");
+                }
+                Directory.Delete(revokedFile);
+                check(unpinnable.SetCleanup(file, false, out error) && !MaintenanceConsentStore.Load(file).CleanupEnabled,
+                    "once the block clears, the same disable persists normally");
 
                 MaintenanceConsentStore demo = new MaintenanceConsentStore();
                 check(demo.SetCleanup(null, true, out error) && demo.CleanupEnabled, "demonstration mode applies consent in memory without touching the disk");

@@ -1698,14 +1698,25 @@ namespace NetBunny
             timer.Stop(); CancelPending(); cancellation.Cancel();
             // Final best-effort flush of any consent revocation whose file update
             // failed during the session, so a restart cannot resurrect it.
-            if (consentRetryCleanup || consentRetryMemory) TryFlushConsentRevocation();
+            if (consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) TryFlushConsentRevocation();
             // 洞天待确认操作同样在退出前做最后一次落盘尝试。
             if (dongtianPersistPending) TryFlushDongtianPersistence();
             if (tempWatcher != null) { tempWatcher.Dispose(); tempWatcher = null; }
             if (memoryReclaimTask != null) { try { memoryReclaimTask.Wait(6000); DrainMemoryReclaim(); } catch { } }
             // Clean only works under the local temporary directory and checks the
             // token between files. Finish the active result before saving progress.
-            if (cleanupTask != null) { try { cleanupTask.Wait(); DrainCleanup(); } catch { } }
+            // Bounded wait: a worker that never answers cancellation must not wedge
+            // the GUI shutdown. If it overruns, its result stays unclaimed — freed
+            // bytes are never invented for an unfinished task.
+            if (cleanupTask != null)
+            {
+                try
+                {
+                    if (cleanupTask.Wait(8000)) DrainCleanup();
+                    else scanStatus = "退出时仍有清理任务未响应取消：已保留其未完成状态，未计入任何清理成果";
+                }
+                catch { }
+            }
             demoStarted = -1; demoPending = false;
             // 退出前封口未落记录的活动片段，保证重启后道韵都有对应获取记录。
             if (baiyeTracker != null) baiyeTracker.Seal();
@@ -2243,6 +2254,23 @@ namespace NetBunny
                     exitWatch.Stop();
                     check(inFlightCancellation.IsCancellationRequested && exitWatch.Elapsed.TotalSeconds < 10,
                         "dispose with an in-flight task cancels the worker and returns promptly instead of blocking shutdown");
+                }
+                using (AdventureController stubborn = new AdventureController(owner, assetDirectory, true))
+                {
+                    // A worker that NEVER answers cancellation: Dispose must bound
+                    // its wait, still return, and never credit freed bytes to an
+                    // unfinished task.
+                    stubborn.simulatedCleaner = delegate(CleanupBatch ignoredBatch, CancellationToken token) { return new TaskCompletionSource<CleanupResult>().Task; };
+                    long freedBefore = stubborn.battle.Progress.FreedBytes;
+                    AdventureEnemy stuck = new AdventureEnemy { Id = "dispose-stubborn", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\stubborn.tmp", Length = 555 } }, 1), Health = 1, MaxHealth = 1 };
+                    stubborn.enabled = true;
+                    stubborn.battle.Enemies.Add(stuck); stubborn.Spawn(stuck); stubborn.battle.Authorize(stuck); stubborn.battle.Cooldown = 0; stubborn.battle.Strike(stuck); stubborn.BeginCleanup(stuck);
+                    check(stubborn.cleanupTask != null, "stubborn cleanup started for the bounded-wait test");
+                    System.Diagnostics.Stopwatch stubbornWatch = System.Diagnostics.Stopwatch.StartNew();
+                    stubborn.Dispose();
+                    stubbornWatch.Stop();
+                    check(stubbornWatch.Elapsed.TotalSeconds < 15 && stubborn.battle.Progress.FreedBytes == freedBefore && stubborn.cleanupTask != null,
+                        "dispose bounds the wait for a cancellation-ignoring worker and never invents freed bytes for it");
                 }
             }
             return "Adventure native smoke: " + count + " checks passed; no real cleanup, network query, or progress save.\r\n" + ResourceSmoke(assetDirectory);
