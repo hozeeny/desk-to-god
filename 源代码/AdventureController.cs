@@ -59,6 +59,8 @@ namespace NetBunny
         private readonly MirageEngine mirage;
         private LingyuForm lingyuForm;
         private string pendingLingyuEnemyId;
+        // 启动时排队一次的蜃楼战斗恢复标记：避免在构造期生成妖物。
+        private bool lingyuCombatResumeQueued;
         // Two independent real-maintenance scopes; neither is implied by combat
         // or by the (separately persisted) unattended auto-battle preference.
         private readonly MaintenanceConsentStore consent = new MaintenanceConsentStore();
@@ -131,6 +133,9 @@ namespace NetBunny
                 SettleBaiyeRewards();
                 // 灵域修为奖励同一协议：修仙侧有标记则销账，无则补发。
                 SettleLingyuRewards();
+                // 蜃楼重启恢复排队：上次退出时战斗未决（ExpeditionActive + CombatPending
+                // 已持久化）的，首个主节拍补发镜妖——界面与渲染此时尚未就绪，不能在此生成。
+                lingyuCombatResumeQueued = lingyu.ExpeditionActive && lingyu.CombatPending;
             }
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
@@ -511,15 +516,33 @@ namespace NetBunny
             AdventureMonster kind = AdventureMonster.All[random.Next(AdventureMonster.All.Length)];
             AdventureEnemy fiend = new AdventureEnemy
             {
-                Id = "lingyu-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = kind.Id,
+                Id = "lingyu-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = kind.Id, NoFieldClear = true,
                 SpawnLevel = battle.Progress.Level
             };
             fiend.MaxHealth = EnemyBalance.OrdinaryHealth(battle.Progress.Level, kind.HealthFactor, 0) * (boss ? 4 : 1);
             fiend.Health = fiend.MaxHealth;
             pendingLingyuEnemyId = fiend.Id;
+            // 满员时镜妖必须仍能现身（否则蜃楼战斗软锁）：退休一只未交战、
+            // 未授权的普通妖物腾名额；绝不挤掉 Boss、在编清理或秘境目标。
+            if (!EnemyFieldBudget.CanAddOrdinary(battle.Enemies))
+            {
+                AdventureEnemy idle = battle.Enemies.FirstOrDefault(e =>
+                    !e.IsBoss && !e.NoFieldClear && !e.Authorized && !e.Cleaning && !e.Defeated && !e.Failed);
+                if (idle != null) battle.Enemies.Remove(idle);
+            }
             Spawn(fiend); battle.Enemies.Add(fiend);
             battle.LastReward = label + "现身桌面 · 击败它继续蜃楼之行";
             RenderWorld(true);
+        }
+        // 蜃楼战斗恢复入口（重启后首拍自动排队一次；灵域面板刷新时也会触发）：
+        // 战斗未决且桌面没有存活镜妖时补发一只，玩家从真实界面即可恢复战斗。
+        // 已有存活镜妖时不重复生成；满员由生成路径内部退休闲置普通妖物腾位。
+        internal bool TryResumeLingyuCombat()
+        {
+            if (disposed || IsDemo || lingyu == null) return false;
+            if (!lingyu.ExpeditionActive || !lingyu.CombatPending) return false;
+            if (pendingLingyuEnemyId != null && battle.Enemies.Any(e => e.Id == pendingLingyuEnemyId)) return false;
+            return mirage.ResumePendingCombat();
         }
         // 蜃楼战斗失败出口：修士力竭时镜妖遁入镜中，解除挂起，秘境不软锁。
         internal void LingyuDeathCheck()
@@ -804,6 +827,8 @@ namespace NetBunny
             networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6,
                 online == KnightConnectivity.Offline ? KnightConnectivity.Unknown : online);
             battle.Tick(dt);
+            // 蜃楼重启恢复：构造期仅排队（渲染未就绪），首拍补发未决战斗的镜妖。
+            if (lingyuCombatResumeQueued) { lingyuCombatResumeQueued = false; TryResumeLingyuCombat(); }
             // 蜃楼战斗中修士力竭：镜妖遁入镜中，机缘战斗按已选落空，秘境不软锁。
             LingyuDeathCheck();
             // Unattended recovery: a defeated cultivator always meditates back to
@@ -1600,6 +1625,70 @@ namespace NetBunny
                     check(c.Lingyu.ExpeditionActive && c.Mirage.CurrentChoices().Length > 0, "the expedition continues after a lost fight");
                     c.Resurrect();
                     check(!File.Exists(c.LingyuWritePath), "demonstration runs never write the real lingyu archive");
+                    // —— 蜃楼重启软锁回归：战斗中退出 → 真实读档 → 控制器/界面补发镜妖 → 预算与去重 ——
+                    string mirageArchive = Path.Combine(Path.GetTempPath(), "lingyu-restart-" + Guid.NewGuid().ToString("N") + ".txt");
+                    c.lingyuPathOverride = mirageArchive;
+                    int resumeGuard = 0; // 真实界面入口 API（与「继续探索」按钮同一路径）进入一场未决战斗
+                    while (!c.Lingyu.CombatPending && resumeGuard < 200)
+                    {
+                        resumeGuard++;
+                        if (c.Mirage.PendingJiyuan != null) { c.LingyuChoose(0); continue; }
+                        string resumeNode = c.Lingyu.ExpeditionNode;
+                        if (resumeNode == "ferry" || resumeNode == "corridor") c.LingyuChoose(0);
+                        else c.LingyuChoose(1);
+                    }
+                    check(c.Lingyu.CombatPending && mirrorFiend() != null, "restart fixture: a mirror fiend holds the fight before exit");
+                    string outcomeBeforeRestart = c.Lingyu.CombatOutcome;
+                    c.lingyu.Save(c.LingyuWritePath); // 与生产 Save() 相同的写盘点：模拟退出落盘
+                    check(File.Exists(mirageArchive), "restart fixture: expedition archive persisted to disk");
+                    // 真实重启读档：新进度对象走生产 LingyuProgress.Load 同一代码路径。
+                    LingyuProgress reloaded = LingyuProgress.Load(mirageArchive);
+                    check(reloaded.ExpeditionActive && reloaded.CombatPending && reloaded.CombatOutcome == outcomeBeforeRestart,
+                        "a restart reloads the pending fight with its settlement semantics intact");
+                    int resumeRequests = 0; bool resumeBoss = false;
+                    MirageEngine resumeEngine = new MirageEngine(reloaded, new Random(53));
+                    resumeEngine.CombatRequested += delegate(string label, bool boss) { resumeRequests++; resumeBoss = boss; };
+                    check(resumeEngine.ResumePendingCombat() && resumeRequests == 1 && resumeBoss == (outcomeBeforeRestart == "final"),
+                        "resume re-issues exactly one combat request and a boss fight stays a boss fight");
+                    LingyuProgress calmProgress = new LingyuProgress { ExpeditionActive = true };
+                    MirageEngine calmEngine = new MirageEngine(calmProgress, new Random(59));
+                    bool calmFired = false; calmEngine.CombatRequested += delegate(string label, bool boss) { calmFired = true; };
+                    check(!calmEngine.ResumePendingCombat() && !calmFired, "resume refuses when no fight is pending");
+                    // 控制器层恢复：镜妖对象丢失（进程重启后的真实情形）→ 补发一只且仅一只。
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal));
+                    check(c.TryResumeLingyuCombat() && mirrorFiend() != null && mirrorFiend().NoFieldClear,
+                        "controller resume respawns one field-clear-immune mirror fiend");
+                    string respawnedId = mirrorFiend() == null ? null : mirrorFiend().Id;
+                    check(!c.TryResumeLingyuCombat() && mirrorFiend() != null && mirrorFiend().Id == respawnedId
+                        && c.battle.Enemies.Count(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal)) == 1,
+                        "resume is idempotent while the fiend lives - no duplicates");
+                    // 敌场预算：填满普通名额后补发仍不超编（退休一只未交战普通妖物腾位）。
+                    while (EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies))
+                    {
+                        AdventureEnemy filler = new AdventureEnemy { Id = "filler-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = AdventureMonster.All[0].Id, SpawnLevel = 1 };
+                        filler.MaxHealth = filler.Health = 10;
+                        c.battle.Enemies.Add(filler);
+                    }
+                    check(!EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies), "restart fixture: field filled to the ordinary budget");
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal));
+                    check(c.TryResumeLingyuCombat() && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies)
+                        && c.battle.Enemies.Count(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal)) == 1,
+                        "a full field still admits the resumed fiend by retiring an idle ordinary, never exceeding budget");
+                    // 真实界面入口恢复：先移除镜妖模拟缺失，打开灵域面板即由 500ms 刷新路径补发。
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal));
+                    using (LingyuForm panel = new LingyuForm(c))
+                    {
+                        panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000);
+                        panel.Show(); Application.DoEvents(); panel.RefreshData();
+                        check(mirrorFiend() != null, "opening the lingyu panel restores the pending fight through the real UI");
+                        panel.Hide();
+                    }
+                    int winGuard = 0; // 恢复后的战斗胜利仍按持久化语义结算
+                    while (mirrorFiend() != null && winGuard++ < 8) killMirrorFiend();
+                    check(!c.Lingyu.CombatPending && mirrorFiend() == null, "a resumed fight settles its win and releases the expedition");
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("filler-", StringComparison.Ordinal));
+                    c.lingyuPathOverride = Path.Combine(Path.GetTempPath(), "lingyu-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    try { File.Delete(mirageArchive); } catch { }
                     // Unattended recovery: a defeated cultivator always rests back.
                     c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
