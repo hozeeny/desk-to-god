@@ -2210,7 +2210,7 @@ namespace NetBunny
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
                     c.enabled = true; c.demoStarted = -1; c.demoPending = false;
                     c.Tick(null, EventArgs.Empty);
-                    check(!c.battle.Progress.Dead && c.battle.Progress.Health == c.battle.Progress.MaxHealth && c.battle.Automatic && c.battle.LastReward.Contains("调息"), "an unattended cultivator recovers from defeat and resumes auto battle");
+                    check(!c.battle.Progress.Dead && c.battle.Progress.Health == c.battle.Progress.MaxHealth && c.battle.Automatic && c.battle.LastReward.Contains("修士调息完毕"), "an unattended cultivator recovers from defeat with an exact rest notice and resumes auto battle");
                     c.cultivation.AutoBattle = false; c.battle.SetAutomatic(false);
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
                     c.Tick(null, EventArgs.Empty);
@@ -2332,8 +2332,8 @@ namespace NetBunny
                     g.battle.Enemies.Clear(); g.CancelPending(); g.battle.SetAutomatic(false);
                     g.battle.Progress.Dead = true; g.battle.Progress.Health = 0; g.battle.DeathTime = CultivationBalance.ReviveRestSeconds * 3;
                     g.Tick(null, EventArgs.Empty);
-                    check(!g.battle.Progress.Dead && !g.battle.Automatic && g.battle.LastReward.Contains("调息"),
-                        "a fallen mortal rests back unattended but keeps combat manual");
+                    check(!g.battle.Progress.Dead && !g.battle.Automatic && g.battle.LastReward.Contains("凡躯调息完毕"),
+                        "a fallen mortal rests back unattended with an exact rest notice and keeps combat manual");
                     Action killVirtual = delegate
                     {
                         AdventureEnemy fiend = new AdventureEnemy { Id = "growth-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = "imp", Health = 1, MaxHealth = 1 };
@@ -3046,7 +3046,7 @@ namespace NetBunny
                     string engagedId = null;
                     int strikesOnTarget = 0, distanceHints = 0, firstKillDistanceHints = -1, firstKillStrikes = -1;
                     double lastClickAt = -9, noTargetSince = -1, phase2Start = 0, phase2Exp = 0, lastTelemetryFeed = -9;
-                    bool blockTested = false, deadLogged = false, exhaustTested = false, awakenClicked = false, feedChecked = false;
+                    bool blockTested = false, deadLogged = false, exhaustTested = false, awakenClicked = false, feedChecked = false, sawRestNotice = false;
                     System.Windows.Forms.Timer driver = new System.Windows.Forms.Timer { Interval = 100 };
                     driver.Tick += delegate
                     {
@@ -3063,6 +3063,13 @@ namespace NetBunny
                             feedChecked = true;
                             expect(c.networkState.Phase != KnightPhase.Dying && c.networkState.Phase != KnightPhase.Grave && c.networkState.Phase != KnightPhase.Revive,
                                 "遥测喂给保持骑士网络状态存活（生产由 MainForm 网络引擎喂给）");
+                        }
+                        // 调息文案尽力捕获：LastReward 会被世界节拍覆写（与格挡同款设计），
+                        // 逐字确定性断言在 Growth 烟测，这里每拍采样只为留下玩家可见反馈的证据。
+                        if (!sawRestNotice && c.battle.LastReward != null && c.battle.LastReward.Contains("凡躯调息完毕"))
+                        {
+                            sawRestNotice = true;
+                            step("REST   玩家可见反馈：" + c.battle.LastReward);
                         }
                         if (phase == 0)
                         {
@@ -3082,8 +3089,10 @@ namespace NetBunny
                             {
                                 deadLogged = false;
                                 expect(!c.battle.Automatic, "调息恢复后凡人仍处于手动模式（不自动接续作战）");
-                                expect(c.battle.LastReward.Contains("凡躯调息完毕"), "调息完成有明确文字反馈");
-                                step("UP     调息完毕，等待玩家再次操作");
+                                expect(c.battle.DeathTime < 1, "调息恢复是全新的复活（死亡计时已归零，非他径清除死亡态）");
+                                // 调息文案逐字断言见 Growth 烟测；GUI 侧 LastReward 会被世界节拍覆写属设计，尽力捕获。
+                                step("UP     调息完毕，等待玩家再次操作（可见文案捕获：" + (sawRestNotice ? "已见「凡躯调息完毕」" : "被世界节拍覆写，以烟测逐字断言为准") + "）");
+                                sawRestNotice = false;
                             }
                             if (c.cultivation.MortalKills >= CultivationBalance.MortalAwakenKills)
                             {
