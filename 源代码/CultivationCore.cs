@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -190,6 +191,9 @@ namespace NetBunny
         // Unattended idle cultivation is the default; manual battle stays opt-in.
         // This toggle is independent from real maintenance consent.
         internal bool AutoBattle = true;
+        // Idempotent external reward ledger (e.g. baiye resonance grants). Keys are
+        // stored as grant.<id>=1 lines; older builds ignore them when reading.
+        internal readonly HashSet<string> ExternalGrants = new HashSet<string>(StringComparer.Ordinal);
         internal string LastNotice = "道种已苏醒，修士正在感应天地灵气";
 
         internal string RealmName { get { return Realms[Math.Max(0, Math.Min(Realms.Length - 1, RealmIndex))]; } }
@@ -317,6 +321,12 @@ namespace NetBunny
                     else if (key == "root" && CultivationIdentity.IsValidRoot(value)) next.SpiritRoot = value;
                     else if (key == "path" && CultivationIdentity.IsValidPath(value)) next.DaoPath = value;
                     else if (key == "autobattle") next.AutoBattle = value == "1";
+                    else if (key.StartsWith("grant.", StringComparison.Ordinal) && value == "1")
+                    {
+                        string grantId = key.Substring(6);
+                        if (grantId.Length > 0 && grantId.Length <= 40 && grantId.IndexOfAny(new[] { '\r', '\n', '=', '|' }) < 0)
+                            next.ExternalGrants.Add(grantId);
+                    }
                     else if (key == "tech" && CultivationTechnique.IsValid(value)) { next.TechniqueId = value; hasIdentity = true; }
                     else if (key == "title" && value.Length > 0 && value.Length <= 24 && value.IndexOfAny(new[] { '\r', '\n', '=' }) < 0) { next.DaoTitle = value; hasIdentity = true; }
                 }
@@ -344,6 +354,7 @@ namespace NetBunny
                 "\nattempts=" + BreakthroughAttempts + "\nroot=" + SpiritRoot +
                 "\npath=" + DaoPath + "\ntech=" + TechniqueId + "\ntitle=" + DaoTitle +
                 "\nautobattle=" + (AutoBattle ? "1" : "0") + "\n";
+            foreach (string grant in ExternalGrants) data += "grant." + grant + "=1\n";
             File.WriteAllText(tmp, data, new UTF8Encoding(false));
             if (File.Exists(path)) File.Replace(tmp, path, path + ".bak");
             else File.Move(tmp, path);
@@ -438,6 +449,15 @@ namespace NetBunny
                 File.WriteAllText(file, "version=99\nrealm=0\nlayer=1\n", new UTF8Encoding(false));
                 if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
                 check(Load(file).Layer == 1 && Load(file).LifetimeQi == 0, "unknown future version falls back to a fresh archive instead of crashing");
+                awakened.Save(file);
+                CultivationProgress granted = Load(file);
+                granted.ExternalGrants.Add("tianji-yansuan");
+                granted.Save(file);
+                check(Load(file).ExternalGrants.Contains("tianji-yansuan"), "external grant ledger survives a save/load round trip");
+                File.WriteAllText(file, "version=2\nrealm=0\nlayer=1\nqi=0\nlifetime=0\ncarry=0\nattempts=0\nroot=wood\npath=sword\ntech=breath\ntitle=t\nautobattle=1\ngrant.bad|id=1\ngrant.good-id=1\n", new UTF8Encoding(false));
+                if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
+                CultivationProgress grantLoad = Load(file);
+                check(grantLoad.ExternalGrants.Contains("good-id") && grantLoad.ExternalGrants.Count == 1, "malformed grant keys are dropped on load");
             }
             finally
             {
