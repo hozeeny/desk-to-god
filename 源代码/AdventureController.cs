@@ -1009,32 +1009,54 @@ namespace NetBunny
             }
             battle.LastReward = "磁盘危机 Boss 已绑定 " + files.Count + " 个临时文件 · 可清理 " + AdventureBattle.FormatBytes(boss.Bytes);
         }
+        // --perf-probe 分模块测量（默认关闭，正常运行的开销仅为每节一次布尔判断）。
+        private static readonly int SecTotal = PerfProbe.Register("tick-total");
+        private static readonly int SecCultivation = PerfProbe.Register("cultivation");
+        private static readonly int SecBaiye = PerfProbe.Register("baiye");
+        private static readonly int SecCleanupDrain = PerfProbe.Register("cleanup-drain");
+        private static readonly int SecDisk = PerfProbe.Register("disk-read");
+        private static readonly int SecConnectivity = PerfProbe.Register("connectivity");
+        private static readonly int SecBattleCore = PerfProbe.Register("battle-core");
+        private static readonly int SecCombatMove = PerfProbe.Register("combat-move");
+        private static readonly int SecEnemyLoop = PerfProbe.Register("enemy-loop");
+        private static readonly int SecWorldMaint = PerfProbe.Register("world-maint");
+        private static readonly int SecSave = PerfProbe.Register("save");
+        private static readonly int SecRender = PerfProbe.Register("render");
         private void Tick(object sender, EventArgs args)
         {
             if (disposed) return;
+            bool probe = PerfProbe.Enabled;
+            if (probe) { PerfProbe.BeginTotal(); PerfProbe.Begin(); }
             double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
             // Cultivation uses the raw elapsed time, never the render-clamped dt.
             AdvanceCultivation(now);
+            if (probe) { PerfProbe.End(SecCultivation); PerfProbe.Begin(); }
             // 百业道韵同样按真实流逝结算，且藏在后台/隐藏桌宠时照常识别前台工作。
             AdvanceBaiye(now);
+            if (probe) { PerfProbe.End(SecBaiye); PerfProbe.Begin(); }
             // A consent revocation whose file update failed is retried until the
             // stale grant is gone — even while the pet is hidden.
-            if ((consentRetryCleanup || consentRetryMemory) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
+            if ((consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
             DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
+            if (probe) { PerfProbe.End(SecCleanupDrain); PerfProbe.Begin(); }
             if (!demonstrationOnly && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
-            if (!enabled) return; effects.Tick(dt);
-            if (demoPending) { RenderWorld(false); return; }
+            if (probe) { PerfProbe.End(SecDisk); PerfProbe.Begin(); }
+            if (!enabled) { if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
+            effects.Tick(dt);
+            if (demoPending) { RenderWorld(false); if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
             if (demoStarted >= 0)
             {
-                if (demonstrationOnly || now - demoStarted < 24) { renderTime += dt; RenderWorld(now - lastEnemyPaint >= .065); return; }
+                if (demonstrationOnly || now - demoStarted < 24) { renderTime += dt; RenderWorld(now - lastEnemyPaint >= .065); if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
                 StopDemo();
             }
+            if (probe) { PerfProbe.End(SecRender); PerfProbe.Begin(); }
             KnightConnectivity online = connectivity == null ? KnightConnectivity.Online : connectivity.Read(out connectivityDetail);
             lastConnectivity = online;
             // Cultivation is local-first: losing the network never kills the
             // cultivator or stops local battle; the pet meditates (Pant) instead.
             networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6,
                 online == KnightConnectivity.Offline ? KnightConnectivity.Unknown : online);
+            if (probe) { PerfProbe.End(SecConnectivity); PerfProbe.Begin(); }
             // 境界-战斗强度联动：每拍同步修仙战力系数（凡人偏弱、觉醒渐强、筑基攻防质变）。
             battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation);
             battle.CultivationDefenseFactor = CultivationCombatPower.DefenseFactor(cultivation);
@@ -1052,6 +1074,7 @@ namespace NetBunny
                 Save();
             }
             ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
+            if (probe) { PerfProbe.End(SecBattleCore); PerfProbe.Begin(); }
             bool canFight = !battle.Progress.Dead && networkState.Phase != KnightPhase.Dying && networkState.Phase != KnightPhase.Grave && networkState.Phase != KnightPhase.Revive;
             // Ambient virtual fiends keep the cultivation world alive even when the
             // machine has no temp files at all; the field budget caps render cost.
@@ -1087,6 +1110,7 @@ namespace NetBunny
             }
             actualMoveSpeed = dragging || dt <= 0 ? 0 : AdventureBattle.Distance(moveStartX, moveStartY, x, y) / dt;
             runCycle = (runCycle + actualMoveSpeed * dt / (displayScale * HeroPoseRig.TravelPerCycle)) % 1;
+            if (probe) { PerfProbe.End(SecCombatMove); PerfProbe.Begin(); }
             foreach (AdventureEnemy enemy in battle.Enemies.ToArray())
             {
                 enemy.MoveSpeed = 0;
@@ -1097,13 +1121,17 @@ namespace NetBunny
                 AttackHero(enemy, canFight, dt);
                 if (battle.Progress.Dead && canFight) { battle.StopFightingAfterDeath(); canFight = false; Save(); }
             }
+            if (probe) { PerfProbe.End(SecEnemyLoop); PerfProbe.Begin(); }
             PumpCleanup();
             RefillEnemies();
             if (now - lastScan >= InventoryIntervalSeconds || (now - lastScan >= .35 && scannedChangeVersion != Interlocked.CompareExchange(ref tempChangeVersion,0,0))) RefreshWorld(false);
             if (!demonstrationOnly && now - lastMemory >= 1 && !memoryBusy) ReadMemory(now);
             if (!demonstrationOnly && now - lastRegion >= 60) { lastRegion = now; region.RefreshAsync(); }
+            if (probe) { PerfProbe.End(SecWorldMaint); PerfProbe.Begin(); }
             if (now - lastSave >= 20) Save();
+            if (probe) { PerfProbe.End(SecSave); PerfProbe.Begin(); }
             RenderWorld(false);
+            if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); }
         }
         private void AdvanceAutomaticCombat(AdventureEnemy target, double now, double dt)
         {
@@ -1362,12 +1390,17 @@ namespace NetBunny
             else if (phase == "run") phase = "idle";
             return new AdventureRenderState { Kind = "Hero", Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
         }
+        private static readonly int SecRenderHero = PerfProbe.Register("render.hero");
+        private static readonly int SecRenderEnemies = PerfProbe.Register("render.enemies");
+        private static readonly int SecRenderWindows = PerfProbe.Register("render.windows");
         private void RenderWorld(bool enemies)
         {
             if (disposed || !enabled) return;
+            bool probe = PerfProbe.Enabled;
             try
             {
                 if (demoStarted >= 0) { RenderDemo(enemies || clock.Elapsed.TotalSeconds - lastEnemyPaint >= .066); return; }
+                if (probe) PerfProbe.Begin();
                 heroWindow.Location = new Point((int)x, (int)y); PaintWindow(heroWindow, HeroVisual(renderTime));
                 double paintNow = clock.Elapsed.TotalSeconds;
                 if (enemies || !landmarkWindow.Visible || paintNow - lastLandmarkPaint >= .25)
@@ -1375,9 +1408,11 @@ namespace NetBunny
                     lastLandmarkPaint = paintNow;
                     PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = renderTime, Label = CastleAmountText, GrowthLabel = GrowthStatusText, GrowthRatio = ResourceGrowthRatio, DiskLabel = diskSnapshot.Available ? "C盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) : "C盘剩余：等待采样", DiskFreeRatio = diskSnapshot.Available ? diskSnapshot.FreeRatio : -1, DiskCritical = diskSnapshot.Available && diskSnapshot.AvailableBytes < LowDiskBossPolicy.LowThresholdBytes, Opacity = 1 });
                 }
+                if (probe) { PerfProbe.End(SecRenderHero); PerfProbe.Begin(); }
                 HashSet<string> visible = new HashSet<string>();
                 // Dispose retired windows BEFORE showing replacements, including demo transitions.
                 RemoveUnusedWindows(new HashSet<string>(battle.Enemies.Where(e => !e.IsVisuallyHidden).Take(EnemyFieldBudget.MaxEnemies).Select(e => e.Id)));
+                if (probe) { PerfProbe.End(SecRenderWindows); PerfProbe.Begin(); }
                 // Keep positions current on every tick, but spread pose rasterization across
                 // four enemies at a time so a full field cannot stall the hero's animation.
                 int enemyCount = battle.Enemies.Count, paintStart = enemyCount == 0 ? 0 : enemyPaintCursor % enemyCount;
@@ -1408,8 +1443,10 @@ namespace NetBunny
                     enemy.VisualDirty = false;
                 }
                 enemyPaintCursor = enemyCount == 0 ? 0 : (paintStart + 4) % enemyCount;
+                if (probe) { PerfProbe.End(SecRenderEnemies); PerfProbe.Begin(); }
                 RemoveUnusedWindows(visible);
                 foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }
+                if (probe) PerfProbe.End(SecRenderWindows);
             }
             catch (Exception e) { failure = e.Message; Enabled = false; }
         }
@@ -2092,6 +2129,57 @@ namespace NetBunny
                 }
             }
             return "Growth integration: " + n + " checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).";
+        }
+        // --perf-probe 运行器：隐藏宿主窗体 + 演示控制器（不写真实档案），
+        // 合成一个忙碌战场（虚拟妖物 + 文件怪 + 双 Boss），按 15ms 节拍驱动 Tick，
+        // 输出分模块 CPU 报表。测量与同机其他负载并存，由报告如实注明。
+        internal static string RunPerfProbe(string assetDirectory, double minutes)
+        {
+            if (minutes <= 0 || minutes > 60) minutes = 3;
+            using (Form owner = new Form())
+            {
+                IntPtr handle = owner.Handle;
+                using (AdventureController c = new AdventureController(owner, assetDirectory, true))
+                {
+                    c.timer.Stop();
+                    c.enabled = true; c.area = new Rectangle(-24000, -24000, 1600, 1000);
+                    c.demoPending = false; c.demoStarted = -1;
+                    c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(7)); c.cultivation.Layer = 6;
+                    Func<string, CleanupCandidate> file = delegate(string id) { return new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\" + id, Length = 4096, Created = 1, EligibleForCleanup = true }; };
+                    Func<CleanupCandidate[], CleanupSnapshot> snap = delegate(CleanupCandidate[] f) { return new CleanupSnapshot { ObservedFilesAvailable = true, ObservedPathsAvailable = true, ObservedFiles = f.ToList(), ObservedPaths = new HashSet<string>(f.Select(x => x.Path), StringComparer.OrdinalIgnoreCase), InventoryComplete = true }; };
+                    c.ApplyInventory(snap(new[] { file("p1"), file("p2"), file("p3") }), false);
+                    for (int i = 0; i < 5; i++) { AdventureEnemy v = new AdventureEnemy { Id = "probe-fiend-" + i, IsVirtual = true, MonsterKind = i % 2 == 0 ? "imp" : "bat", Health = 90, MaxHealth = 90, X = c.x + 200 + i * 120, Y = c.y }; c.battle.Enemies.Add(v); c.Spawn(v); }
+                    AdventureEnemy memBoss = EnemyBalance.MemoryBoss(c.battle.Progress, c.battle.Weapon, new Random(5)); c.battle.Enemies.Add(memBoss); c.Spawn(memBoss);
+                    AdventureEnemy diskBoss = new AdventureEnemy { Id = "probe-disk", IsBoss = true, IsDiskBoss = true, Health = 700, MaxHealth = 700 }; c.battle.Enemies.Add(diskBoss); c.Spawn(diskBoss);
+                    c.battle.SetAutomatic(true);
+                    PerfProbe.Reset(); PerfProbe.Enabled = true;
+                    Stopwatch wall = Stopwatch.StartNew();
+                    double cpuStart = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds;
+                    double end = wall.Elapsed.TotalSeconds + minutes * 60;
+                    int fiendSeq = 5; double nextTopUp = 0;
+                    while (wall.Elapsed.TotalSeconds < end)
+                    {
+                        if (wall.Elapsed.TotalSeconds >= nextTopUp)
+                        {
+                            nextTopUp = wall.Elapsed.TotalSeconds + 5;
+                            int alive = c.battle.Enemies.Count(e => e.IsVirtual && !e.Defeated);
+                            for (int i = alive; i < 5 && EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies); i++)
+                            {
+                                AdventureEnemy v = new AdventureEnemy { Id = "probe-fiend-" + (fiendSeq++), IsVirtual = true, MonsterKind = "imp", Health = 90, MaxHealth = 90, X = c.x + 300, Y = c.y };
+                                c.battle.Enemies.Add(v); c.Spawn(v);
+                            }
+                        }
+                        c.Tick(null, EventArgs.Empty);
+                        Application.DoEvents();
+                        Thread.Sleep(15);
+                    }
+                    double cpu = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds - cpuStart;
+                    PerfProbe.Enabled = false;
+                    return PerfProbe.Report(wall.Elapsed.TotalSeconds, cpu)
+                        + "战场演员: " + c.battle.Enemies.Count + "   英雄等级 Lv." + c.battle.Progress.Level
+                        + "\r\n说明: 演示模式不写真实档案；cultivation/baiye 结算在演示模式跳过（近于零），正常模式为周期性轻量运算。";
+                }
+            }
         }
         private static string LiveSmoke(string assetDirectory)
         {

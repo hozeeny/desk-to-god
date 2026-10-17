@@ -30,6 +30,18 @@ namespace NetBunny
                 catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
                 return;
             }
+            if (args.Length > 0 && args[0] == "--perf-probe")
+            {
+                try
+                {
+                    double minutes = 3;
+                    if (args.Length > 1) Double.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out minutes);
+                    Console.WriteLine(AdventureController.RunPerfProbe(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets"), minutes));
+                    Environment.ExitCode = 0;
+                }
+                catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
+                return;
+            }
             if (args.Length > 0 && args[0] == "--selftest")
             {
                 try { Console.WriteLine(NetworkEngine.SelfTest()); Console.WriteLine(FirewallManager.SelfTest()); Console.WriteLine(KnightPetController.SelfTest()); Console.WriteLine(TrafficLedger.SelfTest()); Console.WriteLine(SpeedTestView.SelfTest()); Console.WriteLine(NetworkToolsView.SelfTest()); Console.WriteLine(CleanupService.SelfTest()); Console.WriteLine(RegionThemeService.SelfTest()); Console.WriteLine(DiskSpaceService.SelfTest()); Console.WriteLine(LiveTempPopulation.SelfTest()); Console.WriteLine(EnemyBalance.SelfTest()); Console.WriteLine(MemoryReclaimer.SelfTest()); Console.WriteLine(CombatTactics.SelfTest()); Console.WriteLine(EnemyFieldBudget.SelfTest()); Console.WriteLine(CultivationProgress.SelfTest()); Console.WriteLine(CultivationCombatPower.SelfTest()); Console.WriteLine(CultivationEncounterScheduler.SelfTest()); Console.WriteLine(CultivationPacing.SelfTest()); Console.WriteLine(BaiyeProgress.SelfTest()); Console.WriteLine(BaiyeTracker.SelfTest()); Console.WriteLine(LingyuSelfTest.Run()); Console.WriteLine(MaintenanceConsentStore.SelfTest()); Console.WriteLine(HeroPoseRig.SelfTest()); Console.WriteLine(AdventureController.SelfTest()); Console.WriteLine(AdventureRenderer.SelfTest()); Console.WriteLine(AdventureRenderer.AssetsSelfTest(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"))); Environment.ExitCode = 0; }
