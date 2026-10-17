@@ -481,15 +481,19 @@ namespace NetBunny
         }
 
         // Return the number of new minor milestones. No time-based "demo end".
-        internal int AdvanceActiveTime(double seconds, CultivationDeviceGrade grade)
+        // rateFactor：只读增益乘区（如洞天丹药/器灵），非法值按 1 处理，上限 4 倍。
+        internal int AdvanceActiveTime(double seconds, CultivationDeviceGrade grade) { return AdvanceActiveTime(seconds, grade, 1.0); }
+        internal int AdvanceActiveTime(double seconds, CultivationDeviceGrade grade, double rateFactor)
         {
             if (Mortal) return 0; // 凡人无灵根，不能吐纳灵气
             if (Double.IsNaN(seconds) || Double.IsInfinity(seconds) || seconds <= 0) return 0;
+            if (Double.IsNaN(rateFactor) || Double.IsInfinity(rateFactor) || rateFactor <= 0) rateFactor = 1.0;
+            rateFactor = Math.Min(4.0, rateFactor);
             // A frozen UI cannot retroactively fabricate a full day of activity.
             // The controller passes elapsed real time, not a frame-count-based dt.
             double elapsed = Math.Min(CultivationBalance.MaxCreditSecondsPerTick, seconds);
             double credit = elapsed * CultivationBalance.BaseQiPerActiveSecond *
-                CultivationHardware.CultivationFactor(grade) * Technique.RateFactor + FractionalQi;
+                CultivationHardware.CultivationFactor(grade) * Technique.RateFactor * rateFactor + FractionalQi;
             long whole = (long)Math.Floor(credit);
             FractionalQi = credit - whole;
             return AddQi(whole);

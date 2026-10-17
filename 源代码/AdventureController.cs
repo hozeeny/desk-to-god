@@ -126,6 +126,8 @@ namespace NetBunny
             lingyu = demonstrationOnly ? new LingyuProgress() : LingyuProgress.Load(LingyuWritePath);
             mirage = new MirageEngine(lingyu, random);
             mirage.CombatRequested += LingyuCombatRequested;
+            // P4 洞天第五个独立存档；示范运行同样只走内存。
+            dongtian = demonstrationOnly ? new DongtianProgress() : DongtianProgress.Load(DongtianWritePath);
             if (!demonstrationOnly)
             {
                 // 启动对账：补齐上次异常退出丢失的获取记录；机缘奖励按两份存档标记对账，不重发不丢失。
@@ -137,6 +139,12 @@ namespace NetBunny
                 if (ReconcileBreakthroughMaterials(cultivation, lingyu))
                 {
                     try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
+                }
+                // 洞天入库同一双向协议：任一方向的半截入库都被补平，材料不复制不消失。
+                if (DongtianProgress.ReconcileTransfers(dongtian, lingyu))
+                {
+                    try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
+                    SaveDongtian();
                 }
             }
             encounters = new CultivationEncounterScheduler(random);
@@ -482,6 +490,56 @@ namespace NetBunny
             }
             else lingyu.Materials[def.MaterialId] = stock + need;
         }
+        // —— P4 洞天经营（与 CultivationProgress / 战斗 / 真实维护解耦）——
+        private readonly DongtianProgress dongtian;
+        private readonly string dongtianPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "dongtian-v1.txt");
+        private string dongtianPathOverride;
+        internal string DongtianWritePath { get { return dongtianPathOverride ?? dongtianPath; } }
+        internal DongtianProgress Dongtian { get { return dongtian; } }
+        internal int LingyuMaterialCount(string material) { if (lingyu == null) return 0; int n; return lingyu.Materials.TryGetValue(material, out n) ? n : 0; }
+        // 筑基后解锁洞天经营；炼气期只见入口提示（埋期待感）。
+        internal bool DongtianUnlocked { get { return cultivation != null && !cultivation.Mortal && cultivation.RealmIndex >= 1; } }
+        private void SaveDongtian()
+        {
+            if (demonstrationOnly || dongtian == null) return;
+            try { dongtian.Save(DongtianWritePath); } catch (Exception e) { scanStatus = "洞天档案暂未保存：" + e.Message; }
+        }
+        private double DongtianQiFactor() { return dongtian == null ? 1.0 : dongtian.QiRateFactor(DateTime.UtcNow); }
+        private double DongtianDamageFactor() { return dongtian == null ? 1.0 : dongtian.DamageFactor(DateTime.UtcNow); }
+        private double DongtianReviveFactor() { return dongtian == null ? 1.0 : dongtian.ReviveTimeFactor(DateTime.UtcNow); }
+        // 灵域材料带回洞天入库：dtin-<mat>-<seq> 双向台账，灵域档先行落盘，
+        // 启动对账双向补平（协议同 B1 破境材料事务）。
+        internal bool DongtianImport(string material)
+        {
+            if (disposed || IsDemo || dongtian == null || lingyu == null || !DongtianUnlocked) return false;
+            int stock;
+            lingyu.Materials.TryGetValue(material, out stock);
+            if (stock < 1) { dongtian.LastNotice = "灵域没有可入库的「" + DongtianRecipes.MaterialName(material) + "」"; return false; }
+            string grantId = "dtin-" + material + "-" + (dongtian.ImportSeq + 1);
+            stock -= 1;
+            if (stock <= 0) lingyu.Materials.Remove(material); else lingyu.Materials[material] = stock;
+            lingyu.Grants[grantId] = DateTime.UtcNow.Ticks;
+            if (!demonstrationOnly) { try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; } }
+            dongtian.ImportSeq++;
+            dongtian.Bag[material] = dongtian.CountOf(material) + 1;
+            dongtian.Grants.Add(grantId);
+            dongtian.LastNotice = "「" + DongtianRecipes.MaterialName(material) + "」已带回洞天入库";
+            SaveDongtian();
+            return true;
+        }
+        internal bool DongtianPlant(int slot, string seedId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Plant(slot, seedId, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        internal bool DongtianHarvest(int slot) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Harvest(slot, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        internal bool DongtianStartPill(string pillId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartPill(pillId, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        internal bool DongtianCollectPill() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectPill(DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        internal bool DongtianStartGear(string gearId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartGear(gearId, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        internal bool DongtianCollectGear() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectGear(DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        private DongtianForm dongtianForm;
+        internal void OpenDongtian()
+        {
+            if (disposed) return;
+            if (dongtianForm == null || dongtianForm.IsDisposed) dongtianForm = new DongtianForm(this);
+            dongtianForm.RefreshData(); dongtianForm.Show(); dongtianForm.BringToFront(); dongtianForm.Activate();
+        }
         // 破境契机评估（B2 时刻授予，幂等，四条路径并行不互斥）：
         // 秘境寻宝 = 蜃楼通关时刻；天材地宝 = 水月灵髓入手时刻；百业悟道见下；
         // 长期苦修由核心按感悟自动领悟。契机绑定获得时的境界与来源事件编号。
@@ -533,7 +591,7 @@ namespace NetBunny
             if (lastCultivationAt < 0 || cultivationPaused || IsDemo) { lastCultivationAt = now; return; }
             double elapsed = now - lastCultivationAt; lastCultivationAt = now;
             if (elapsed <= 0) return;
-            if (cultivation.AdvanceActiveTime(elapsed, deviceGrade) > 0) Save();
+            if (cultivation.AdvanceActiveTime(elapsed, deviceGrade, DongtianQiFactor()) > 0) Save();
             if (encounters.Observe(elapsed)) encounterDue = true;
         }
         // 百业证道：同一节拍用真实流逝秒数结算道韵。与修仙吐纳互不依赖——
@@ -1058,7 +1116,7 @@ namespace NetBunny
                 online == KnightConnectivity.Offline ? KnightConnectivity.Unknown : online);
             if (probe) { PerfProbe.End(SecConnectivity); PerfProbe.Begin(); }
             // 境界-战斗强度联动：每拍同步修仙战力系数（凡人偏弱、觉醒渐强、筑基攻防质变）。
-            battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation);
+            battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation) * DongtianDamageFactor();
             battle.CultivationDefenseFactor = CultivationCombatPower.DefenseFactor(cultivation);
             battle.Tick(dt);
             // 蜃楼战斗中修士力竭：镜妖遁入镜中，机缘战斗按已选落空，秘境不软锁。
@@ -1066,7 +1124,7 @@ namespace NetBunny
             // Unattended recovery: a defeated cultivator always meditates back to
             // full health; no manual revival and no fixed online schedule needed.
             // 筑基修士恢复加倍（CultivationCombatPower.ReviveFactor）。
-            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation))
+            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation) * DongtianReviveFactor())
             {
                 battle.Revive();
                 if (cultivation.AutoBattle) battle.SetAutomatic(true);
@@ -1496,6 +1554,8 @@ namespace NetBunny
             if (baiye != null) { try { baiye.Save(BaiyeWritePath); } catch (Exception e) { scanStatus = "百业档案暂未保存：" + e.Message; } }
             // 灵域第四个独立存档；保存失败只记状态，不影响其他存档。
             if (lingyu != null) { try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; } }
+            // 洞天第五个独立存档（P4）；保存失败只记状态。
+            if (dongtian != null) { try { dongtian.Save(DongtianWritePath); } catch (Exception e) { scanStatus = "洞天档案暂未保存：" + e.Message; } }
         }
         public void Dispose()
         {
@@ -2124,6 +2184,24 @@ namespace NetBunny
                     check(g.battle.CultivationDamageFactor > 1.5, "late qi-refining sharpens every strike");
                     g.cultivation.RealmIndex = 1; g.Tick(null, EventArgs.Empty);
                     check(g.battle.CultivationDefenseFactor < 1.0 && g.battle.CultivationDamageFactor > 2.0, "foundation establishment brings real power");
+                    // —— P4 洞天经营闭环（演示控制器，内存态）：解锁门槛、入库、种植炼制、增益接线 ——
+                    g.cultivation.RealmIndex = 0;
+                    check(!g.DongtianUnlocked && !g.DongtianPlant(0, "linggu"), "qi-refining cannot open the cave yet");
+                    g.cultivation.RealmIndex = 1;
+                    check(g.DongtianUnlocked, "foundation establishment unlocks the cave");
+                    g.lingyu.Materials["shuiyue-lingsui"] = 2;
+                    check(g.DongtianImport("shuiyue-lingsui") && g.DongtianImport("shuiyue-lingsui") && !g.DongtianImport("shuiyue-lingsui")
+                        && g.Dongtian.CountOf("shuiyue-lingsui") == 2 && g.LingyuMaterialCount("shuiyue-lingsui") == 0,
+                        "imports move lingsui one by one through the dual ledger");
+                    check(g.DongtianStartPill("ninglu") && g.Dongtian.CountOf("shuiyue-lingsui") == 1, "the mirage material brews into a pill");
+                    g.Dongtian.Furnace = "ninglu,1"; // 直接写成已成熟槽位，走真实收丹路径
+                    check(g.DongtianCollectPill() && g.Dongtian.BuffActive("buff-ninglu", DateTime.UtcNow), "collecting the pill activates its buff");
+                    g.Tick(null, EventArgs.Empty);
+                    check(g.battle.CultivationDamageFactor > CultivationCombatPower.DamageFactor(g.cultivation),
+                        "the pill buff feeds the per-tick combat factor");
+                    check(g.DongtianPlant(0, "linggu") && !g.DongtianHarvest(0), "planting starts real-time growth and refuses early harvest");
+                    g.Dongtian.Fields[0] = "linggu,1";
+                    check(g.DongtianHarvest(0) && g.Dongtian.CountOf("linggu") == 2, "a ripe field harvests into the bag");
                     check(g.connectivity == null && g.battle.Progress.FreedBytes == 0 && !File.Exists(g.LingyuWritePath),
                         "growth simulation never touches network, files, or real archives");
                 }
