@@ -128,6 +128,8 @@ namespace NetBunny
             lingyu = demonstrationOnly ? new LingyuProgress() : LingyuProgress.Load(LingyuWritePath);
             mirage = new MirageEngine(lingyu, random);
             mirage.CombatRequested += LingyuCombatRequested;
+            // P4 洞天第五个独立存档；示范运行同样只走内存。
+            dongtian = demonstrationOnly ? new DongtianProgress() : DongtianProgress.Load(DongtianWritePath);
             if (!demonstrationOnly)
             {
                 // 启动对账：补齐上次异常退出丢失的获取记录；机缘奖励按两份存档标记对账，不重发不丢失。
@@ -139,6 +141,12 @@ namespace NetBunny
                 if (ReconcileBreakthroughMaterials(cultivation, lingyu))
                 {
                     try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
+                }
+                // 洞天入库同一双向协议：任一方向的半截入库都被补平，材料不复制不消失。
+                if (DongtianProgress.ReconcileTransfers(dongtian, lingyu))
+                {
+                    try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
+                    SaveDongtian();
                 }
                 // 蜃楼重启恢复排队：上次退出时战斗未决（ExpeditionActive + CombatPending
                 // 已持久化）的，首个主节拍补发镜妖——界面与渲染此时尚未就绪，不能在此生成。
@@ -494,6 +502,91 @@ namespace NetBunny
             }
             else lingyu.Materials[def.MaterialId] = stock + need;
         }
+        // —— P4 洞天经营（与 CultivationProgress / 战斗 / 真实维护解耦）——
+        private readonly DongtianProgress dongtian;
+        private readonly string dongtianPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "dongtian-v1.txt");
+        private string dongtianPathOverride;
+        internal string DongtianWritePath { get { return dongtianPathOverride ?? dongtianPath; } }
+        internal DongtianProgress Dongtian { get { return dongtian; } }
+        internal int LingyuMaterialCount(string material) { if (lingyu == null) return 0; int n; return lingyu.Materials.TryGetValue(material, out n) ? n : 0; }
+        // 筑基后解锁洞天经营；炼气期只见入口提示（埋期待感）。
+        internal bool DongtianUnlocked { get { return cultivation != null && !cultivation.Mortal && cultivation.RealmIndex >= 1; } }
+        private void SaveDongtian()
+        {
+            SaveDongtianCore();
+        }
+        private bool dongtianPersistPending; private double dongtianPersistRetryAt = -1;
+        // 持久化状态三段式：待确认（内存生效、档案未落盘）→ 提交成功（双档落盘）。
+        // 任何真实写入失败都不静默报成功：状态栏与洞天面板明示，Tick 每 15 秒重试。
+        internal bool DongtianPersistPending { get { return dongtianPersistPending; } }
+        private bool SaveDongtianCore()
+        {
+            if (dongtian == null || (demonstrationOnly && dongtianPathOverride == null)) return true;
+            try
+            {
+                dongtian.Save(DongtianWritePath);
+                return true;
+            }
+            catch (Exception e) { dongtianPersistPending = true; scanStatus = "洞天档案暂未保存（操作待确认，将持续自动重试）：" + e.Message; return false; }
+        }
+        // 灵域档同款保存：入库协议要求灵域档先行落盘，失败同样进入待确认。
+        private bool SaveLingyuCore()
+        {
+            if (lingyu == null || (demonstrationOnly && lingyuPathOverride == null)) return true;
+            try { lingyu.Save(LingyuWritePath); return true; }
+            catch (Exception e) { dongtianPersistPending = true; scanStatus = "灵域档案暂未保存（操作待确认，将持续自动重试）：" + e.Message; return false; }
+        }
+        // 待确认重试：两份档案都落盘才算提交成功；崩溃窗口由启动对账（ReconcileTransfers）补平。
+        internal void TryFlushDongtianPersistence()
+        {
+            if (disposed || !dongtianPersistPending) return;
+            bool lingyuOk = lingyu == null || (demonstrationOnly && lingyuPathOverride == null);
+            if (!lingyuOk) { try { lingyu.Save(LingyuWritePath); lingyuOk = true; } catch { } }
+            bool dongtianOk = dongtian == null || (demonstrationOnly && dongtianPathOverride == null);
+            if (!dongtianOk) { try { dongtian.Save(DongtianWritePath); dongtianOk = true; } catch { } }
+            if (lingyuOk && dongtianOk) { dongtianPersistPending = false; if (dongtian != null) dongtian.LastNotice = "洞天与灵域档案均已落盘（提交成功）"; }
+        }
+        private double DongtianQiFactor() { return dongtian == null ? 1.0 : dongtian.QiRateFactor(DateTime.UtcNow); }
+        private double DongtianDamageFactor() { return dongtian == null ? 1.0 : dongtian.DamageFactor(DateTime.UtcNow); }
+        private double DongtianReviveFactor() { return dongtian == null ? 1.0 : dongtian.ReviveTimeFactor(DateTime.UtcNow); }
+        // 灵域材料带回洞天入库：dtin-<mat>-<seq> 双向台账，灵域档先行落盘，
+        // 启动对账双向补平（协议同 B1 破境材料事务）。
+        internal bool DongtianImport(string material)
+        {
+            if (disposed || IsDemo || dongtian == null || lingyu == null || !DongtianUnlocked) return false;
+            int stock;
+            lingyu.Materials.TryGetValue(material, out stock);
+            if (stock < 1) { dongtian.LastNotice = "灵域没有可入库的「" + DongtianRecipes.MaterialName(material) + "」"; return false; }
+            string grantId = "dtin-" + material + "-" + (dongtian.ImportSeq + 1);
+            stock -= 1;
+            if (stock <= 0) lingyu.Materials.Remove(material); else lingyu.Materials[material] = stock;
+            lingyu.Grants[grantId] = DateTime.UtcNow.Ticks;
+            bool committed = SaveLingyuCore();
+            dongtian.ImportSeq++;
+            dongtian.Bag[material] = dongtian.CountOf(material) + 1;
+            dongtian.Grants.Add(grantId);
+            committed = SaveDongtianCore() && committed;
+            dongtian.LastNotice = "「" + DongtianRecipes.MaterialName(material) + "」已带回洞天入库" + (committed ? "" : "（档案待落盘，自动重试中）");
+            return true;
+        }
+        // 六个操作入口共用同一持久化语义：内存生效即返回成功，但写盘失败必明示待确认并自动重试。
+        private void SaveDongtianWithNotice()
+        {
+            if (!SaveDongtianCore() && dongtian != null) dongtian.LastNotice += "（档案待落盘，自动重试中）";
+        }
+        internal bool DongtianPlant(int slot, string seedId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Plant(slot, seedId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianHarvest(int slot) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Harvest(slot, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianStartPill(string pillId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartPill(pillId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianCollectPill() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectPill(DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianStartGear(string gearId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartGear(gearId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianCollectGear() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectGear(DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        private DongtianForm dongtianForm;
+        internal void OpenDongtian()
+        {
+            if (disposed) return;
+            if (dongtianForm == null || dongtianForm.IsDisposed) dongtianForm = new DongtianForm(this);
+            dongtianForm.RefreshData(); dongtianForm.Show(); dongtianForm.BringToFront(); dongtianForm.Activate();
+        }
         // 破境契机评估（B2 时刻授予，幂等，四条路径并行不互斥）：
         // 秘境寻宝 = 蜃楼通关时刻；天材地宝 = 水月灵髓入手时刻；百业悟道见下；
         // 长期苦修由核心按感悟自动领悟。契机绑定获得时的境界与来源事件编号。
@@ -545,7 +638,7 @@ namespace NetBunny
             if (lastCultivationAt < 0 || cultivationPaused || IsDemo) { lastCultivationAt = now; return; }
             double elapsed = now - lastCultivationAt; lastCultivationAt = now;
             if (elapsed <= 0) return;
-            if (cultivation.AdvanceActiveTime(elapsed, deviceGrade) > 0) Save();
+            if (cultivation.AdvanceActiveTime(elapsed, deviceGrade, DongtianQiFactor()) > 0) Save();
             if (encounters.Observe(elapsed)) encounterDue = true;
         }
         // 百业证道：同一节拍用真实流逝秒数结算道韵。与修仙吐纳互不依赖——
@@ -1031,34 +1124,66 @@ namespace NetBunny
             }
             battle.LastReward = "磁盘危机 Boss 已绑定 " + files.Count + " 个临时文件 · 可清理 " + AdventureBattle.FormatBytes(boss.Bytes);
         }
+        // --perf-probe 分模块测量（默认关闭，正常运行的开销仅为每节一次布尔判断）。
+        private static readonly int SecTotal = PerfProbe.Register("tick-total");
+        private static readonly int SecCultivation = PerfProbe.Register("cultivation");
+        private static readonly int SecBaiye = PerfProbe.Register("baiye");
+        private static readonly int SecCleanupDrain = PerfProbe.Register("cleanup-drain");
+        private static readonly int SecDisk = PerfProbe.Register("disk-read");
+        private static readonly int SecConnectivity = PerfProbe.Register("connectivity");
+        private static readonly int SecBattleCore = PerfProbe.Register("battle-core");
+        private static readonly int SecCombatMove = PerfProbe.Register("combat-move");
+        private static readonly int SecEnemyLoop = PerfProbe.Register("enemy-loop");
+        private static readonly int SecWorldMaint = PerfProbe.Register("world-maint");
+        private static readonly int SecSave = PerfProbe.Register("save");
+        private static readonly int SecRender = PerfProbe.Register("render");
         private void Tick(object sender, EventArgs args)
         {
             if (disposed) return;
+            bool probe = PerfProbe.Enabled;
+            if (probe) { PerfProbe.BeginTotal(); PerfProbe.Begin(); }
             double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
+            // P1 自适应节拍：战斗动画/拖拽/演示/战利品期间保持 15ms；
+            // 静态桌面降到 33ms（30fps 对桌宠足够流畅），整拍 CPU 近半。
+            bool busyFrame = demoStarted >= 0 || demoPending || dragging || attackAnimation > 0 || actualMoveSpeed > 1 || lootViews.Count > 0 || now < blackholeUntil;
+            if (!busyFrame)
+                foreach (AdventureEnemy e in battle.Enemies)
+                    if (!e.IsVisuallyHidden && (e.AttackFlash > .05 || e.HitFlash > 0 || e.VisualDefeated || e.Dragging)) { busyFrame = true; break; }
+            int wantedInterval = busyFrame ? 15 : 33;
+            if (timer.Interval != wantedInterval) timer.Interval = wantedInterval;
             // Cultivation uses the raw elapsed time, never the render-clamped dt.
             AdvanceCultivation(now);
+            if (probe) { PerfProbe.End(SecCultivation); PerfProbe.Begin(); }
             // 百业道韵同样按真实流逝结算，且藏在后台/隐藏桌宠时照常识别前台工作。
             AdvanceBaiye(now);
+            if (probe) { PerfProbe.End(SecBaiye); PerfProbe.Begin(); }
             // A consent revocation whose file update failed is retried until the
             // stale grant is gone — even while the pet is hidden.
             if ((consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
+            // 洞天/灵域档案的待确认操作同款：每 15 秒重试直至双档落盘提交成功。
+            if (dongtianPersistPending && now >= dongtianPersistRetryAt) { dongtianPersistRetryAt = now + 15; TryFlushDongtianPersistence(); }
             DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
+            if (probe) { PerfProbe.End(SecCleanupDrain); PerfProbe.Begin(); }
             if (!demonstrationOnly && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
-            if (!enabled) return; effects.Tick(dt);
-            if (demoPending) { RenderWorld(false); return; }
+            if (probe) { PerfProbe.End(SecDisk); PerfProbe.Begin(); }
+            if (!enabled) { if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
+            effects.Tick(dt);
+            if (demoPending) { RenderWorld(false); if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
             if (demoStarted >= 0)
             {
-                if (demonstrationOnly || now - demoStarted < 24) { renderTime += dt; RenderWorld(now - lastEnemyPaint >= .065); return; }
+                if (demonstrationOnly || now - demoStarted < 24) { renderTime += dt; RenderWorld(now - lastEnemyPaint >= .065); if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
                 StopDemo();
             }
+            if (probe) { PerfProbe.End(SecRender); PerfProbe.Begin(); }
             KnightConnectivity online = connectivity == null ? KnightConnectivity.Online : connectivity.Read(out connectivityDetail);
             lastConnectivity = online;
             // Cultivation is local-first: losing the network never kills the
             // cultivator or stops local battle; the pet meditates (Pant) instead.
             networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6,
                 online == KnightConnectivity.Offline ? KnightConnectivity.Unknown : online);
+            if (probe) { PerfProbe.End(SecConnectivity); PerfProbe.Begin(); }
             // 境界-战斗强度联动：每拍同步修仙战力系数（凡人偏弱、觉醒渐强、筑基攻防质变）。
-            battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation);
+            battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation) * DongtianDamageFactor();
             battle.CultivationDefenseFactor = CultivationCombatPower.DefenseFactor(cultivation);
             battle.Tick(dt);
             // 蜃楼重启恢复：构造期仅排队（渲染未就绪），首拍补发未决战斗的镜妖。
@@ -1068,7 +1193,7 @@ namespace NetBunny
             // Unattended recovery: a defeated cultivator always meditates back to
             // full health; no manual revival and no fixed online schedule needed.
             // 筑基修士恢复加倍（CultivationCombatPower.ReviveFactor）。
-            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation))
+            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation) * DongtianReviveFactor())
             {
                 battle.Revive();
                 // 凡人力竭后照常自行调息恢复，但恢复后保持手动待机，等待玩家主动出手。
@@ -1077,6 +1202,7 @@ namespace NetBunny
                 Save();
             }
             ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
+            if (probe) { PerfProbe.End(SecBattleCore); PerfProbe.Begin(); }
             bool canFight = !battle.Progress.Dead && networkState.Phase != KnightPhase.Dying && networkState.Phase != KnightPhase.Grave && networkState.Phase != KnightPhase.Revive;
             // Ambient virtual fiends keep the cultivation world alive even when the
             // machine has no temp files at all; the field budget caps render cost.
@@ -1114,6 +1240,7 @@ namespace NetBunny
             }
             actualMoveSpeed = dragging || dt <= 0 ? 0 : AdventureBattle.Distance(moveStartX, moveStartY, x, y) / dt;
             runCycle = (runCycle + actualMoveSpeed * dt / (displayScale * HeroPoseRig.TravelPerCycle)) % 1;
+            if (probe) { PerfProbe.End(SecCombatMove); PerfProbe.Begin(); }
             foreach (AdventureEnemy enemy in battle.Enemies.ToArray())
             {
                 enemy.MoveSpeed = 0;
@@ -1124,13 +1251,17 @@ namespace NetBunny
                 AttackHero(enemy, canFight, dt);
                 if (battle.Progress.Dead && canFight) { battle.StopFightingAfterDeath(); canFight = false; Save(); }
             }
+            if (probe) { PerfProbe.End(SecEnemyLoop); PerfProbe.Begin(); }
             PumpCleanup();
             RefillEnemies();
             if (now - lastScan >= InventoryIntervalSeconds || (now - lastScan >= .35 && scannedChangeVersion != Interlocked.CompareExchange(ref tempChangeVersion,0,0))) RefreshWorld(false);
             if (!demonstrationOnly && now - lastMemory >= 1 && !memoryBusy) ReadMemory(now);
             if (!demonstrationOnly && now - lastRegion >= 60) { lastRegion = now; region.RefreshAsync(); }
+            if (probe) { PerfProbe.End(SecWorldMaint); PerfProbe.Begin(); }
             if (now - lastSave >= 20) Save();
+            if (probe) { PerfProbe.End(SecSave); PerfProbe.Begin(); }
             RenderWorld(false);
+            if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); }
         }
         private void AdvanceAutomaticCombat(AdventureEnemy target, double now, double dt)
         {
@@ -1401,7 +1532,33 @@ namespace NetBunny
         private void PositionLandmark() { landmarkWindow.Location = new Point(area.Left + 16, area.Bottom - LandmarkSize.Height - 16); }
         private void PaintWindow(KnightLayeredWindow window, AdventureRenderState state)
         {
+            PresentedFrames++;
             window.Present(renderer.Render(state)); if (!window.Visible) window.Show();
+        }
+        // 实际栅格化计数（性能探针用）：每次 PaintWindow +1，跳绘不计。
+        internal long PresentedFrames;
+        private string lastHeroSignature;
+        // P0 动画帧量化：战斗特效期间 24fps，跑动 24fps/12 步循环，静态 12fps；
+        // 签名（帧、相位、朝向、血量档位、标签等）任一不变则跳过栅格化，仅更新窗口位置。
+        private string HeroSignature(AdventureRenderState s)
+        {
+            double now = clock.Elapsed.TotalSeconds;
+            int q = attackAnimation > 0 || now < blackholeUntil || s.MoveSpeed > 1 ? 24 : 12;
+            double cycleFrac = s.Cycle - Math.Floor(s.Cycle);
+            return s.Phase + "|" + s.WeaponId + "|" + (demonstrationOnly ? demoTheme : region.CurrentCode) + "|" + s.Size.Width
+                + "|" + (int)(s.Time * q) + "|" + (int)(cycleFrac * (s.MoveSpeed > 1 ? 12 : 24)) + "|" + (int)(s.MoveSpeed / 25)
+                + "|" + (s.FacingRight ? 1 : 0) + "|" + s.Level + "|" + (int)(s.HealthRatio * 40)
+                + "|" + (int)(s.GlowProgress * 24) + "|" + (int)(s.AttackProgress * q) + "|" + (int)(s.PhaseTime * q) + "|" + s.Label;
+        }
+        private string EnemySignature(AdventureEnemy enemy, string label, double deathProgress)
+        {
+            int q = enemy.AttackFlash > .05 || enemy.HitFlash > 0 ? 24 : 10;
+            return (enemy.IsDiskBoss ? "D" : !String.IsNullOrEmpty(enemy.EvilTheme) ? "E" : enemy.IsBoss ? "B" : "S")
+                + "|" + enemy.MonsterKind + "|" + (enemy.BossWeapon ?? "") + "|" + (enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode))
+                + "|" + EnemySize(enemy).Width + "|" + (enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle")
+                + "|" + (int)(enemy.AnimationTime * q) + "|" + (int)(enemy.DeathElapsed * q) + "|" + (int)(deathProgress * 12)
+                + "|" + (enemy.FacingRight ? 1 : 0) + "|" + (int)(enemy.MoveSpeed / 10)
+                + "|" + enemy.Health + "/" + enemy.MaxHealth + "|" + enemy.QueueNumber + "|" + label;
         }
         private AdventureRenderState HeroVisual(double now)
         {
@@ -1412,22 +1569,32 @@ namespace NetBunny
             else if (phase == "run") phase = "idle";
             return new AdventureRenderState { Kind = "Hero", Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
         }
+        private static readonly int SecRenderHero = PerfProbe.Register("render.hero");
+        private static readonly int SecRenderEnemies = PerfProbe.Register("render.enemies");
+        private static readonly int SecRenderWindows = PerfProbe.Register("render.windows");
         private void RenderWorld(bool enemies)
         {
             if (disposed || !enabled) return;
+            bool probe = PerfProbe.Enabled;
             try
             {
                 if (demoStarted >= 0) { RenderDemo(enemies || clock.Elapsed.TotalSeconds - lastEnemyPaint >= .066); return; }
-                heroWindow.Location = new Point((int)x, (int)y); PaintWindow(heroWindow, HeroVisual(renderTime));
+                if (probe) PerfProbe.Begin();
+                heroWindow.Location = new Point((int)x, (int)y);
+                AdventureRenderState heroState = HeroVisual(renderTime);
+                string heroSig = HeroSignature(heroState);
+                if (heroSig != lastHeroSignature || !heroWindow.Visible) { lastHeroSignature = heroSig; PaintWindow(heroWindow, heroState); }
                 double paintNow = clock.Elapsed.TotalSeconds;
                 if (enemies || !landmarkWindow.Visible || paintNow - lastLandmarkPaint >= .25)
                 {
                     lastLandmarkPaint = paintNow;
                     PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = renderTime, Label = CastleAmountText, GrowthLabel = GrowthStatusText, GrowthRatio = ResourceGrowthRatio, DiskLabel = diskSnapshot.Available ? "C盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) : "C盘剩余：等待采样", DiskFreeRatio = diskSnapshot.Available ? diskSnapshot.FreeRatio : -1, DiskCritical = diskSnapshot.Available && diskSnapshot.AvailableBytes < LowDiskBossPolicy.LowThresholdBytes, Opacity = 1 });
                 }
+                if (probe) { PerfProbe.End(SecRenderHero); PerfProbe.Begin(); }
                 HashSet<string> visible = new HashSet<string>();
                 // Dispose retired windows BEFORE showing replacements, including demo transitions.
                 RemoveUnusedWindows(new HashSet<string>(battle.Enemies.Where(e => !e.IsVisuallyHidden).Take(EnemyFieldBudget.MaxEnemies).Select(e => e.Id)));
+                if (probe) { PerfProbe.End(SecRenderWindows); PerfProbe.Begin(); }
                 // Keep positions current on every tick, but spread pose rasterization across
                 // four enemies at a time so a full field cannot stall the hero's animation.
                 int enemyCount = battle.Enemies.Count, paintStart = enemyCount == 0 ? 0 : enemyPaintCursor % enemyCount;
@@ -1454,12 +1621,25 @@ namespace NetBunny
                     if (!enemies && !newWindow && !enemy.VisualDirty && !enemy.VisualDefeated && (enemyIndex - paintStart + enemyCount) % enemyCount >= 4) continue;
                     string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "邪恶分身 · " + AdventureWeapon.Find(enemy.BossWeapon).Name : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name + (enemy.Batch != null && enemy.Batch.Candidates.Any(f=>!f.EligibleForCleanup) ? " · 近期文件" : "");
                     double deathProgress = enemy.VisualDefeated ? Math.Min(1, enemy.DeathElapsed / AdventureEnemy.ShatterSeconds) : 0;
+                    // P0：完全静止且无特效的妖物整体跳绘（姿态冻结）；活动妖物按帧量化签名跳绘。
+                    bool idleStatic = !enemy.VisualDefeated && enemy.AttackFlash <= .05 && enemy.HitFlash <= 0 && enemy.MoveSpeed <= 1;
+                    string enemySig = null;
+                    if (!newWindow && window.Visible && !enemy.VisualDirty)
+                    {
+                        if (idleStatic) continue;
+                        enemySig = EnemySignature(enemy, label, deathProgress);
+                        if (enemySig == enemy.PaintedSignature) continue;
+                    }
+                    if (!idleStatic && enemySig == null) enemySig = EnemySignature(enemy, label, deathProgress);
+                    enemy.PaintedSignature = enemySig;
                     PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
                     enemy.VisualDirty = false;
                 }
                 enemyPaintCursor = enemyCount == 0 ? 0 : (paintStart + 4) % enemyCount;
+                if (probe) { PerfProbe.End(SecRenderEnemies); PerfProbe.Begin(); }
                 RemoveUnusedWindows(visible);
                 foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }
+                if (probe) PerfProbe.End(SecRenderWindows);
             }
             catch (Exception e) { failure = e.Message; Enabled = false; }
         }
@@ -1509,6 +1689,8 @@ namespace NetBunny
             if (baiye != null) { try { baiye.Save(BaiyeWritePath); } catch (Exception e) { scanStatus = "百业档案暂未保存：" + e.Message; } }
             // 灵域第四个独立存档；保存失败只记状态，不影响其他存档。
             if (lingyu != null) { try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; } }
+            // 洞天第五个独立存档（P4）；保存失败只记状态。
+            if (dongtian != null) { try { dongtian.Save(DongtianWritePath); } catch (Exception e) { scanStatus = "洞天档案暂未保存：" + e.Message; } }
         }
         public void Dispose()
         {
@@ -1516,12 +1698,25 @@ namespace NetBunny
             timer.Stop(); CancelPending(); cancellation.Cancel();
             // Final best-effort flush of any consent revocation whose file update
             // failed during the session, so a restart cannot resurrect it.
-            if (consentRetryCleanup || consentRetryMemory) TryFlushConsentRevocation();
+            if (consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) TryFlushConsentRevocation();
+            // 洞天待确认操作同样在退出前做最后一次落盘尝试。
+            if (dongtianPersistPending) TryFlushDongtianPersistence();
             if (tempWatcher != null) { tempWatcher.Dispose(); tempWatcher = null; }
             if (memoryReclaimTask != null) { try { memoryReclaimTask.Wait(6000); DrainMemoryReclaim(); } catch { } }
             // Clean only works under the local temporary directory and checks the
             // token between files. Finish the active result before saving progress.
-            if (cleanupTask != null) { try { cleanupTask.Wait(); DrainCleanup(); } catch { } }
+            // Bounded wait: a worker that never answers cancellation must not wedge
+            // the GUI shutdown. If it overruns, its result stays unclaimed — freed
+            // bytes are never invented for an unfinished task.
+            if (cleanupTask != null)
+            {
+                try
+                {
+                    if (cleanupTask.Wait(8000)) DrainCleanup();
+                    else scanStatus = "退出时仍有清理任务未响应取消：已保留其未完成状态，未计入任何清理成果";
+                }
+                catch { }
+            }
             demoStarted = -1; demoPending = false;
             // 退出前封口未落记录的活动片段，保证重启后道韵都有对应获取记录。
             if (baiyeTracker != null) baiyeTracker.Seal();
@@ -1529,6 +1724,7 @@ namespace NetBunny
             timer.Dispose(); if (connectivity != null) connectivity.Dispose(); region.Changed -= RegionChanged; region.Dispose();
             if (equipment != null) equipment.Dispose(); if (stele != null) stele.Dispose(); if (lingyuForm != null) lingyuForm.Dispose(); if (breakthroughForm != null) breakthroughForm.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
         }        internal AdventureBattle Battle { get { return battle; } }
+        internal int CurrentTickInterval { get { return timer.Interval; } }
         internal string DetailText { get { return cleanupNotice + "\r\n" + scanStatus + "\r\n" + (diskSnapshot.Available ? "C 盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) + " / " + AdventureBattle.FormatBytes(diskSnapshot.TotalBytes) : diskSnapshot.Error) + "\r\n" + connectivityDetail + "\r\n" + region.Status; } }
         internal string ThemeMode { get { return battle.Progress.ThemeMode; } }
         internal bool IsDemo { get { return demoStarted >= 0 || demoPending; } }
@@ -1647,10 +1843,12 @@ namespace NetBunny
                     c.RenderWorld(true); check(c.enemyWindows.Count == 8 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies), "full field contains six ordinary monsters and the two distinct bosses");
                     System.Reflection.FieldInfo currentFrame = typeof(KnightLayeredWindow).GetField("current", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                     HashSet<string> repainted = new HashSet<string>(); bool boundedPaint = true, positionsCurrent = true;
+                    // 移动中的妖物（MoveSpeed>1）：帧量化签名每拍变化，轮换预算内每只到点必重绘。
+                    foreach (AdventureEnemy enemy in c.battle.Enemies) enemy.MoveSpeed = 5;
                     for (int tick = 0; tick < 4; tick++)
                     {
                         Dictionary<string, object> frames = c.enemyWindows.ToDictionary(pair => pair.Key, pair => currentFrame.GetValue(pair.Value));
-                        foreach (AdventureEnemy enemy in c.battle.Enemies) { enemy.X += 2; enemy.AnimationTime += .016; }
+                        foreach (AdventureEnemy enemy in c.battle.Enemies) { enemy.X += 2; enemy.AnimationTime += .09; }
                         c.renderTime += .016; c.RenderWorld(false); int changed = 0;
                         foreach (AdventureEnemy enemy in c.battle.Enemies)
                         {
@@ -1660,9 +1858,17 @@ namespace NetBunny
                         }
                         boundedPaint &= changed == 4;
                     }
-                    check(boundedPaint, "normal rendering spreads eight monsters across four rasterizations per tick");
+                    check(boundedPaint, "normal rendering spreads eight moving monsters across four rasterizations per tick");
                     check(positionsCurrent, "all monster positions follow movement even when their pose is cached");
                     check(repainted.Count == 8, "round-robin rendering never starves a monster pose");
+                    // P0 静止跳绘：完全静止、无特效、非脏的妖物一拍零栅格化，窗口位置仍然跟随。
+                    foreach (AdventureEnemy enemy in c.battle.Enemies) { enemy.MoveSpeed = 0; enemy.AttackFlash = 0; enemy.HitFlash = 0; }
+                    Dictionary<string, object> idleFrames = c.enemyWindows.ToDictionary(pair => pair.Key, pair => currentFrame.GetValue(pair.Value));
+                    foreach (AdventureEnemy enemy in c.battle.Enemies) enemy.X += 3;
+                    c.RenderWorld(false);
+                    check(c.battle.Enemies.All(enemy => Object.ReferenceEquals(idleFrames[enemy.Id], currentFrame.GetValue(c.enemyWindows[enemy.Id])))
+                        && c.battle.Enemies.All(enemy => c.enemyWindows[enemy.Id].Left == (int)enemy.X),
+                        "idle monsters skip rasterization entirely while their windows still track position");
                     AdventureEnemy reaction = c.battle.Enemies.First(e => e.Id == "paint-5"); reaction.Health = reaction.MaxHealth = 100;
                     reaction.Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\reaction.tmp", Length = 4096 } }, 1);
                     c.battle.Authorize(reaction); c.battle.Cooldown = 0; c.enemyPaintCursor = 0;
@@ -1762,8 +1968,10 @@ namespace NetBunny
                     check(c.battle.PlanNext(c.x, c.y, c.AutoMaintenanceEligibility) == gatedFile, "explicit unattended-maintenance consent admits real-effect targets");
                     check(c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && !gatedFile.Authorized && c.battle.Automatic, "revoking unattended maintenance retires its queued automatic targets but keeps auto battle");
                     c.battle.CancelQueue(); c.battle.Enemies.Remove(gatedFile); c.battle.Enemies.Remove(freeFiend);
-                    // A failed revocation write still applies in memory, cancels the
-                    // in-flight worker at once, and retries the stale grant removal.
+                    // A revocation against a locked grant file still applies in
+                    // memory at once and cancels the in-flight worker; instead of
+                    // only scheduling a retry it pins a revocation marker so a
+                    // force-quit cannot let the stale grant resurrect consent.
                     string blockedConsent = Path.Combine(Path.GetTempPath(), "consent-blocked-" + Guid.NewGuid().ToString("N") + ".txt");
                     File.WriteAllText(blockedConsent, "cleanup=1\nmemory=1\nautomaint=0\n", new UTF8Encoding(false));
                     FileStream consentLock = new FileStream(blockedConsent, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -1776,21 +1984,28 @@ namespace NetBunny
                         AdventureEnemy inFlight = new AdventureEnemy { Id = "in-flight-revoke", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\inflight.tmp", Length = 777 } }, 1), Health = 1, MaxHealth = 1 };
                         c.battle.Enemies.Add(inFlight); c.Spawn(inFlight); c.battle.Authorize(inFlight); c.battle.Cooldown = 0; c.battle.Strike(inFlight); c.BeginCleanup(inFlight);
                         check(c.cleanupTask != null && c.workCancellation != null, "in-flight cleanup worker started for the revocation-failure test");
-                        check(!c.SetCleanupConsent(false) && !c.consent.CleanupEnabled && c.consentRetryCleanup, "failed revocation write reports failure yet still applies in memory and schedules a retry");
+                        check(c.SetCleanupConsent(false) && !c.consent.CleanupEnabled && !c.consentRetryCleanup && File.Exists(blockedConsent + ".revoked"),
+                            "revocation against a locked grant applies in memory at once and pins a revocation marker instead of failing");
                         check(c.workCancellation.IsCancellationRequested, "in-flight cleanup is cancelled even when the consent file update fails");
                         c.DrainCleanup();
                         check(inFlight.Failed && c.battle.Progress.FreedBytes == freed && c.battle.LastReward.Contains("取消"), "cancelled worker reports its actual result without inventing freed bytes");
+                        // Simulate a restart right now: the stale grant file still
+                        // says cleanup=1, and while the lock keeps it unreadable
+                        // the only safe answer is fully closed — never resurrected.
+                        check(!MaintenanceConsentStore.Load(blockedConsent).CleanupEnabled && !MaintenanceConsentStore.Load(blockedConsent).MemoryEnabled,
+                            "a restart after the revoked disable fails fully closed while the stale grant is locked");
                     }
                     finally
                     {
                         c.consentPathOverride = null; c.simulatedCleaner = null;
                         consentLock.Dispose();
                         try { File.Delete(blockedConsent); } catch { }
+                        try { File.Delete(blockedConsent + ".revoked"); } catch { }
                     }
                     c.TryFlushConsentRevocation();
                     check(!c.consentRetryCleanup, "stale consent removal is retried until the file can no longer resurrect it");
-                    // 无人值守自动维护同款承诺：撤销写盘失败 → 本机立即生效并持续重试清除；
-                    // 授权文件是事实源——显式落盘的授权重启后按文件恢复。
+                    // 无人值守自动维护同款承诺：锁定的授权文件撤销时同样钉入撤销
+                    // 标记——本机立即生效，重启不会复活；显式落盘的授权仍按文件恢复。
                     string blockedAuto = Path.Combine(Path.GetTempPath(), "consent-automaint-" + Guid.NewGuid().ToString("N") + ".txt");
                     File.WriteAllText(blockedAuto, "cleanup=0\nmemory=0\nautomaint=1\n", new UTF8Encoding(false));
                     FileStream autoLock = new FileStream(blockedAuto, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -1798,18 +2013,19 @@ namespace NetBunny
                     {
                         c.consentPathOverride = blockedAuto;
                         c.consent.AutoMaintenanceEnabled = true;
-                        check(!c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && c.consentRetryAutoMaint,
-                            "failed automaint revocation applies in memory at once and schedules the stale-grant retry");
+                        check(c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && !c.consentRetryAutoMaint && File.Exists(blockedAuto + ".revoked"),
+                            "automaint revocation against a locked grant applies in memory at once and pins the revocation marker");
                     }
                     finally { autoLock.Dispose(); }
-                    c.TryFlushConsentRevocation(); // 锁已释放：重试写回 blockedAuto
-                    check(!c.consentRetryAutoMaint && !MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled,
-                        "the retried removal leaves no file that could resurrect automaint after a restart");
+                    c.TryFlushConsentRevocation(); // 锁已释放：无需重试，Load 会修正并清理
+                    check(!c.consentRetryAutoMaint && !MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled && !File.Exists(blockedAuto + ".revoked"),
+                        "after the lock clears, loading persists the corrected grant and retires the marker");
                     c.consentPathOverride = null;
                     File.WriteAllText(blockedAuto, "cleanup=0\nmemory=0\nautomaint=1\n", new UTF8Encoding(false));
                     check(MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled,
                         "an explicitly persisted automaint grant is exactly what a restart restores");
                     try { File.Delete(blockedAuto); } catch { }
+                    try { File.Delete(blockedAuto + ".revoked"); } catch { }
                     // Hide/show and demo transitions never detach runtime state from
                     // the persisted unattended-battle preference.
                     c.cultivation.AutoBattle = true; c.battle.SetAutomatic(true);
@@ -2016,6 +2232,45 @@ namespace NetBunny
                     c.activeCleanupEnemy = partial; c.workCancellation = new CancellationTokenSource(); c.cleanupTask = Task.FromResult(new CleanupResult { FreedBytes = 1048576, DeletedFiles = 1, Cancelled = true, Message = "synthetic partial completion" });
                     int xpBeforeExit = c.battle.Progress.Experience;
                     c.Dispose(); check(c.battle.Progress.FreedBytes == freed + 1048576 && c.battle.Progress.Experience == xpBeforeExit, "exit drains real partial success without paying combat XP a second time");
+                }
+                using (AdventureController hanging = new AdventureController(owner, assetDirectory, true))
+                {
+                    // Exit with an in-flight background task: Dispose cancels the
+                    // worker and still returns promptly instead of blocking the
+                    // whole shutdown behind cleanupTask.Wait().
+                    hanging.simulatedCleaner = delegate(CleanupBatch ignoredBatch, CancellationToken token)
+                    {
+                        TaskCompletionSource<CleanupResult> tcs = new TaskCompletionSource<CleanupResult>();
+                        token.Register(delegate { tcs.TrySetResult(new CleanupResult { Cancelled = true, Message = "清理已取消" }); });
+                        return tcs.Task;
+                    };
+                    AdventureEnemy inFlight = new AdventureEnemy { Id = "dispose-in-flight", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\dispose.tmp", Length = 999 } }, 1), Health = 1, MaxHealth = 1 };
+                    hanging.enabled = true;
+                    hanging.battle.Enemies.Add(inFlight); hanging.Spawn(inFlight); hanging.battle.Authorize(inFlight); hanging.battle.Cooldown = 0; hanging.battle.Strike(inFlight); hanging.BeginCleanup(inFlight);
+                    CancellationTokenSource inFlightCancellation = hanging.workCancellation;
+                    check(hanging.cleanupTask != null && inFlightCancellation != null, "in-flight cleanup started for the dispose test");
+                    System.Diagnostics.Stopwatch exitWatch = System.Diagnostics.Stopwatch.StartNew();
+                    hanging.Dispose();
+                    exitWatch.Stop();
+                    check(inFlightCancellation.IsCancellationRequested && exitWatch.Elapsed.TotalSeconds < 10,
+                        "dispose with an in-flight task cancels the worker and returns promptly instead of blocking shutdown");
+                }
+                using (AdventureController stubborn = new AdventureController(owner, assetDirectory, true))
+                {
+                    // A worker that NEVER answers cancellation: Dispose must bound
+                    // its wait, still return, and never credit freed bytes to an
+                    // unfinished task.
+                    stubborn.simulatedCleaner = delegate(CleanupBatch ignoredBatch, CancellationToken token) { return new TaskCompletionSource<CleanupResult>().Task; };
+                    long freedBefore = stubborn.battle.Progress.FreedBytes;
+                    AdventureEnemy stuck = new AdventureEnemy { Id = "dispose-stubborn", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\stubborn.tmp", Length = 555 } }, 1), Health = 1, MaxHealth = 1 };
+                    stubborn.enabled = true;
+                    stubborn.battle.Enemies.Add(stuck); stubborn.Spawn(stuck); stubborn.battle.Authorize(stuck); stubborn.battle.Cooldown = 0; stubborn.battle.Strike(stuck); stubborn.BeginCleanup(stuck);
+                    check(stubborn.cleanupTask != null, "stubborn cleanup started for the bounded-wait test");
+                    System.Diagnostics.Stopwatch stubbornWatch = System.Diagnostics.Stopwatch.StartNew();
+                    stubborn.Dispose();
+                    stubbornWatch.Stop();
+                    check(stubbornWatch.Elapsed.TotalSeconds < 15 && stubborn.battle.Progress.FreedBytes == freedBefore && stubborn.cleanupTask != null,
+                        "dispose bounds the wait for a cancellation-ignoring worker and never invents freed bytes for it");
                 }
             }
             return "Adventure native smoke: " + count + " checks passed; no real cleanup, network query, or progress save.\r\n" + ResourceSmoke(assetDirectory);
@@ -2258,11 +2513,226 @@ namespace NetBunny
                     check(g.battle.CultivationDamageFactor > 1.5, "late qi-refining sharpens every strike");
                     g.cultivation.RealmIndex = 1; g.Tick(null, EventArgs.Empty);
                     check(g.battle.CultivationDefenseFactor < 1.0 && g.battle.CultivationDamageFactor > 2.0, "foundation establishment brings real power");
+                    // —— P4 洞天经营闭环（演示控制器，内存态）：解锁门槛、入库、种植炼制、增益接线 ——
+                    g.cultivation.RealmIndex = 0;
+                    check(!g.DongtianUnlocked && !g.DongtianPlant(0, "linggu"), "qi-refining cannot open the cave yet");
+                    g.cultivation.RealmIndex = 1;
+                    check(g.DongtianUnlocked, "foundation establishment unlocks the cave");
+                    g.lingyu.Materials["shuiyue-lingsui"] = 2;
+                    check(g.DongtianImport("shuiyue-lingsui") && g.DongtianImport("shuiyue-lingsui") && !g.DongtianImport("shuiyue-lingsui")
+                        && g.Dongtian.CountOf("shuiyue-lingsui") == 2 && g.LingyuMaterialCount("shuiyue-lingsui") == 0,
+                        "imports move lingsui one by one through the dual ledger");
+                    check(g.DongtianStartPill("ninglu") && g.Dongtian.CountOf("shuiyue-lingsui") == 1, "the mirage material brews into a pill");
+                    g.Dongtian.Furnace = "ninglu,1"; // 直接写成已成熟槽位，走真实收丹路径
+                    check(g.DongtianCollectPill() && g.Dongtian.BuffActive("buff-ninglu", DateTime.UtcNow), "collecting the pill activates its buff");
+                    g.Tick(null, EventArgs.Empty);
+                    check(g.battle.CultivationDamageFactor > CultivationCombatPower.DamageFactor(g.cultivation),
+                        "the pill buff feeds the per-tick combat factor");
+                    check(g.DongtianPlant(0, "linggu") && !g.DongtianHarvest(0), "planting starts real-time growth and refuses early harvest");
+                    g.Dongtian.Fields[0] = "linggu,1";
+                    check(g.DongtianHarvest(0) && g.Dongtian.CountOf("linggu") == 2, "a ripe field harvests into the bag");
+                    // —— 洞天面板刷新：低频定时、完成态自动出现领取、控件实例稳定、长开无 GDI/USER 泄漏 ——
+                    using (DongtianForm panel = new DongtianForm(g))
+                    {
+                        panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000);
+                        panel.Show(); Application.DoEvents(); panel.RefreshData();
+                        Control[] firstSet = panel.ActionControlsSnapshot();
+                        check(firstSet.Length > 0 && firstSet.Any(b => b.Text.StartsWith("种", StringComparison.Ordinal))
+                            && firstSet.All(b => b.Text != "收丹" && b.Text != "收器" && !b.Text.StartsWith("收获", StringComparison.Ordinal)),
+                            "the cave panel opens with planting actions and no pending collect");
+                        int gdiBefore = GetGuiResources(Process.GetCurrentProcess().Handle, 0);
+                        int userBefore = GetGuiResources(Process.GetCurrentProcess().Handle, 1);
+                        for (int cycle = 0; cycle < 240; cycle++) { panel.RefreshData(); if ((cycle & 31) == 0) Application.DoEvents(); }
+                        check(firstSet.SequenceEqual(panel.ActionControlsSnapshot()),
+                            "an unchanged action set reuses the same button instances across 240 refreshes");
+                        check(GetGuiResources(Process.GetCurrentProcess().Handle, 0) <= gdiBefore + 4
+                            && GetGuiResources(Process.GetCurrentProcess().Handle, 1) <= userBefore + 4,
+                            "a long-open panel leaks no GDI/USER objects across refreshes");
+                        string signatureBeforeRipe = panel.ActionSignatureForTest;
+                        // 灵田成熟：窗口保持打开，下一次低频刷新自动出现「收获田1」
+                        g.Dongtian.Fields[0] = "linggu,1";
+                        panel.RefreshData();
+                        Control[] ripeSet = panel.ActionControlsSnapshot();
+                        check(ripeSet.Any(b => b.Text == "收获田1") && panel.ActionSignatureForTest != signatureBeforeRipe,
+                            "a ripe field surfaces its harvest action while the window stays open");
+                        for (int cycle = 0; cycle < 30; cycle++) panel.RefreshData();
+                        check(ripeSet.SequenceEqual(panel.ActionControlsSnapshot()), "the rebuilt set also stays instance-stable");
+                        // 丹炉完成：收丹按钮自动出现，点击走真实控制器路径结算
+                        check(g.DongtianStartPill("ninglu"), "brewing restarts for the collect-path check");
+                        g.Dongtian.Furnace = "ninglu,1"; // 直接写成已成槽位，走真实收丹路径
+                        panel.RefreshData();
+                        Button collectPill = panel.ActionControlsSnapshot().FirstOrDefault(b => b.Text == "收丹") as Button;
+                        check(collectPill != null, "a finished furnace surfaces the collect-pill action while the window stays open");
+                        if (collectPill != null) { collectPill.PerformClick(); Application.DoEvents(); }
+                        check(g.Dongtian.Furnace == null && g.Dongtian.BuffActive("buff-ninglu", DateTime.UtcNow),
+                            "clicking the surfaced collect-pill action settles the pill for real");
+                        // 器位完成：收器按钮自动出现并真实结算（器灵常驻生效）
+                        g.Dongtian.Forge = "putuan,1";
+                        panel.RefreshData();
+                        Button collectGear = panel.ActionControlsSnapshot().FirstOrDefault(b => b.Text == "收器") as Button;
+                        check(collectGear != null, "a finished forge surfaces the collect-gear action while the window stays open");
+                        if (collectGear != null) { collectGear.PerformClick(); Application.DoEvents(); }
+                        check(g.Dongtian.Forge == null && g.Dongtian.HasGear("putuan"),
+                            "clicking the surfaced collect-gear action settles the gear for real");
+                        panel.Hide();
+                    }
+                    g.Dongtian.Fields[0] = null; // 还原现场，后续故障注入段自带夹具
+                    // —— 洞天存档故障注入：写盘失败不静默、待确认重试、库存与重复请求守恒 ——
+                    string dtFixture = Path.Combine(Path.GetTempPath(), "dongtian-smoke-" + Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(dtFixture);
+                    try
+                    {
+                        g.dongtianPathOverride = Path.Combine(dtFixture, "dongtian-v1.txt");
+                        g.lingyuPathOverride = Path.Combine(dtFixture, "lingyu-v1.txt");
+                        g.lingyu.Materials.Clear(); g.lingyu.Grants.Clear();
+                        g.Dongtian.Bag.Clear(); g.Dongtian.Grants.Clear(); g.Dongtian.ImportSeq = 0;
+                        g.lingyu.Materials["shuiyue-lingsui"] = 3;
+                        check(g.DongtianImport("shuiyue-lingsui") && !g.DongtianPersistPending && File.Exists(g.DongtianWritePath) && File.Exists(g.LingyuWritePath),
+                            "a committed import lands in both archives at once");
+                        // 库存不足：不动任何台账与序号
+                        check(!g.DongtianImport("lingshi-absent") && g.Dongtian.ImportSeq == 1 && !g.DongtianPersistPending
+                            && g.lingyu.Grants.Count == 1 && g.Dongtian.Grants.Count == 1,
+                            "insufficient stock refuses the import without touching either ledger");
+                        // 重复请求：每次入库只移一份、序号唯一、总量守恒
+                        check(g.DongtianImport("shuiyue-lingsui") && g.DongtianImport("shuiyue-lingsui")
+                            && g.Dongtian.CountOf("shuiyue-lingsui") == 3 && g.LingyuMaterialCount("shuiyue-lingsui") == 0
+                            && g.Dongtian.Grants.Count == 3 && g.lingyu.Grants.Count == 3,
+                            "repeated imports move exactly one each with unique ledger ids");
+                        // 同一材料：入库后脱离破境材料口径；炼丹恰消耗一份
+                        check(g.DongtianStartPill("ninglu") && g.Dongtian.CountOf("shuiyue-lingsui") == 2, "brewing consumes the bag copy once");
+                        g.cultivation.RealmIndex = 0; // 炼气视角：破境材料只认灵域库存，洞天袋内副本不算
+                        check(g.BreakthroughMaterialCount == 0, "imported lingsui leaves the breakthrough material count");
+                        g.lingyu.Materials["shuiyue-lingsui"] = 2;
+                        check(g.BreakthroughMaterialCount == 2 && g.Dongtian.CountOf("shuiyue-lingsui") == 2,
+                            "lingyu stock and cave bag stay separate ledgers");
+                        g.cultivation.RealmIndex = 1; // 恢复筑基（洞天解锁门槛）
+                        // 多次连续写盘失败（双档皆锁）：内存生效但明示待确认，绝不静默报成功
+                        FileStream dtLock = new FileStream(g.DongtianWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        FileStream lyLock = new FileStream(g.LingyuWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        try
+                        {
+                            check(g.DongtianImport("shuiyue-lingsui") && g.DongtianPersistPending, "a failed write reports pending instead of silent success");
+                            check(g.DongtianImport("shuiyue-lingsui") && g.DongtianPersistPending, "repeated failed writes stay pending");
+                            g.TryFlushDongtianPersistence();
+                            check(g.DongtianPersistPending, "the flush keeps waiting while the files stay locked");
+                            check(g.Dongtian.CountOf("shuiyue-lingsui") == 4 && g.LingyuMaterialCount("shuiyue-lingsui") == 0,
+                                "pending imports still apply in memory exactly once");
+                        }
+                        finally { dtLock.Dispose(); lyLock.Dispose(); }
+                        g.TryFlushDongtianPersistence();
+                        check(!g.DongtianPersistPending && DongtianProgress.Load(g.DongtianWritePath).CountOf("shuiyue-lingsui") == 4
+                            && LingyuProgress.Load(g.LingyuWritePath).Grants.Count == 5,
+                            "the retry commits every pending import once the files free up");
+                        // 单档失败方向：只锁灵域档
+                        g.lingyu.Materials["shuiyue-lingsui"] = 1;
+                        FileStream lyLock2 = new FileStream(g.LingyuWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        try { check(g.DongtianImport("shuiyue-lingsui") && g.DongtianPersistPending, "a lingyu-only write failure is also explicit"); }
+                        finally { lyLock2.Dispose(); }
+                        g.TryFlushDongtianPersistence();
+                        check(!g.DongtianPersistPending, "the lingyu-side retry also commits");
+                        // 操作入口同款语义：锁档开炉炼丹 → 待确认；解锁后提交成功
+                        g.Dongtian.Furnace = null;
+                        FileStream dtLock2 = new FileStream(g.DongtianWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        try { check(g.DongtianStartPill("ninglu") && g.DongtianPersistPending && g.Dongtian.LastNotice.Contains("待落盘"), "brewing under a locked archive is marked pending too"); }
+                        finally { dtLock2.Dispose(); }
+                        g.TryFlushDongtianPersistence();
+                        check(!g.DongtianPersistPending && g.Dongtian.Furnace != null, "the pending brew is committed after the retry");
+                    }
+                    finally
+                    {
+                        g.dongtianPathOverride = null; g.lingyuPathOverride = null;
+                        try { Directory.Delete(dtFixture, true); } catch { }
+                    }
                     check(g.connectivity == null && g.battle.Progress.FreedBytes == 0 && !File.Exists(g.LingyuWritePath),
                         "growth simulation never touches network, files, or real archives");
                 }
             }
             return "Growth integration: " + n + " checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).";
+        }
+        // --perf-probe 运行器：隐藏宿主窗体 + 演示控制器（不写真实档案），
+        // 合成一个忙碌战场（虚拟妖物 + 文件怪 + 双 Boss），按控制器当前节拍驱动 Tick，
+        // 输出分模块 CPU 报表；随后附 30 秒静止场景（停战清场）对照自适应节拍与跳绘收益。
+        // 测量与同机其他负载并存，由报告如实注明。
+        private sealed class ProbeSnapshot
+        {
+            internal double Cpu, WorkingSetMb, PrivateMb; internal int Handles, Gdi, User; internal long Frames; internal int Ticks;
+            internal static ProbeSnapshot Capture(AdventureController c, double cpuStart)
+            {
+                Process p = Process.GetCurrentProcess();
+                return new ProbeSnapshot { Cpu = p.TotalProcessorTime.TotalSeconds - cpuStart, WorkingSetMb = p.WorkingSet64 / 1048576.0, PrivateMb = p.PrivateMemorySize64 / 1048576.0, Handles = p.HandleCount, Gdi = GetGuiResources(p.Handle, 0), User = GetGuiResources(p.Handle, 1), Frames = c.PresentedFrames };
+            }
+            internal string Describe()
+            {
+                return "CPU " + Cpu.ToString("0.0") + "s · 工作集 " + WorkingSetMb.ToString("0.0") + "MB · 私有 " + PrivateMb.ToString("0.0") + "MB · 句柄 " + Handles + " · GDI " + Gdi + " · USER " + User + " · 栅格化 " + Frames + " 帧 / " + Ticks + " 拍";
+            }
+        }
+        internal static string RunPerfProbe(string assetDirectory, double minutes)
+        {
+            if (minutes <= 0 || minutes > 60) minutes = 3;
+            using (Form owner = new Form())
+            {
+                IntPtr handle = owner.Handle;
+                using (AdventureController c = new AdventureController(owner, assetDirectory, true))
+                {
+                    c.timer.Stop();
+                    c.enabled = true; c.area = new Rectangle(-24000, -24000, 1600, 1000);
+                    c.demoPending = false; c.demoStarted = -1;
+                    c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(7)); c.cultivation.Layer = 6;
+                    Func<string, CleanupCandidate> file = delegate(string id) { return new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\" + id, Length = 4096, Created = 1, EligibleForCleanup = true }; };
+                    Func<CleanupCandidate[], CleanupSnapshot> snap = delegate(CleanupCandidate[] f) { return new CleanupSnapshot { ObservedFilesAvailable = true, ObservedPathsAvailable = true, ObservedFiles = f.ToList(), ObservedPaths = new HashSet<string>(f.Select(x => x.Path), StringComparer.OrdinalIgnoreCase), InventoryComplete = true }; };
+                    c.ApplyInventory(snap(new[] { file("p1"), file("p2"), file("p3") }), false);
+                    for (int i = 0; i < 5; i++) { AdventureEnemy v = new AdventureEnemy { Id = "probe-fiend-" + i, IsVirtual = true, MonsterKind = i % 2 == 0 ? "imp" : "bat", Health = 90, MaxHealth = 90, X = c.x + 200 + i * 120, Y = c.y }; c.battle.Enemies.Add(v); c.Spawn(v); }
+                    AdventureEnemy memBoss = EnemyBalance.MemoryBoss(c.battle.Progress, c.battle.Weapon, new Random(5)); c.battle.Enemies.Add(memBoss); c.Spawn(memBoss);
+                    AdventureEnemy diskBoss = new AdventureEnemy { Id = "probe-disk", IsBoss = true, IsDiskBoss = true, Health = 700, MaxHealth = 700 }; c.battle.Enemies.Add(diskBoss); c.Spawn(diskBoss);
+                    c.battle.SetAutomatic(true);
+                    PerfProbe.Reset(); PerfProbe.Enabled = true; c.PresentedFrames = 0;
+                    Stopwatch wall = Stopwatch.StartNew();
+                    double cpuStart = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds;
+                    double end = wall.Elapsed.TotalSeconds + minutes * 60;
+                    int fiendSeq = 5; double nextTopUp = 0; int busyTicks = 0;
+                    while (wall.Elapsed.TotalSeconds < end)
+                    {
+                        if (wall.Elapsed.TotalSeconds >= nextTopUp)
+                        {
+                            nextTopUp = wall.Elapsed.TotalSeconds + 5;
+                            int alive = c.battle.Enemies.Count(e => e.IsVirtual && !e.Defeated);
+                            for (int i = alive; i < 5 && EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies); i++)
+                            {
+                                AdventureEnemy v = new AdventureEnemy { Id = "probe-fiend-" + (fiendSeq++), IsVirtual = true, MonsterKind = "imp", Health = 90, MaxHealth = 90, X = c.x + 300, Y = c.y };
+                                c.battle.Enemies.Add(v); c.Spawn(v);
+                            }
+                        }
+                        c.Tick(null, EventArgs.Empty); busyTicks++;
+                        Application.DoEvents();
+                        Thread.Sleep(c.CurrentTickInterval);
+                    }
+                    double busyWall = wall.Elapsed.TotalSeconds;
+                    ProbeSnapshot busySnap = ProbeSnapshot.Capture(c, cpuStart); busySnap.Ticks = busyTicks;
+                    int busyActors = c.battle.Enemies.Count, busyInterval = c.CurrentTickInterval;
+                    string busyReport = PerfProbe.Report(busyWall, busySnap.Cpu);
+                    // —— 静止场景：停战清场、冻结主角移动，量 30 秒自适应节拍与跳绘 ——
+                    c.battle.SetAutomatic(false); c.battle.CancelQueue(); c.battle.Enemies.Clear();
+                    c.pauseMotionUntil = c.clock.Elapsed.TotalSeconds + 9999;
+                    PerfProbe.Reset();
+                    long framesBefore = c.PresentedFrames; double calmStart = wall.Elapsed.TotalSeconds; int calmTicks = 0;
+                    while (wall.Elapsed.TotalSeconds < calmStart + 30)
+                    {
+                        c.Tick(null, EventArgs.Empty); calmTicks++;
+                        Application.DoEvents();
+                        Thread.Sleep(c.CurrentTickInterval);
+                    }
+                    double calmWall = wall.Elapsed.TotalSeconds - calmStart;
+                    ProbeSnapshot calmSnap = ProbeSnapshot.Capture(c, cpuStart); calmSnap.Ticks = calmTicks; calmSnap.Frames = c.PresentedFrames - framesBefore;
+                    PerfProbe.Enabled = false;
+                    string calmReport = PerfProbe.Report(calmWall, calmSnap.Cpu - busySnap.Cpu);
+                    return "== 忙碌战场（自动作战）==\r\n" + busyReport
+                        + "资源: " + busySnap.Describe() + " · 节拍 " + busyInterval + "ms\r\n"
+                        + "战场演员: " + busyActors + "   英雄等级 Lv." + c.battle.Progress.Level
+                        + "\r\n\r\n== 静止场景（停战清场 · 自适应节拍）==\r\n" + calmReport
+                        + "资源: " + calmSnap.Describe() + " · 节拍 " + c.CurrentTickInterval + "ms\r\n"
+                        + "\r\n说明: 演示模式不写真实档案；cultivation/baiye 结算在演示模式跳过（近于零），正常模式为周期性轻量运算。静止场景期间若环境妖物自然刷新，计入真实负载。";
+                }
+            }
         }
         private static string LiveSmoke(string assetDirectory)
         {

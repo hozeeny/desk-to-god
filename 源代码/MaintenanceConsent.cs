@@ -24,6 +24,14 @@ namespace NetBunny
         // it — migration must not silently widen real maintenance into automation.
         internal bool AutoMaintenanceEnabled;
 
+        // Revocation marker: when a disable cannot rewrite OR delete the grant
+        // file (locked, ACL, transient AV lock), the revoked scope names are
+        // pinned into "<path>.revoked". Load treats pinned scopes as off even
+        // if a stale grant file survived, then rewrites the corrected state.
+        // The marker only ever closes scopes, never opens them (fail-closed).
+        private static string RevokedPath(string path) { return path == null ? null : path + ".revoked"; }
+        private static string ScopeName(int scope) { return scope == 0 ? "cleanup" : scope == 1 ? "memory" : "automaint"; }
+
         private bool Get(int scope)
         {
             return scope == 0 ? CleanupEnabled : scope == 1 ? MemoryEnabled : AutoMaintenanceEnabled;
@@ -40,21 +48,63 @@ namespace NetBunny
             MaintenanceConsentStore store = new MaintenanceConsentStore();
             try
             {
-                if (String.IsNullOrEmpty(path) || !File.Exists(path)) return store;
-                foreach (string line in File.ReadAllLines(path, Encoding.UTF8))
+                if (String.IsNullOrEmpty(path)) return store;
+                string revoked = RevokedPath(path);
+                System.Collections.Generic.List<string> pinned = ReadRevoked(revoked);
+                if (File.Exists(path))
                 {
-                    int equals = line.IndexOf('='); if (equals < 1) continue;
-                    string key = line.Substring(0, equals).Trim(), value = line.Substring(equals + 1).Trim();
-                    if (key == "cleanup" && value == "1") store.CleanupEnabled = true;
-                    else if (key == "memory" && value == "1") store.MemoryEnabled = true;
-                    else if (key == "automaint" && value == "1") store.AutoMaintenanceEnabled = true;
-                    // First-stage single-scope archives upgrade to the two attended
-                    // scopes only; unattended auto maintenance stays off (conservative).
-                    else if (key == "consent" && value == "1") { store.CleanupEnabled = true; store.MemoryEnabled = true; }
+                    foreach (string line in File.ReadAllLines(path, Encoding.UTF8))
+                    {
+                        int equals = line.IndexOf('='); if (equals < 1) continue;
+                        string key = line.Substring(0, equals).Trim(), value = line.Substring(equals + 1).Trim();
+                        if (key == "cleanup" && value == "1") store.CleanupEnabled = true;
+                        else if (key == "memory" && value == "1") store.MemoryEnabled = true;
+                        else if (key == "automaint" && value == "1") store.AutoMaintenanceEnabled = true;
+                        // First-stage single-scope archives upgrade to the two attended
+                        // scopes only; unattended auto maintenance stays off (conservative).
+                        else if (key == "consent" && value == "1") { store.CleanupEnabled = true; store.MemoryEnabled = true; }
+                    }
+                }
+                if (pinned.Count > 0)
+                {
+                    // A pinned revocation outranks any stale grant: a previous
+                    // disable pinned the scope off, so a force-quit right after
+                    // revoking cannot resurrect consent on this launch.
+                    foreach (string name in pinned)
+                    {
+                        if (name == "cleanup") store.CleanupEnabled = false;
+                        else if (name == "memory") store.MemoryEnabled = false;
+                        else if (name == "automaint") store.AutoMaintenanceEnabled = false;
+                    }
+                    // Best effort: persist the corrected state and retire the
+                    // marker. If the grant file is still locked the marker stays
+                    // and keeps protecting the next launch as well.
+                    string ignored;
+                    if (store.Persist(path, out ignored)) { try { File.Delete(revoked); } catch { } }
                 }
             }
             catch { return new MaintenanceConsentStore(); }
             return store;
+        }
+
+        private static System.Collections.Generic.List<string> ReadRevoked(string revoked)
+        {
+            System.Collections.Generic.List<string> names = new System.Collections.Generic.List<string>();
+            if (revoked == null || !File.Exists(revoked)) return names;
+            try
+            {
+                foreach (string line in File.ReadAllLines(revoked, Encoding.UTF8))
+                {
+                    string name = line.Trim();
+                    if ((name == "cleanup" || name == "memory" || name == "automaint") && !names.Contains(name)) names.Add(name);
+                }
+            }
+            catch { names.Clear(); }
+            // The marker exists but is unreadable or holds no recognizable scope:
+            // the revocation state is uncertain, so fail closed on EVERY scope.
+            // Real maintenance never resurrects from a marker we cannot read.
+            if (names.Count == 0) { names.Add("cleanup"); names.Add("memory"); names.Add("automaint"); }
+            return names;
         }
 
         private bool Persist(string path, out string error)
@@ -73,6 +123,8 @@ namespace NetBunny
                     new UTF8Encoding(false));
                 if (File.Exists(path)) File.Replace(temporary, path, path + ".bak");
                 else File.Move(temporary, path);
+                // A successful full-state write supersedes any revocation marker.
+                try { string revoked = RevokedPath(path); if (File.Exists(revoked)) File.Delete(revoked); } catch { }
                 return true;
             }
             catch (Exception e) { error = e.Message; return false; }
@@ -99,7 +151,28 @@ namespace NetBunny
                 error = null;
                 return true;
             }
-            catch (Exception e) { error = e.Message; return false; }
+            catch { }
+            // Rewrite and delete both failed (locked grant file): pin the revoked
+            // scope so a force-quit right after this disable cannot resurrect the
+            // stale grant on next launch. The marker only closes scopes.
+            try
+            {
+                string revoked = RevokedPath(path);
+                if (revoked != null)
+                {
+                    System.Collections.Generic.List<string> names = ReadRevoked(revoked);
+                    string name = ScopeName(scope);
+                    if (!names.Contains(name)) names.Add(name);
+                    System.Text.StringBuilder body = new System.Text.StringBuilder();
+                    foreach (string n in names) body.Append(n).Append('\n');
+                    File.WriteAllText(revoked, body.ToString(), new UTF8Encoding(false));
+                    error = null;
+                    return true;
+                }
+            }
+            catch (Exception pin) { error = pin.Message; return false; }
+            error = "consent path unavailable";
+            return false;
         }
 
         internal bool SetCleanup(string path, bool enabled, out string error)
@@ -166,17 +239,73 @@ namespace NetBunny
                 check(!failing.SetAutoMaintenance(blocked, true, out error) && error != null && !failing.AutoMaintenanceEnabled, "a failed save never enables unattended maintenance, not even in memory");
                 check(failing.SetCleanup(blocked, false, out error) && !failing.CleanupEnabled, "disable against an unwritable path succeeds because no stale grant can exist there");
 
-                // A file locked by another handle can neither be replaced nor deleted.
+                // A file locked by another handle can neither be replaced nor deleted,
+                // but the revocation marker still pins the scope off for next launch.
                 File.WriteAllText(file, "cleanup=1\nmemory=1\n", new UTF8Encoding(false));
                 MaintenanceConsentStore live = MaintenanceConsentStore.Load(file);
                 check(live.CleanupEnabled && live.MemoryEnabled, "both scopes loaded before the lock test");
+                string revokedFile = file + ".revoked";
                 using (FileStream lockHandle = new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                 {
-                    check(!live.SetCleanup(file, false, out error) && error != null && !live.CleanupEnabled && live.MemoryEnabled,
-                        "disable applies immediately in memory and reports when the stale grant cannot be removed");
+                    check(live.SetCleanup(file, false, out error) && !live.CleanupEnabled && live.MemoryEnabled,
+                        "disable against a locked grant applies immediately in memory and succeeds via the revocation marker");
+                    check(File.Exists(revokedFile), "the revocation marker was pinned while the grant file stayed locked");
+                    // Simulate a force-quit right here: the stale grant file still
+                    // says cleanup=1, but the marker must win on the next launch.
+                    // While the lock also makes the grant unreadable, the load
+                    // fails fully closed — every scope off is the only safe answer.
+                    MaintenanceConsentStore relaunch = MaintenanceConsentStore.Load(file);
+                    check(!relaunch.CleanupEnabled && !relaunch.MemoryEnabled,
+                        "a force-quit after revoking fails fully closed on relaunch while the grant file is unreadable");
+                    check(File.Exists(revokedFile), "marker survives while the corrected state cannot yet be persisted");
                 }
-                check(MaintenanceConsentStore.Load(file).CleanupEnabled, "the stale file indeed survived the failed disable, so reporting it mattered");
-                check(live.SetCleanup(file, false, out error) && !MaintenanceConsentStore.Load(file).CleanupEnabled, "once the handle is gone, disabling persists");
+                // After the lock clears, loading rewrites the corrected grant file
+                // and retires the marker.
+                MaintenanceConsentStore healed = MaintenanceConsentStore.Load(file);
+                check(!healed.CleanupEnabled && healed.MemoryEnabled, "post-lock load keeps the revoked scope off and the other scope on");
+                check(!File.Exists(revokedFile) && !MaintenanceConsentStore.Load(file).CleanupEnabled && MaintenanceConsentStore.Load(file).MemoryEnabled,
+                    "the corrected state is persisted and the marker retired once the lock clears");
+                // Re-enabling after a revoked disable is an explicit fresh grant.
+                check(healed.SetCleanup(file, true, out error) && MaintenanceConsentStore.Load(file).CleanupEnabled && !File.Exists(revokedFile),
+                    "re-consenting after a revocation is a clean new grant with no marker left");
+                check(live.SetCleanup(file, false, out error) && !MaintenanceConsentStore.Load(file).CleanupEnabled, "ordinary disable still persists once handles are gone");
+
+                // Fault injection: a marker that exists but cannot be read must
+                // never be treated as absent — uncertain state fails fully closed.
+                File.WriteAllText(file, "cleanup=1\nmemory=1\nautomaint=1\n", new UTF8Encoding(false));
+                File.WriteAllText(revokedFile, "garbage-not-a-scope\r\n???\n", new UTF8Encoding(false));
+                MaintenanceConsentStore unreadable = MaintenanceConsentStore.Load(file);
+                check(!unreadable.CleanupEnabled && !unreadable.MemoryEnabled && !unreadable.AutoMaintenanceEnabled,
+                    "an unreadable revocation marker fails every scope closed instead of restoring the old grant");
+                check(!File.Exists(revokedFile) && !MaintenanceConsentStore.Load(file).CleanupEnabled,
+                    "the corrected all-closed state persists and the unreadable marker is retired");
+                File.WriteAllText(file, "cleanup=1\nmemory=1\n", new UTF8Encoding(false));
+                File.WriteAllText(revokedFile, "cleanup\n", new UTF8Encoding(false));
+                using (FileStream markerLock = new FileStream(revokedFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    MaintenanceConsentStore lockedMarker = MaintenanceConsentStore.Load(file);
+                    check(!lockedMarker.CleanupEnabled && !lockedMarker.MemoryEnabled && !lockedMarker.AutoMaintenanceEnabled,
+                        "a locked marker also fails closed on every scope rather than vanishing");
+                }
+                MaintenanceConsentStore afterLock = MaintenanceConsentStore.Load(file); // heals and retires the marker
+                check(!File.Exists(revokedFile) && !afterLock.CleanupEnabled && !afterLock.MemoryEnabled,
+                    "the healed all-closed state persists after the marker lock clears (uncertain state never re-opens any scope)");
+
+                // If the revocation itself cannot be persisted at all, the disable
+                // must report failure — never claim a reliable save.
+                File.WriteAllText(file, "cleanup=1\n", new UTF8Encoding(false));
+                Directory.CreateDirectory(revokedFile); // a directory blocks marker creation
+                MaintenanceConsentStore unpinnable = MaintenanceConsentStore.Load(file); // read before locking
+                check(unpinnable.CleanupEnabled, "grant loaded before the unpinnable-revocation test");
+                using (FileStream grantLock2 = new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    string pinError;
+                    check(!unpinnable.SetCleanup(file, false, out pinError) && pinError != null && !unpinnable.CleanupEnabled,
+                        "a revocation that cannot be persisted anywhere reports failure instead of claiming a reliable save");
+                }
+                Directory.Delete(revokedFile);
+                check(unpinnable.SetCleanup(file, false, out error) && !MaintenanceConsentStore.Load(file).CleanupEnabled,
+                    "once the block clears, the same disable persists normally");
 
                 MaintenanceConsentStore demo = new MaintenanceConsentStore();
                 check(demo.SetCleanup(null, true, out error) && demo.CleanupEnabled, "demonstration mode applies consent in memory without touching the disk");
