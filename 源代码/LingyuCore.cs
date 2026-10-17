@@ -50,8 +50,8 @@ namespace NetBunny
                 Id = "wenqu", Name = "文曲书院",
                 Description = "办公文档与文字创作化出的书卷灵域，书灵墨妖与符箓传承（后续版本开放）",
                 LinkedBaiyePaths = new[] { "wen", "huajing" },
-                UnlockBaiyeLevel = 1, UnlockRealmIndex = 0, UnlockLayer = 15,
-                EntryHint = "文道或画境道初窥门径，或炼气第 15 层"
+                UnlockBaiyeLevel = 1, UnlockRealmIndex = 0, UnlockLayer = 12,
+                EntryHint = "文道或画境道初窥门径，或炼气第 12 层（圆满）"
             },
             new LingyuRealmDef
             {
@@ -707,6 +707,21 @@ namespace NetBunny
                 check(!LingyuCatalog.CanEnter(wx, none, cult), "wanxiang needs more than bare zhuji");
                 cult.Layer = 5;
                 check(LingyuCatalog.CanEnter(wx, none, cult), "wanxiang unlocks at zhuji layer 5");
+                // B4 门槛同步：文曲书院沿用新版炼气十二层制（旧 15 层在十二层制下永不可达）。
+                LingyuRealmDef wq = LingyuCatalog.FindRealm("wenqu");
+                BaiyeProgress wen = new BaiyeProgress(); wen.AddYun("wen", 60, DateTime.UtcNow); // 文道 L1
+                cult.RealmIndex = 0; cult.Layer = 11;
+                check(!LingyuCatalog.CanEnter(wq, none, cult), "wenqu stays locked one layer short of realm-complete");
+                cult.Layer = 12;
+                check(LingyuCatalog.CanEnter(wq, none, cult), "wenqu opens at qi-refining layer twelve");
+                cult.Mortal = true;
+                check(!LingyuCatalog.CanEnter(wq, wen, cult), "a mortal never enters the academy even with a qualified dao");
+                cult.Mortal = false; cult.Layer = 1;
+                check(LingyuCatalog.CanEnter(wq, wen, cult), "the wen dao path opens the academy at any layer");
+                LingyuRealmDef tg = LingyuCatalog.FindRealm("tiangong");
+                check(!LingyuCatalog.CanEnter(tg, none, cult), "tiangong needs foundation establishment");
+                cult.RealmIndex = 1; cult.Layer = 1;
+                check(LingyuCatalog.CanEnter(tg, none, cult), "tiangong opens at foundation establishment layer one");
 
                 // 2) 统一结算：幂等发放 + 修为跨存档对账两个窗口。
                 LingyuProgress p = new LingyuProgress();

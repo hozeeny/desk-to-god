@@ -136,7 +136,7 @@ namespace NetBunny
                 if (practice.Mortal) chanceText = "凡人尚未踏入仙途：先在修行面板完成灵根觉醒。";
                 else if (practice.IsFinalRealm) chanceText = "已至巅峰，无需破境。";
                 else if (!practice.RealmComplete) chanceText = "尚未圆满：修至" + practice.RealmName + "第" + practice.LayersMax + "层后方可尝试破境（当前第 " + practice.Layer + " 层）。";
-                else if (practice.BreakthroughOpportunities.Count == 0) chanceText = "本境已圆满，尚缺破境契机：上方四途任得其一即可开启仪式。";
+                else if (practice.BreakthroughOpportunities.Count == 0 || practice.CurrentOpportunityCount == 0) chanceText = "本境已圆满，尚缺破境契机：上方四途任得其一即可开启仪式（契机须在" + practice.RealmName + "重新悟得）。";
                 else
                 {
                     chanceText = "本次破境成功率：" + percent + "%（基础 " + def.BreakthroughBasePercent + "% + 感悟加成 " +

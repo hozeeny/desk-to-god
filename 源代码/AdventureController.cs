@@ -42,6 +42,7 @@ namespace NetBunny
         private readonly CultivationEncounterScheduler encounters;
         private readonly CultivationDeviceGrade deviceGrade;
         private readonly string cultivationPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "cultivation-v2.txt");
+        private string cultivationPathOverride;
         private readonly string consentPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "maintenance-consent.txt");
         // 百业证道：独立存档与识别器；与修仙主进度、战斗、真实维护互不耦合。
         private readonly string baiyePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnightAssistant", "baiye-v1.txt");
@@ -115,7 +116,7 @@ namespace NetBunny
             if (!demonstrationOnly) AdventureProgress.EnsureLegacyBackup(progressPath);
             battle = new AdventureBattle(demonstrationOnly ? new AdventureProgress() : AdventureProgress.Load(progressPath));
             // Demonstration and smoke runs never touch the real cultivation archive.
-            cultivation = demonstrationOnly ? new CultivationProgress() : CultivationProgress.Load(cultivationPath);
+            cultivation = demonstrationOnly ? new CultivationProgress() : CultivationProgress.Load(CultivationWritePath);
             cultivation.EnsureIdentity(random);
             // Demonstration and smoke runs keep the real baiye archive untouched too.
             baiye = demonstrationOnly ? new BaiyeProgress() : BaiyeProgress.Load(BaiyeWritePath);
@@ -132,6 +133,11 @@ namespace NetBunny
                 SettleBaiyeRewards();
                 // 灵域修为奖励同一协议：修仙侧有标记则销账，无则补发。
                 SettleLingyuRewards();
+                // 破境材料跨存档事务兜底：修仙档已记账而灵域档未扣的材料在此补平（幂等）。
+                if (ReconcileBreakthroughMaterials(cultivation, lingyu))
+                {
+                    try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
+                }
             }
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
@@ -338,16 +344,17 @@ namespace NetBunny
             cultivation.LastNotice = "改修「" + cultivation.Technique.Name + "」，修行路线仍可随时调整";
             Save();
         }
-        // 筑基破境材料：蜃楼主镜机缘「水月灵髓」。勾选使用且有库存即消耗
-        // （成败皆消耗——灵髓入炉化入药力），加成与保底由修仙核心配置决定。
-        internal const string BreakthroughMaterialId = "shuiyue-lingsui";
+        // 破境材料按当前境界的配置结算（如炼气→筑基的「水月灵髓」，蜃楼主镜机缘）。
+        // 勾选使用且库存足够即消耗（成败皆消耗——灵髓入炉化入药力），加成与保底由修仙核心配置决定。
         internal int BreakthroughMaterialCount
         {
             get
             {
-                if (lingyu == null) return 0;
+                if (lingyu == null || cultivation == null) return 0;
+                string materialId = cultivation.RealmDef.MaterialId;
+                if (materialId.Length == 0) return 0;
                 int count;
-                return lingyu.Materials.TryGetValue(BreakthroughMaterialId, out count) ? count : 0;
+                return lingyu.Materials.TryGetValue(materialId, out count) ? count : 0;
             }
         }
         // 灵根觉醒：凡人十次有效击杀后引气入体。旧档修士永不走此路径（Mortal=false）。
@@ -360,32 +367,100 @@ namespace NetBunny
             if (awakened && enabled) RenderWorld(true);
             return awakened;
         }
+        // B1 破境材料安全结算：扣除任何材料之前，先统一校验角色状态、境界、
+        // 圆满条件与破境契机（核心 CanAttemptBreakthrough），材料种类与库存以
+        // 当前境界配置为准。消耗按跨存档幂等事务入账：btmat-<境界>-<尝试序号>
+        // 同时写入灵域台账与修仙 ExternalGrants；修仙档先行保存（资格与感悟的
+        // 权威），灵域材料档随后。崩溃在任一保存点只产生一种不一致形态
+        // （修仙已记账、灵域未扣），由启动对账 ReconcileBreakthroughMaterials 补平；
+        // 两份都未落盘则整笔回滚，重放同一序号仍幂等。
         internal bool TryBreakthrough(bool useMaterial)
         {
             if (disposed || IsDemo) return false;
-            bool materialUsed = false;
-            if (useMaterial && BreakthroughMaterialCount > 0)
+            // 无资格（凡人/巅峰/未圆满/缺契机）：核心写出具体原因，绝不触碰材料。
+            if (!cultivation.CanAttemptBreakthrough)
             {
-                materialUsed = true;
-                lingyu.Materials[BreakthroughMaterialId]--;
-                if (lingyu.Materials[BreakthroughMaterialId] <= 0) lingyu.Materials.Remove(BreakthroughMaterialId);
-                // 示范运行不写真实灵域档案；正常模式保存失败只记状态，不吞掉突破本身。
-                if (!demonstrationOnly) { try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; } }
+                cultivation.TryBreakthrough(random, false);
+                Save();
+                return false;
+            }
+            CultivationRealmDef def = cultivation.RealmDef;
+            bool materialUsed = false;
+            if (useMaterial && def.MaterialId.Length > 0 && lingyu != null)
+            {
+                int need = Math.Max(1, def.MaterialCount);
+                int stock;
+                lingyu.Materials.TryGetValue(def.MaterialId, out stock);
+                if (stock >= need)
+                {
+                    string grantId = "btmat-" + cultivation.RealmIndex + "-" + (cultivation.BreakthroughAttempts + 1);
+                    if (!lingyu.Grants.ContainsKey(grantId))
+                    {
+                        lingyu.Materials[def.MaterialId] = stock - need;
+                        if (lingyu.Materials[def.MaterialId] <= 0) lingyu.Materials.Remove(def.MaterialId);
+                        lingyu.Grants[grantId] = DateTime.UtcNow.Ticks;
+                    }
+                    cultivation.ExternalGrants.Add(grantId);
+                    materialUsed = true;
+                    lastLingsuiCount = BreakthroughMaterialCount; // 消耗即刻对齐增量基线，下一滴灵髓仍是新入手时刻
+                }
             }
             bool success = cultivation.TryBreakthrough(random, materialUsed);
             Save();
             if (success && enabled) RenderWorld(true);
             return success;
         }
-        // 破境契机评估（幂等，四条路径并行不互斥）：
-        // 秘境寻宝 = 蜃楼通关；天材地宝 = 水月灵髓在手；百业悟道见下；长期苦修由核心按感悟自动领悟。
+        // B1 启动对账（幂等）：修仙档有 btmat-* 记账而灵域台账缺失时，按对应
+        // 境界的材料定义补扣并补台账；库存已被其他路径消耗时只补台账防重复，
+        // 绝不扣成负数。纯逻辑静态方法，便于用临时档案直接测试崩溃/重启场景。
+        internal static bool ReconcileBreakthroughMaterials(CultivationProgress cultivation, LingyuProgress lingyu)
+        {
+            if (cultivation == null || lingyu == null) return false;
+            bool changed = false;
+            foreach (string grant in cultivation.ExternalGrants)
+            {
+                if (!grant.StartsWith("btmat-", StringComparison.Ordinal) || lingyu.Grants.ContainsKey(grant)) continue;
+                string[] parts = grant.Split('-');
+                int realmIdx;
+                if (parts.Length == 3 && Int32.TryParse(parts[1], out realmIdx))
+                {
+                    CultivationRealmDef def = CultivationRealms.For(realmIdx);
+                    if (def.MaterialId.Length > 0)
+                    {
+                        int need = Math.Max(1, def.MaterialCount);
+                        int stock;
+                        lingyu.Materials.TryGetValue(def.MaterialId, out stock);
+                        if (stock >= need)
+                        {
+                            lingyu.Materials[def.MaterialId] = stock - need;
+                            if (lingyu.Materials[def.MaterialId] <= 0) lingyu.Materials.Remove(def.MaterialId);
+                        }
+                    }
+                }
+                lingyu.Grants[grant] = DateTime.UtcNow.Ticks;
+                changed = true;
+            }
+            return changed;
+        }
+        // 破境契机评估（B2 时刻授予，幂等，四条路径并行不互斥）：
+        // 秘境寻宝 = 蜃楼通关时刻；天材地宝 = 水月灵髓入手时刻；百业悟道见下；
+        // 长期苦修由核心按感悟自动领悟。契机绑定获得时的境界——只在"新通关 /
+        // 新入手"的增量时刻授予，破境后旧成就不会自动变成新境界的资格。
+        // 首次评估按历史库存一次性补发（旧档迁移，钉住当前境界，不向后放大）。
+        private int lastQianmianVisits = -1, lastLingsuiCount = -1;
         private void EvaluateBreakthroughOpportunities()
         {
-            if (cultivation == null || lingyu == null || cultivation.Mortal) return;
-            if (lingyu.Visits("qianmian") >= 1 && cultivation.GrantOpportunity("realm"))
-                battle.LastReward = "破境契机 · 秘境寻宝：蜃楼一行，窥见筑基门径";
-            if (BreakthroughMaterialCount > 0 && cultivation.GrantOpportunity("treasure"))
+            if (cultivation == null || lingyu == null || cultivation.Mortal) { lastQianmianVisits = -1; lastLingsuiCount = -1; return; }
+            int visits = lingyu.Visits("qianmian");
+            int lingsui = BreakthroughMaterialCount;
+            bool migrating = lastQianmianVisits < 0;
+            bool newClear = migrating ? visits >= 1 : visits > lastQianmianVisits;
+            bool newLingsui = migrating ? lingsui > 0 : lingsui > lastLingsuiCount;
+            if (newClear && cultivation.GrantOpportunity("realm"))
+                battle.LastReward = "破境契机 · 秘境寻宝：蜃楼一行，窥见" + cultivation.RealmName + "门径";
+            if (newLingsui && cultivation.GrantOpportunity("treasure"))
                 battle.LastReward = "破境契机 · 天材地宝：水月灵髓蕴藏一缕先天灵机";
+            lastQianmianVisits = visits; lastLingsuiCount = lingsui;
         }
         private bool BaiyeWudaoEligible()
         {
@@ -433,9 +508,11 @@ namespace NetBunny
                 SettleBaiyeRewards();
             }
             if (leveledUp) Save();
-            // 破境契机 · 百业悟道：任一道途登堂（Lv.3）或已获天机阵图传承，红尘道果凝作破境灵机。
-            if (cultivation != null && !cultivation.Mortal && !cultivation.HasOpportunity("baiye")
-                && BaiyeWudaoEligible() && cultivation.GrantOpportunity("baiye"))
+            // 破境契机 · 百业悟道（B2 时刻授予）：道途升级或新机缘解锁的瞬间，
+            // 已登堂（Lv.3）的积累或天机阵图传承凝作当前境界的破境灵机；
+            // 破境后须等下一次真实悟道时刻，旧等级不会自动化作新境界的资格。
+            if ((leveledUp || unlocked.Count > 0) && cultivation != null && !cultivation.Mortal
+                && !cultivation.HasOpportunity("baiye") && BaiyeWudaoEligible() && cultivation.GrantOpportunity("baiye"))
             {
                 baiyeNotice = battle.LastReward = "破境契机 · 百业悟道：红尘百业凝作一缕悟道灵机";
                 Save();
@@ -526,6 +603,7 @@ namespace NetBunny
         }
         // ---- 灵域历练（P3）：进入门控 / 节点选择 / 暂离；秘境战斗只生成虚拟妖物 ----
         internal string LingyuWritePath { get { return lingyuPathOverride ?? lingyuPath; } }
+        internal string CultivationWritePath { get { return cultivationPathOverride ?? cultivationPath; } }
         internal LingyuProgress Lingyu { get { return lingyu; } }
         internal MirageEngine Mirage { get { return mirage; } }
         internal bool LingyuCanEnter(LingyuRealmDef realm) { return !disposed && lingyu != null && LingyuCatalog.CanEnter(realm, baiye, cultivation); }
@@ -546,6 +624,7 @@ namespace NetBunny
             LingyuRealmDef realm = LingyuCatalog.FindRealm(realmId);
             if (realm == null || !realm.Playable || !LingyuCanEnter(realm)) return false;
             mirage.Enter(BuildJiyuanContext());
+            EvaluateBreakthroughOpportunities(); // 进入灵域也是契机评估点：旧档历史成就在此一次性迁移补发
             Save();
             return true;
         }
@@ -563,6 +642,7 @@ namespace NetBunny
             Save();
         }
         // 蜃楼战斗请求：生成一只带秘境标记的虚拟妖物（主镜战更耐打）。
+        // 镜妖免疫一键清场——秘境战斗必须真实分出胜负，不走清场捷径。
         // 沿用既有虚拟战斗：自动作战会迎击，玩家也可以手动点击出击；
         // 绝不删除真实文件、关闭进程或回收内存。
         private void LingyuCombatRequested(string label, bool boss)
@@ -573,12 +653,20 @@ namespace NetBunny
             AdventureMonster kind = AdventureMonster.All[random.Next(AdventureMonster.All.Length)];
             AdventureEnemy fiend = new AdventureEnemy
             {
-                Id = "lingyu-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = kind.Id,
+                Id = "lingyu-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = kind.Id, NoFieldClear = true,
                 SpawnLevel = battle.Progress.Level
             };
             fiend.MaxHealth = EnemyBalance.OrdinaryHealth(battle.Progress.Level, kind.HealthFactor, 0) * (boss ? 4 : 1);
             fiend.Health = fiend.MaxHealth;
             pendingLingyuEnemyId = fiend.Id;
+            // 满员时镜妖必须仍能现身（否则蜃楼战斗软锁）：退休一只未交战、
+            // 未授权的普通妖物腾名额；绝不挤掉 Boss、在编清理或秘境目标。
+            if (!EnemyFieldBudget.CanAddOrdinary(battle.Enemies))
+            {
+                AdventureEnemy idle = battle.Enemies.FirstOrDefault(e =>
+                    !e.IsBoss && !e.NoFieldClear && !e.Authorized && !e.Cleaning && !e.Defeated && !e.Failed);
+                if (idle != null) battle.Enemies.Remove(idle);
+            }
             Spawn(fiend); battle.Enemies.Add(fiend);
             battle.LastReward = label + "现身桌面 · 击败它继续蜃楼之行";
             RenderWorld(true);
@@ -645,8 +733,9 @@ namespace NetBunny
             cultivation.AddQi(qi);
             battle.CompleteVirtual(enemy, qi);
             // 凡人期：每一次有效击杀都是红尘历练，十次圆满即可觉醒灵根。
+            // 只认真实战斗（Strike 致死）；一键清场等未经历战斗的结算不历练。
             // 历练提示覆盖修为播报——凡人的修为暂存灵明，觉醒时才真正转化。
-            if (cultivation.Mortal)
+            if (cultivation.Mortal && enemy.FellInCombat)
             {
                 if (cultivation.RecordMortalKill())
                     battle.LastReward = cultivation.CanAwaken
@@ -669,7 +758,7 @@ namespace NetBunny
         {
             int qi = encounters.RollKillQi(enemy.IsBoss);
             cultivation.AddQi(qi);
-            if (cultivation.Mortal) cultivation.RecordMortalKill(); // 未授权虚拟结算同样算有效击杀；保留「未授权」提示
+            if (cultivation.Mortal && enemy.FellInCombat) cultivation.RecordMortalKill(); // 未授权虚拟结算：真实战斗击倒同样算有效击杀；清场击倒不算
             battle.CompleteHeld(enemy, qi);
             Save();
         }
@@ -1307,7 +1396,7 @@ namespace NetBunny
             // unchanged v1 format (v5.4 can still read it); the frozen
             // *.v54-backup copy made at first launch preserves history.
             // Cultivation data lives in its own separate versioned archive.
-            try { cultivation.Save(cultivationPath); } catch (Exception e) { scanStatus = "修炼档案暂未保存：" + e.Message; }
+            try { cultivation.Save(CultivationWritePath); } catch (Exception e) { scanStatus = "修炼档案暂未保存：" + e.Message; }
             // 百业道韵第三个独立存档；保存失败只记状态，不影响其他存档。
             if (baiye != null) { try { baiye.Save(BaiyeWritePath); } catch (Exception e) { scanStatus = "百业档案暂未保存：" + e.Message; } }
             // 灵域第四个独立存档；保存失败只记状态，不影响其他存档。
@@ -1755,8 +1844,19 @@ namespace NetBunny
                     for (int i = 0; i < 9; i++) killVirtual();
                     check(g.cultivation.Mortal && g.cultivation.MortalKills == 9 && g.cultivation.DeferredQi > 0 && g.cultivation.Qi == 0 && !g.cultivation.CanAwaken,
                         "nine kills temper the mortal body while gains stay deferred");
-                    killVirtual();
-                    check(g.cultivation.MortalKills == 10 && g.cultivation.CanAwaken, "ten settled kills open the awakening ritual");
+                    // —— B3 凡人历练防绕过：只有真实战斗（Strike 致死）才计历练 ——
+                    AdventureEnemy sweepFiend = new AdventureEnemy { Id = "growth-sweep", IsVirtual = true, MonsterKind = "slime", Health = 5, MaxHealth = 5 };
+                    g.battle.Enemies.Add(sweepFiend); g.Spawn(sweepFiend);
+                    List<AdventureEnemy> swept = g.battle.ClearFieldSnapshot(); // 一键清场的内部两步，绕过 Strike
+                    foreach (AdventureEnemy e2 in swept) g.BeginCleanup(e2);
+                    check(swept.Contains(sweepFiend) && g.cultivation.MortalKills == 9,
+                        "one-click clear settles rewards but never tempers the mortal body");
+                    // 真实战斗第十杀 + 重复回调：结算只认一次。
+                    AdventureEnemy lastFiend = new AdventureEnemy { Id = "growth-repeat", IsVirtual = true, MonsterKind = "imp", Health = 1, MaxHealth = 1 };
+                    g.battle.Enemies.Add(lastFiend); g.Spawn(lastFiend); g.battle.Authorize(lastFiend); g.battle.Cooldown = 0; g.battle.Strike(lastFiend);
+                    g.BeginCleanup(lastFiend); g.BeginCleanup(lastFiend); g.battle.Tick(.31);
+                    check(g.cultivation.MortalKills == 10 && g.cultivation.CanAwaken,
+                        "the tenth combat kill opens the ritual and repeated callbacks never double-count");
                     long deferredBefore = g.cultivation.DeferredQi;
                     check(g.AwakenSpiritRoot() && !g.cultivation.Mortal && CultivationIdentity.IsValidRoot(g.cultivation.SpiritRoot)
                         && CultivationTechnique.IsValid(g.cultivation.TechniqueId) && g.cultivation.DaoTitle.Length > 0,
@@ -1781,6 +1881,73 @@ namespace NetBunny
                         && g.cultivation.BreakthroughOpportunities.Count == 0 && g.cultivation.BreakthroughInsight == 0,
                         "the guaranteed ritual succeeds and clears opportunities for the new realm");
                     check(g.BreakthroughMaterialCount == 0, "the consumed lingsui leaves the collection");
+                    // —— B1 破境材料安全结算：前置校验、幂等事务、启动对账 ——
+                    // 无资格重复点击：材料与两本台账分毫不动（任一存档写入失败都无从谈起）。
+                    g.cultivation.RealmIndex = 0; g.cultivation.Layer = 3; g.cultivation.Qi = 0;
+                    g.cultivation.BreakthroughOpportunities.Clear(); g.cultivation.ExternalGrants.Clear();
+                    g.lingyu.Materials["shuiyue-lingsui"] = 1; g.lingyu.Grants.Clear();
+                    int attemptsBefore = g.cultivation.BreakthroughAttempts;
+                    check(!g.TryBreakthrough(true) && !g.TryBreakthrough(true)
+                        && g.lingyu.Materials["shuiyue-lingsui"] == 1 && g.lingyu.Grants.Count == 0
+                        && g.cultivation.ExternalGrants.Count == 0 && g.cultivation.BreakthroughAttempts == attemptsBefore,
+                        "unqualified repeated clicks never touch the material or either ledger");
+                    // 资格齐备：恰扣一份，唯一事务号同时落两本台账；成败皆消耗。
+                    g.cultivation.Layer = 12; g.cultivation.GrantOpportunity("realm"); g.cultivation.BreakthroughInsight = 0;
+                    bool btOutcome = g.TryBreakthrough(true);
+                    string txId = "btmat-0-" + (attemptsBefore + 1);
+                    check(!g.lingyu.Materials.ContainsKey("shuiyue-lingsui")
+                        && g.lingyu.Grants.ContainsKey(txId) && g.cultivation.ExternalGrants.Contains(txId)
+                        && (!btOutcome || g.cultivation.RealmIndex == 1),
+                        "one settled attempt debits exactly one material and ledgers both archives once");
+                    // 崩溃窗口重放（内存态）：修仙已记账、灵域未扣 → 对账补扣且幂等。
+                    CultivationProgress crashedCult = new CultivationProgress();
+                    crashedCult.Mortal = false; crashedCult.EnsureIdentity(new Random(9));
+                    crashedCult.ExternalGrants.Add("btmat-0-3");
+                    LingyuProgress crashedLingyu = new LingyuProgress();
+                    crashedLingyu.Materials["shuiyue-lingsui"] = 2;
+                    check(ReconcileBreakthroughMaterials(crashedCult, crashedLingyu)
+                        && crashedLingyu.Materials["shuiyue-lingsui"] == 1 && crashedLingyu.Grants.ContainsKey("btmat-0-3"),
+                        "reconcile settles the crashed material debit");
+                    check(!ReconcileBreakthroughMaterials(crashedCult, crashedLingyu)
+                        && crashedLingyu.Materials["shuiyue-lingsui"] == 1, "reconcile is idempotent");
+                    crashedCult.ExternalGrants.Add("btmat-0-4"); crashedLingyu.Materials.Remove("shuiyue-lingsui");
+                    check(ReconcileBreakthroughMaterials(crashedCult, crashedLingyu)
+                        && crashedLingyu.Grants.ContainsKey("btmat-0-4") && !crashedLingyu.Materials.ContainsKey("shuiyue-lingsui"),
+                        "reconcile never drives the stock negative when the material is already gone");
+                    // 真实临时档案：崩溃现场落盘 → 重载 → 对账补平 → 再落盘重载核对（重启对账链路）。
+                    string cultTmp = Path.Combine(Path.GetTempPath(), "btmat-cult-" + Guid.NewGuid().ToString("N") + ".txt");
+                    string lingTmp = Path.Combine(Path.GetTempPath(), "btmat-ling-" + Guid.NewGuid().ToString("N") + ".txt");
+                    try
+                    {
+                        CultivationProgress fileCult = new CultivationProgress();
+                        fileCult.Mortal = false; fileCult.EnsureIdentity(new Random(11));
+                        fileCult.ExternalGrants.Add("btmat-0-1"); // 修仙档已保存，灵域档未来得及保存
+                        fileCult.Save(cultTmp);
+                        LingyuProgress fileLingyu = new LingyuProgress();
+                        fileLingyu.Materials["shuiyue-lingsui"] = 1;
+                        fileLingyu.Save(lingTmp);
+                        CultivationProgress reloadCult = CultivationProgress.Load(cultTmp);
+                        LingyuProgress reloadLingyu = LingyuProgress.Load(lingTmp);
+                        check(ReconcileBreakthroughMaterials(reloadCult, reloadLingyu)
+                            && !reloadLingyu.Materials.ContainsKey("shuiyue-lingsui") && reloadLingyu.Grants.ContainsKey("btmat-0-1"),
+                            "restart reconcile settles the interrupted transaction from disk");
+                        reloadLingyu.Save(lingTmp);
+                        LingyuProgress verifyLingyu = LingyuProgress.Load(lingTmp);
+                        check(verifyLingyu.Grants.ContainsKey("btmat-0-1") && !verifyLingyu.Materials.ContainsKey("shuiyue-lingsui"),
+                            "the reconciled ledger survives another save/load cycle");
+                        // 写盘失败注入：灵域档指向目录路径 → 保存必须抛错（控制器路径有 try/catch 兜底）。
+                        string dirAsFile = Path.Combine(Path.GetTempPath(), "btmat-dir-" + Guid.NewGuid().ToString("N"));
+                        Directory.CreateDirectory(dirAsFile);
+                        bool saveFailed = false;
+                        try { reloadLingyu.Save(dirAsFile); } catch (IOException) { saveFailed = true; } catch (UnauthorizedAccessException) { saveFailed = true; }
+                        check(saveFailed, "saving onto a directory path is reported as a failure");
+                        Directory.Delete(dirAsFile);
+                    }
+                    finally
+                    {
+                        try { File.Delete(cultTmp); } catch { }
+                        try { File.Delete(lingTmp); } catch { }
+                    }
                     // 失败分支：不保底时结果不定，但要么晋境、要么加感悟，根基与契机无损。
                     g.cultivation.RealmIndex = 0; g.cultivation.Layer = 12; g.cultivation.Qi = 0; g.cultivation.BreakthroughInsight = 0;
                     g.cultivation.GrantOpportunity("realm");
@@ -1788,6 +1955,22 @@ namespace NetBunny
                     check(outcome ? g.cultivation.RealmIndex == 1
                             : g.cultivation.RealmIndex == 0 && g.cultivation.Layer == 12 && g.cultivation.BreakthroughInsight > 0 && g.cultivation.HasOpportunity("realm"),
                         "every attempt either advances the realm or deepens insight without loss");
+                    // —— B2 契机境界分层（端到端）：历史成就迁移补发一次；无新时刻不白捡；新通关重新悟得 ——
+                    g.cultivation.Mortal = false; g.cultivation.RealmIndex = 1; g.cultivation.Layer = 9; g.cultivation.Qi = 0;
+                    g.cultivation.BreakthroughOpportunities.Clear(); g.cultivation.ExternalGrants.Clear();
+                    g.lingyu.Grants.Clear(); g.lingyu.RealmVisits["qianmian"] = 1;
+                    g.EvaluateBreakthroughOpportunities(); // 首次评估 = 旧档迁移补发（钉住当前境界）
+                    check(g.cultivation.HasOpportunity("realm") && g.cultivation.CanAttemptBreakthrough,
+                        "legacy mirage clears migrate to the current realm exactly once");
+                    g.cultivation.BreakthroughOpportunities.Clear();
+                    g.EvaluateBreakthroughOpportunities();
+                    check(!g.cultivation.HasOpportunity("realm") && !g.cultivation.CanAttemptBreakthrough,
+                        "without a new mirage moment the old clear is never re-granted");
+                    g.lingyu.RealmVisits["qianmian"] = 2; // 新的通关时刻
+                    g.EvaluateBreakthroughOpportunities();
+                    check(g.cultivation.HasOpportunity("realm") && g.cultivation.CanAttemptBreakthrough
+                        && g.cultivation.BreakthroughOpportunities["realm"] == 1,
+                        "a fresh clear re-earns the opportunity pinned to the new realm");
                     // 境界-战斗强度联动：Tick 每拍同步系数（凡人偏弱 / 炼气渐强 / 筑基质变）。
                     g.cultivation.RealmIndex = 0; g.cultivation.Layer = 1; g.cultivation.Mortal = true;
                     g.Tick(null, EventArgs.Empty);
@@ -1836,6 +2019,28 @@ namespace NetBunny
                     List<AdventureEnemy> clear=c.battle.ClearFieldSnapshot(); check(!clear.Contains(boss) && !boss.Defeated && boss.Health==boss.MaxHealth,"memory boss cannot be bypassed by one-click clear");
                     foreach(AdventureEnemy target in clear) { target.Defeated=true; target.Cleaning=false; }
                     c.battle.CancelQueue(); c.battle.Enemies.RemoveAll(e=>!e.IsBoss);
+                    // B4/PR#3 回归：蜃楼镜妖（含主镜 Boss 战）免疫一键清场——秘境战斗必须真实分出胜负。
+                    c.battle.Enemies.Clear(); c.CancelPending();
+                    c.LingyuCombatRequested("主镜蜃主", true);
+                    AdventureEnemy mirrorBoss=c.battle.Enemies.Single(e=>e.Id.StartsWith("lingyu-",StringComparison.Ordinal));
+                    AdventureEnemy stray=new AdventureEnemy {Id="stray",IsVirtual=true,MonsterKind="bat",Health=50,MaxHealth=50}; c.Spawn(stray); c.battle.Enemies.Add(stray);
+                    List<AdventureEnemy> sweep=c.battle.ClearFieldSnapshot();
+                    check(sweep.Contains(stray) && !sweep.Contains(mirrorBoss) && mirrorBoss.Health==mirrorBoss.MaxHealth && !mirrorBoss.Cleaning,
+                        "the mirage boss never falls to one-click clear");
+                    foreach(AdventureEnemy t2 in sweep) { t2.Defeated=true; t2.Cleaning=false; }
+                    c.battle.CancelQueue(); c.battle.Enemies.Clear();
+                    // B4/PR#3 回归：满员时镜妖仍能现身（退休闲置普通妖腾名额），且不突破战场预算。
+                    for(int fill=0;fill<9;fill++){ AdventureEnemy filler=new AdventureEnemy {Id="fill-"+fill,IsVirtual=true,MonsterKind="bat",Health=50,MaxHealth=50}; c.battle.Enemies.Add(filler); }
+                    check(!EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies),"nine ordinary fill the field");
+                    c.LingyuCombatRequested("镜妖", false);
+                    check(c.battle.Enemies.Count(e2=>e2.Id.StartsWith("lingyu-",StringComparison.Ordinal))==1
+                        && c.battle.Enemies.Count==9 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies),
+                        "a full field retires one idle ordinary to admit the mirror fiend within budget");
+                    c.LingyuCombatRequested("镜妖·再战", false);
+                    check(c.battle.Enemies.Count(e2=>e2.Id.StartsWith("lingyu-",StringComparison.Ordinal))==1
+                        && c.battle.Enemies.Count==9 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies),
+                        "the next mirror fiend replaces the former one within budget");
+                    c.battle.Enemies.Clear(); c.pendingLingyuEnemyId=null;
                     int calls=0; c.simulatedMemoryReclaimer=delegate(CancellationToken token) { calls++; return Task.FromResult(new MemoryReclaimResult {Before=new MemorySnapshot{Available=true,UsedPercent=75},After=new MemorySnapshot{Available=true,UsedPercent=73},Trimmed=2,WorkingSetReduction=1024*1024}); };
                     c.battle.Authorize(boss); boss.Health=1; c.battle.Cooldown=0; c.battle.Strike(boss); c.BeginCleanup(boss); c.BeginCleanup(boss); c.DrainMemoryReclaim();
                     check(calls==1 && boss.Defeated && c.memoryPercent==73 && c.battle.LastReward.Contains("75.0% → 73.0%"),"boss death triggers one measured reclaim and cannot duplicate it");

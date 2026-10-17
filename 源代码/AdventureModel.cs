@@ -62,6 +62,12 @@ namespace NetBunny
         internal bool IsBoss, IsDiskBoss, Authorized, Cleaning, CleanupStarted, Failed, Defeated;
         internal bool VisualDefeated, VisualDirty = true, FacingRight = true, Dragging;
         internal bool KillRewarded;
+        // 仅在真实战斗（Strike 致死，含群攻溅射）中倒下时置位；
+        // 一键清场等未经历战斗的结算不置位——凡人历练只认真正完成的有效战斗。
+        internal bool FellInCombat;
+        // 免疫一键清场：蜃楼镜妖等秘境战斗目标必须经由真实战斗分胜负，
+        // 清场快键不能代替玩家打赢秘境（修为与秘境进度都不走清场捷径）。
+        internal bool NoFieldClear;
         internal int KillExperience;
         internal const double ShatterSeconds = .30;
         internal double DeathElapsed, MoveSpeed;
@@ -256,7 +262,7 @@ namespace NetBunny
             Automatic = false; // This action authorizes one fixed snapshot, never future spawns.
             foreach (AdventureEnemy enemy in Enemies.ToArray())
             {
-                if (enemy.Defeated || enemy.Failed || (enemy.IsBoss && !enemy.IsDiskBoss && !String.IsNullOrEmpty(enemy.EvilTheme))) continue;
+                if (enemy.Defeated || enemy.Failed || enemy.NoFieldClear || (enemy.IsBoss && !enemy.IsDiskBoss && !String.IsNullOrEmpty(enemy.EvilTheme))) continue;
                 if (enemy.IsDiskWarning) { LastReward = DiskWarningMessage; continue; }
                 if (enemy.Cleaning) { if (enemy.Authorized) enemy.Authorization = AdventureAuthorization.ClearField; continue; }
                 if (!enemy.Authorized) Authorize(enemy, AdventureAuthorization.ClearField);
@@ -295,7 +301,7 @@ namespace NetBunny
             {
                 int blow = (int)Math.Round((weapon.Damage + (Progress.Level - 1) * 3) * CultivationDamageFactor);
                 enemy.Health = Math.Max(0, enemy.Health - blow); enemy.HitFlash = .25; enemy.VisualDirty = true;
-                if (enemy.Health == 0) { enemy.Cleaning = true; enemy.StartShatter(); GrantKillExperience(enemy); defeated.Add(enemy); }
+                if (enemy.Health == 0) { enemy.Cleaning = true; enemy.FellInCombat = true; enemy.StartShatter(); GrantKillExperience(enemy); defeated.Add(enemy); }
             }
             return defeated;
         }

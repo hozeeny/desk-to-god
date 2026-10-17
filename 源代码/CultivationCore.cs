@@ -65,6 +65,9 @@ namespace NetBunny
         internal string MaterialId = "";             // 可选突破材料（灵域收藏），空为未配置
         internal int MaterialCount = 1;
         internal int MaterialBonusPercent;           // 消耗材料追加的成功率
+        // 本境界可获得的破境契机池：破境资格绑定目标大境界，上一境界的契机
+        // 不会自动充当下一境界的资格；高阶境界至少在池内保留苦修保底路径。
+        internal string[] OpportunityPool = new string[0];
     }
     internal static class CultivationRealms
     {
@@ -74,43 +77,50 @@ namespace NetBunny
                 Id = "qi", Name = "炼气",
                 LayerCosts = new[] { 120, 180, 260, 380, 550, 780, 1100, 1550, 2200, 3100, 4300 }, // 一至十二层
                 BreakthroughBasePercent = 30, InsightPercentDivisor = 50, GuaranteedInsight = 2000,
-                FailureInsight = 120, MaterialId = "shuiyue-lingsui", MaterialCount = 1, MaterialBonusPercent = 15
+                FailureInsight = 120, MaterialId = "shuiyue-lingsui", MaterialCount = 1, MaterialBonusPercent = 15,
+                OpportunityPool = new[] { "treasure", "realm", "baiye", "insight" }
             },
             new CultivationRealmDef
             {
                 Id = "zhuji", Name = "筑基", // 以下各大境界为第一版测试参数，随各自纵切调整
                 LayerCosts = new[] { 6000, 7800, 10000, 12800, 16000, 20000, 25000, 30000 },
-                BreakthroughBasePercent = 25, InsightPercentDivisor = 80, GuaranteedInsight = 8000, FailureInsight = 200
+                BreakthroughBasePercent = 25, InsightPercentDivisor = 80, GuaranteedInsight = 8000, FailureInsight = 200,
+                OpportunityPool = new[] { "realm", "baiye", "insight" } // 天材地宝仅炼气配置灵髓，不复用到高阶
             },
             new CultivationRealmDef
             {
                 Id = "jindan", Name = "金丹",
                 LayerCosts = new[] { 48000, 60000, 76000, 95000, 120000, 150000, 185000, 225000 },
-                BreakthroughBasePercent = 22, InsightPercentDivisor = 150, GuaranteedInsight = 30000, FailureInsight = 400
+                BreakthroughBasePercent = 22, InsightPercentDivisor = 150, GuaranteedInsight = 30000, FailureInsight = 400,
+                OpportunityPool = new[] { "realm", "baiye", "insight" }
             },
             new CultivationRealmDef
             {
                 Id = "yuanying", Name = "元婴",
                 LayerCosts = new[] { 300000, 380000, 480000, 600000, 760000, 950000, 1200000, 1500000 },
-                BreakthroughBasePercent = 18, InsightPercentDivisor = 250, GuaranteedInsight = 100000, FailureInsight = 800
+                BreakthroughBasePercent = 18, InsightPercentDivisor = 250, GuaranteedInsight = 100000, FailureInsight = 800,
+                OpportunityPool = new[] { "realm", "baiye", "insight" }
             },
             new CultivationRealmDef
             {
                 Id = "huashen", Name = "化神",
                 LayerCosts = new[] { 2200000, 3000000, 4200000, 6000000, 8500000, 12000000 },
-                BreakthroughBasePercent = 15, InsightPercentDivisor = 400, GuaranteedInsight = 250000, FailureInsight = 1500
+                BreakthroughBasePercent = 15, InsightPercentDivisor = 400, GuaranteedInsight = 250000, FailureInsight = 1500,
+                OpportunityPool = new[] { "realm", "baiye", "insight" }
             },
             new CultivationRealmDef
             {
                 Id = "hedao", Name = "合道",
                 LayerCosts = new[] { 18000000, 25000000, 36000000, 52000000, 75000000, 105000000 },
-                BreakthroughBasePercent = 12, InsightPercentDivisor = 800, GuaranteedInsight = 800000, FailureInsight = 3000
+                BreakthroughBasePercent = 12, InsightPercentDivisor = 800, GuaranteedInsight = 800000, FailureInsight = 3000,
+                OpportunityPool = new[] { "realm", "baiye", "insight" }
             },
             new CultivationRealmDef
             {
                 Id = "dujie", Name = "渡劫",
                 LayerCosts = new[] { 160000000, 240000000, 380000000, 600000000 },
-                BreakthroughBasePercent = 10, InsightPercentDivisor = 1500, GuaranteedInsight = 2000000, FailureInsight = 6000
+                BreakthroughBasePercent = 10, InsightPercentDivisor = 1500, GuaranteedInsight = 2000000, FailureInsight = 6000,
+                OpportunityPool = new[] { "realm", "baiye", "insight" }
             },
             new CultivationRealmDef { Id = "feisheng", Name = "飞升" } // 目前开放的最高境界
         };
@@ -304,9 +314,10 @@ namespace NetBunny
 
     internal sealed class CultivationProgress
     {
-        // Version 2 keeps its line format; the growth update only appends lines
-        // (mortal / mkills / deferred / insight / opp.*), which older builds skip.
-        internal const int FormatVersion = 2;
+        // Version 3: opp.* lines now record the realm index at which the
+        // opportunity was earned (opp.<id>=<realmIndex>); v2 archives carry the
+        // boolean form (opp.<id>=1) and are read as qi-refining opportunities.
+        internal const int FormatVersion = 3;
         internal static readonly string[] Realms =
             { "炼气", "筑基", "金丹", "元婴", "化神", "合道", "渡劫", "飞升" };
 
@@ -326,7 +337,9 @@ namespace NetBunny
         internal long BreakthroughInsight;
         // 破境契机：天材地宝 / 秘境寻宝 / 百业悟道 / 长期苦修，任一开启破境，
         // 四条路径并行不互斥；破境成功后进入下一境重新收集。
-        internal readonly HashSet<string> BreakthroughOpportunities = new HashSet<string>(StringComparer.Ordinal);
+        // B2：契机绑定获得时的大境界（id → RealmIndex）——筑基机缘不能充当
+        // 结丹、结婴资格，新境界的突破门槛须由新的机缘时刻重新满足。
+        internal readonly Dictionary<string, int> BreakthroughOpportunities = new Dictionary<string, int>(StringComparer.Ordinal);
         // Empty means "not yet awakened". A saved non-mortal archive (including
         // migrated v1 archives) always carries a valid root, never overwritten here.
         internal string SpiritRoot = "";
@@ -349,13 +362,37 @@ namespace NetBunny
         internal bool IsFinalRealm { get { return RealmIndex >= Realms.Length - 1; } }
         internal bool RealmComplete { get { return !Mortal && Layer >= LayersMax; } }
         internal bool CanAwaken { get { return Mortal && MortalKills >= CultivationBalance.MortalAwakenKills; } }
-        // 破境条件：本境圆满 + 至少一条破境契机；成功率见 BreakthroughPercent。
-        internal bool CanAttemptBreakthrough { get { return !Mortal && !IsFinalRealm && RealmComplete && BreakthroughOpportunities.Count > 0; } }
-        internal bool HasOpportunity(string id) { return BreakthroughOpportunities.Contains(id); }
+        // 破境条件：本境圆满 + 至少一条绑定当前境界的破境契机；成功率见 BreakthroughPercent。
+        internal int CurrentOpportunityCount
+        {
+            get
+            {
+                int found = 0;
+                foreach (KeyValuePair<string, int> pair in BreakthroughOpportunities)
+                    if (pair.Value == RealmIndex) found++;
+                return found;
+            }
+        }
+        internal bool CanAttemptBreakthrough { get { return !Mortal && !IsFinalRealm && RealmComplete && CurrentOpportunityCount > 0; } }
+        // 只有绑定当前境界的契机才算已悟得；上一境界的旧契机只作历史记录。
+        internal bool HasOpportunity(string id)
+        {
+            int earnedRealm;
+            return id != null && BreakthroughOpportunities.TryGetValue(id, out earnedRealm) && earnedRealm == RealmIndex;
+        }
+        // 时刻授予：仅当该契机属于本境界机缘池时记录，并钉住获得时的境界。
+        // 其他境界的旧记录不挡路——新境界的悟道时刻会把它刷新为当前境界。
         internal bool GrantOpportunity(string id)
         {
             if (String.IsNullOrEmpty(id) || id.Length > 24 || id.IndexOfAny(new[] { '\r', '\n', '=', '|' }) >= 0) return false;
-            return BreakthroughOpportunities.Add(id);
+            string[] pool = RealmDef.OpportunityPool;
+            bool inPool = false;
+            for (int i = 0; i < pool.Length; i++) if (pool[i] == id) { inPool = true; break; }
+            if (!inPool) return false;
+            int earnedRealm;
+            if (BreakthroughOpportunities.TryGetValue(id, out earnedRealm) && earnedRealm == RealmIndex) return false;
+            BreakthroughOpportunities[id] = RealmIndex;
+            return true;
         }
         internal int BreakthroughPercent(bool useMaterial, bool materialAvailable)
         {
@@ -374,7 +411,7 @@ namespace NetBunny
                     return "凡人 · 凡俗历练 " + MortalKills + " / " + CultivationBalance.MortalAwakenKills +
                         (CanAwaken ? " · 灵根感应已至，可觉醒" : "") + (DeferredQi > 0 ? " · 已记下历练馈赠 " + DeferredQi : "");
                 string advancement = RealmComplete ?
-                    RealmName + "圆满 · 破境感悟 " + BreakthroughInsight.ToString(CultureInfo.InvariantCulture) + " · 契机 " + BreakthroughOpportunities.Count + "/4" :
+                    RealmName + "圆满 · 破境感悟 " + BreakthroughInsight.ToString(CultureInfo.InvariantCulture) + " · 契机 " + CurrentOpportunityCount + "/" + RealmDef.OpportunityPool.Length :
                     "修行 " + Qi.ToString(CultureInfo.InvariantCulture) + " / " + NextLayerCost.ToString(CultureInfo.InvariantCulture);
                 string chance = CanAttemptBreakthrough ? " · 破境机会 " + BreakthroughPercent(false, false) + "% 起" : "";
                 return (String.IsNullOrEmpty(DaoTitle) ? "" : DaoTitle + " · ") + RealmName + " · 第" + Layer + "层 · " + advancement + chance;
@@ -540,10 +577,19 @@ namespace NetBunny
                     else if (key == "mkills" && Int32.TryParse(value, out n) && n >= 0) next.MortalKills = Math.Min(n, CultivationBalance.MortalAwakenKills);
                     else if (key == "deferred" && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out number) && number >= 0) next.DeferredQi = number;
                     else if (key == "insight" && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out number) && number >= 0) next.BreakthroughInsight = number;
-                    else if (key.StartsWith("opp.", StringComparison.Ordinal) && value == "1")
+                    else if (key.StartsWith("opp.", StringComparison.Ordinal))
                     {
                         string opportunityId = key.Substring(4);
-                        next.GrantOpportunity(opportunityId);
+                        int earnedRealm;
+                        if (!Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out earnedRealm)) earnedRealm = 0;
+                        // v2 档案的 opp.<id>=1 是布尔标记：一律解释为炼气（境界0）时代获得；
+                        // v3 起值为获得时的大境界序号。读档不经 GrantOpportunity——历史契机
+                        // 保留原境界记录，是否有效由 HasOpportunity/CanAttemptBreakthrough 判定。
+                        if (version < 3) earnedRealm = 0;
+                        if (opportunityId.Length > 0 && opportunityId.Length <= 24
+                            && opportunityId.IndexOfAny(new[] { '\r', '\n', '=', '|' }) < 0
+                            && earnedRealm >= 0 && earnedRealm < Realms.Length)
+                            next.BreakthroughOpportunities[opportunityId] = earnedRealm;
                     }
                     else if (key == "root" && CultivationIdentity.IsValidRoot(value)) next.SpiritRoot = value;
                     else if (key == "path" && CultivationIdentity.IsValidPath(value)) next.DaoPath = value;
@@ -557,7 +603,7 @@ namespace NetBunny
                     else if (key == "tech" && CultivationTechnique.IsValid(value)) { next.TechniqueId = value; hasIdentity = true; }
                     else if (key == "title" && value.Length > 0 && value.Length <= 24 && value.IndexOfAny(new[] { '\r', '\n', '=' }) < 0) { next.DaoTitle = value; hasIdentity = true; }
                 }
-                if ((version != 1 && version != FormatVersion) || next.RealmIndex < 0 || next.RealmIndex >= Realms.Length ||
+                if ((version < 1 || version > FormatVersion) || next.RealmIndex < 0 || next.RealmIndex >= Realms.Length ||
                     next.Layer < 1 || next.Layer > 20 || next.Qi < 0 || next.LifetimeQi < 0 ||
                     next.BreakthroughAttempts < 0 || Double.IsNaN(next.FractionalQi) ||
                     Double.IsInfinity(next.FractionalQi) || next.FractionalQi < 0 || next.FractionalQi >= 1)
@@ -601,7 +647,8 @@ namespace NetBunny
                 "\nmortal=" + (Mortal ? "1" : "0") + "\nmkills=" + MortalKills +
                 "\ndeferred=" + DeferredQi.ToString(CultureInfo.InvariantCulture) +
                 "\ninsight=" + BreakthroughInsight.ToString(CultureInfo.InvariantCulture) + "\n";
-            foreach (string opportunity in BreakthroughOpportunities) data += "opp." + opportunity + "=1\n";
+            foreach (KeyValuePair<string, int> opportunity in BreakthroughOpportunities)
+                data += "opp." + opportunity.Key + "=" + opportunity.Value.ToString(CultureInfo.InvariantCulture) + "\n";
             foreach (string grant in ExternalGrants) data += "grant." + grant + "=1\n";
             File.WriteAllText(tmp, data, new UTF8Encoding(false));
             if (File.Exists(path)) File.Replace(tmp, path, path + ".bak");
@@ -728,6 +775,23 @@ namespace NetBunny
                 "the pity threshold guarantees the breakthrough");
             check(gambler.BreakthroughInsight == 0 && gambler.BreakthroughOpportunities.Count == 0, "success consumes the insight and opportunities for the new realm");
             check(gambler.BreakthroughAttempts == 2, "attempts are counted");
+            // ---- B2 契机按境界分层：资格绑定目标大境界 ----
+            CultivationProgress layered = new CultivationProgress { Mortal = false };
+            layered.AddQi(total); // 炼气圆满
+            check(layered.GrantOpportunity("realm") && layered.HasOpportunity("realm") && layered.CanAttemptBreakthrough,
+                "a qi-refining opportunity opens the qi-refining ritual");
+            check(!layered.GrantOpportunity("made-up"), "unknown opportunity ids are refused");
+            check(!layered.GrantOpportunity("realm"), "the same opportunity never grants twice in one realm");
+            CultivationProgress zhuji = new CultivationProgress { Mortal = false, RealmIndex = 1, Layer = 9 };
+            check(!zhuji.GrantOpportunity("treasure"), "treasure is not in the foundation-establishment pool");
+            check(zhuji.GrantOpportunity("realm") && zhuji.GrantOpportunity("insight") && zhuji.CurrentOpportunityCount == 2 && zhuji.CanAttemptBreakthrough,
+                "higher realms keep their own opportunity pool including the insight fallback");
+            CultivationProgress stale = new CultivationProgress { Mortal = false, RealmIndex = 1, Layer = 9 };
+            stale.BreakthroughOpportunities["realm"] = 0; // 炼气时代获得的秘境寻宝
+            check(!stale.HasOpportunity("realm") && !stale.CanAttemptBreakthrough && stale.CurrentOpportunityCount == 0,
+                "an opportunity earned in the previous realm never qualifies the next one");
+            check(stale.GrantOpportunity("realm") && stale.CanAttemptBreakthrough,
+                "a fresh moment in the new realm re-earns the same opportunity kind");
             // 感悟达标后凡人期灵根与境界展示不受破境影响
             check(!new CultivationProgress().TryBreakthrough(new Random(1), false), "mortals never break through");
             // ---- 身份与混合灵根保留 ----
@@ -787,6 +851,21 @@ namespace NetBunny
                 check(sanitized.MortalKills == CultivationBalance.MortalAwakenKills && sanitized.HasOpportunity("realm") &&
                     sanitized.BreakthroughOpportunities.Count == 1 && sanitized.ExternalGrants.Contains("good-id") && sanitized.ExternalGrants.Count == 1,
                     "out-of-range kill counts and malformed keys are dropped on load");
+                // B2 迁移：v2 布尔契机一律解释为炼气时代获得——筑基档里的旧契机
+                // 保留为历史记录，但不充当筑基破境资格（保守迁移，不放大权限）。
+                File.WriteAllText(file, "version=2\nrealm=1\nlayer=9\nqi=0\nlifetime=0\ncarry=0\nattempts=1\nroot=wood\npath=sword\ntech=breath\ntitle=t\nautobattle=1\nmkills=10\nopp.realm=1\n", new UTF8Encoding(false));
+                if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
+                CultivationProgress legacyZhuji = Load(file);
+                check(legacyZhuji.RealmIndex == 1 && legacyZhuji.Layer == 9 && legacyZhuji.RealmComplete
+                    && legacyZhuji.BreakthroughOpportunities.Count == 1 && !legacyZhuji.HasOpportunity("realm")
+                    && !legacyZhuji.CanAttemptBreakthrough,
+                    "a v2 boolean opportunity stays a qi-refining record and never qualifies the next realm");
+                // v3 往返：契机带着获得时的境界落档，读回分毫不差。
+                CultivationProgress v3 = new CultivationProgress { Mortal = false, RealmIndex = 1, Layer = 9 };
+                v3.GrantOpportunity("baiye"); v3.Save(file);
+                CultivationProgress v3Back = Load(file);
+                check(v3Back.BreakthroughOpportunities.Count == 1 && v3Back.HasOpportunity("baiye") && v3Back.CanAttemptBreakthrough,
+                    "v3 opportunities round trip with their earning realm intact");
             }
             finally
             {
@@ -866,9 +945,155 @@ namespace NetBunny
                 minSeen = Math.Min(minSeen, qi); maxSeen = Math.Max(maxSeen, qi);
                 bossMore &= rewards.RollKillQi(true) >= CultivationBalance.BossKillQiMin;
             }
-            spread = minSeen == CultivationBalance.VirtualKillQiMin && maxSeen == CultivationBalance.VirtualKillQiMin + CultivationBalance.VirtualKillQiSpan - 1;
+            spread = minSeen == CultivationBalance.VirtualKillQiMin && maxSeen == CultivationKillMax();
             check(spread && bossMore, "kill qi rewards stay inside configured bounds");
             return "Cultivation encounter: " + n + " checks passed (pure logic; no spawn, no files).";
+        }
+        private static int CultivationKillMax() { return CultivationBalance.VirtualKillQiMin + CultivationBalance.VirtualKillQiSpan - 1; }
+    }
+
+    // ---- 成长节奏模拟（任务C）：纯解析模型，全部参数取自 CultivationBalance /
+    // CultivationRealms / CultivationTechnique / CultivationHardware / BaiyeCatalog，
+    // 不同电脑档位 × 功法配置的成长曲线可重复输出，供平衡审查（--growth-sim）。
+    internal static class CultivationPacing
+    {
+        // 遭遇节奏假设（与调度器同源）：间隔均匀分布 45–95s，均值 70s。
+        internal const double EncounterMeanSeconds =
+            (CultivationBalance.VirtualEncounterMinSeconds + CultivationBalance.VirtualEncounterMinSeconds + CultivationBalance.VirtualEncounterSpanSeconds) / 2.0;
+        // 击杀修为期望：普通 6..10 均匀（均值 8）；炼气六层起 30% 精英双倍 → 8×1.3=10.4。
+        internal static double KillQiExpectation(int layer)
+        {
+            double plain = CultivationBalance.VirtualKillQiMin + (CultivationBalance.VirtualKillQiSpan - 1) / 2.0;
+            return layer >= CultivationBalance.EliteMinLayer ? plain * (1 + CultivationBalance.EliteChance * (CultivationBalance.EliteQiFactor - 1)) : plain;
+        }
+        internal static double ActiveRate(CultivationDeviceGrade grade, string techniqueId)
+        {
+            return CultivationBalance.BaseQiPerActiveSecond * CultivationHardware.CultivationFactor(grade) * CultivationTechnique.Find(techniqueId).RateFactor;
+        }
+        // 圆满前每秒总收益：活跃吐纳 + 遭遇击杀期望。
+        internal static double TotalRate(CultivationDeviceGrade grade, string techniqueId, int layer)
+        {
+            return ActiveRate(grade, techniqueId) + KillQiExpectation(layer) / EncounterMeanSeconds;
+        }
+        // 凡人一场战斗的近似时长（初始长枪 vs 一级普通妖物均值），用于十杀节奏估算。
+        internal static double MortalFightSeconds()
+        {
+            double dps = (24.0 * CultivationBalance.MortalDamageFactor) / .58; // 星辉长枪 24 伤 / 0.58s × 凡人 0.75
+            double meanHealth = 0;
+            for (int i = 0; i < AdventureMonster.All.Length; i++) meanHealth += Math.Max(100, 150.0 * AdventureMonster.All[i].HealthFactor);
+            meanHealth /= AdventureMonster.All.Length;
+            return meanHealth / dps;
+        }
+        internal static double MortalTenKillsSeconds()
+        {
+            return CultivationBalance.MortalAwakenKills * (EncounterMeanSeconds + MortalFightSeconds());
+        }
+        // 本境从 1 层修至圆满（含每层耗时）的累计活跃秒数。
+        internal static double RealmSeconds(CultivationDeviceGrade grade, string techniqueId, int realmIndex)
+        {
+            CultivationRealmDef def = CultivationRealms.For(realmIndex);
+            double total = 0;
+            for (int layer = 1; layer < def.LayersMax; layer++) total += def.LayerCost(layer) / TotalRate(grade, techniqueId, layer);
+            return total;
+        }
+        internal static string Fmt(double seconds)
+        {
+            if (seconds < 120) return Math.Round(seconds) + " 秒";
+            if (seconds < 7200) return (seconds / 60).ToString("0.0") + " 分钟";
+            return (seconds / 3600).ToString("0.00") + " 小时";
+        }
+        internal static string Report()
+        {
+            StringBuilder text = new StringBuilder();
+            CultivationDeviceGrade[] grades = { CultivationDeviceGrade.TurbidSpirit, CultivationDeviceGrade.Ordinary, CultivationDeviceGrade.ClearSpirit };
+            string[] gradeNames = { "浊灵档（低配）", "凡灵档（标配）", "清灵档（高配）" };
+            string[] techs = { "breath", "zenvision", "swordheart" };
+            string[] techNames = { "引气吐纳诀 ×1.00", "观星冥想篇 ×1.03", "剑心通明诀 ×1.06" };
+
+            text.Append("# 《桌面修仙传》V6.0 成长节奏模拟（--growth-sim 自动生成）\n\n");
+            text.Append("参数同源：CultivationBalance / CultivationRealms / BaiyeCatalog；遭遇间隔均值 ")
+                .Append(EncounterMeanSeconds).Append(" 秒，击杀修为期 8（炼气六层起精英期望 10.4）。\n\n");
+
+            text.Append("## 1. 凡人十杀觉醒节奏\n\n");
+            text.Append("- 单场战斗约 ").Append(MortalFightSeconds().ToString("0.0")).Append(" 秒（长枪 × 凡人 0.75 系数，普通妖物均值血量）\n");
+            text.Append("- 十杀 ≈ 10 × (").Append(EncounterMeanSeconds).Append("s 遭遇 + 战斗) = **").Append(Fmt(MortalTenKillsSeconds())).Append("**\n");
+            text.Append("- 觉醒即战力跃升：伤害系数 0.75 → 1.05（+40%），立刻可感知\n\n");
+
+            text.Append("## 2. 炼气一至十二层成长曲线（累计活跃时长）\n\n");
+            text.Append("| 档位 | 功法 | 吐纳 qi/s | 1→6 层 | 6→12 层 | 1→12 层合计 |\n|---|---|---|---|---|---|\n");
+            CultivationRealmDef qiDef = CultivationRealms.For(0);
+            for (int g = 0; g < grades.Length; g++)
+                for (int t = 0; t < techs.Length; t++)
+                {
+                    double early = 0, late = 0;
+                    for (int layer = 1; layer < qiDef.LayersMax; layer++)
+                    {
+                        double span = qiDef.LayerCost(layer) / TotalRate(grades[g], techs[t], layer);
+                        if (layer < 6) early += span; else late += span;
+                    }
+                    text.Append("| ").Append(gradeNames[g]).Append(" | ").Append(techNames[t])
+                        .Append(" | ").Append(ActiveRate(grades[g], techs[t]).ToString("0.000"))
+                        .Append(" | ").Append(Fmt(early)).Append(" | ").Append(Fmt(late)).Append(" | **").Append(Fmt(early + late)).Append("** |\n");
+                }
+
+            text.Append("\n## 3. 炼气圆满后四条破境机缘路径\n\n");
+            double fullRate = TotalRate(CultivationDeviceGrade.Ordinary, "breath", 12);
+            text.Append("| 路径 | 条件 | 预计额外活跃投入（凡灵档·吐纳诀） |\n|---|---|---|\n");
+            text.Append("| 长期苦修（保底） | 圆满感悟 ≥500 | ").Append(Fmt(CultivationBalance.InsightOpportunityThreshold / fullRate)).Append(" |\n");
+            text.Append("| 秘境寻宝 | 通关千面蜃楼（游历道 L1 或炼气十层可进） | 蜃楼全程约 10–25 分钟（节点战 3+ 场） |\n");
+            text.Append("| 天材地宝 | 炼气十层以上首胜蜃楼主得水月灵髓 | 与秘境寻宝同程，层数达标即得 |\n");
+            text.Append("| 百业悟道 | 任一道途 Lv.3（360 道韵） | 60 分钟有效电脑活动 |\n");
+            text.Append("\n无稀有宝物时的苦修保底链：感悟 500（资格）→ 尝试（基础 30%，失败 +120 感悟）→ 感悟 2000 保底必成 ≈ 圆满后 **")
+                .Append(Fmt(CultivationRealms.For(0).GuaranteedInsight / fullRate)).Append("** 活跃时长内必定破境，机缘永不贬值（苦修只是更慢）。\n\n");
+
+            text.Append("## 4. 筑基后与炼气期强度对比\n\n");
+            CultivationProgress probe = new CultivationProgress { Mortal = false, Layer = 12 };
+            double qiFactor = CultivationCombatPower.DamageFactor(probe);
+            probe.RealmIndex = 1; probe.Layer = 1;
+            double zjFactor = CultivationCombatPower.DamageFactor(probe);
+            text.Append("- 伤害系数：炼气十二层 ").Append(qiFactor.ToString("0.00")).Append(" → 筑基一层 ").Append(zjFactor.ToString("0.00"))
+                .Append("（+").Append(((zjFactor / qiFactor - 1) * 100).ToString("0")).Append("%），另有受击 -25%、恢复 ×2\n");
+            text.Append("- 筑基一层升二层需 6000 修为 ≈ ").Append(Fmt(6000 / TotalRate(CultivationDeviceGrade.Ordinary, "breath", 1)))
+                .Append("（凡灵档）——大境界层级节奏放缓是有意设计\n\n");
+
+            text.Append("## 5. 判定\n\n");
+            text.Append("- 档位差异 ±18% 内（低配反而略快，补偿设计），不构成付费级差距；\n");
+            text.Append("- 成长曲线无数值突变：每层耗时随成本平滑上升，无长时间零反馈（遭遇与吐纳双源并行）；\n");
+            text.Append("- 不设固定通关时间；高阶境界数值为第一版测试参数，随各自纵切再定稿。\n");
+            return text.ToString();
+        }
+        internal static string SelfTest()
+        {
+            int n = 0;
+            Action<bool, string> check = delegate(bool ok, string label) { if (!ok) throw new InvalidOperationException("Cultivation pacing: " + label); n++; };
+            check(Math.Abs(EncounterMeanSeconds - 70.0) < 0.001, "encounter mean matches the configured window");
+            check(KillQiExpectation(1) == 8.0 && KillQiExpectation(6) > 10.0, "elite expectation kicks in at layer six");
+            check(MortalTenKillsSeconds() > 600 && MortalTenKillsSeconds() < 900, "ten mortal kills land inside a tight early-session band");
+            CultivationProgress mortal = new CultivationProgress();
+            CultivationProgress awakened = new CultivationProgress { Mortal = false, Layer = 1 };
+            check(CultivationCombatPower.DamageFactor(awakened) / CultivationCombatPower.DamageFactor(mortal) > 1.3, "awakening power jump is immediately felt");
+            check(ActiveRate(CultivationDeviceGrade.TurbidSpirit, "breath") > ActiveRate(CultivationDeviceGrade.ClearSpirit, "breath"),
+                "low-end compensation stays within a narrow band");
+            check(ActiveRate(CultivationDeviceGrade.TurbidSpirit, "breath") / ActiveRate(CultivationDeviceGrade.ClearSpirit, "breath") <= 1.2,
+                "hardware tiers never decide the game");
+            double previous = 0;
+            bool monotone = true;
+            CultivationRealmDef def = CultivationRealms.For(0);
+            for (int layer = 1; layer < def.LayersMax; layer++)
+            {
+                double span = def.LayerCost(layer) / TotalRate(CultivationDeviceGrade.Ordinary, "breath", layer);
+                if (span < previous) monotone = false;
+                previous = span;
+            }
+            check(monotone, "layer times rise smoothly without sudden jumps");
+            double full = RealmSeconds(CultivationDeviceGrade.Ordinary, "breath", 0);
+            check(full > 3600 && full < 12 * 3600, "qi-refining completion sits in a days-scale idle band, not minutes, not weeks");
+            double pity = CultivationRealms.For(0).GuaranteedInsight / TotalRate(CultivationDeviceGrade.Ordinary, "breath", 12);
+            check(pity < 3600, "the no-treasure pity path completes well within an hour of surplus practice");
+            CultivationProgress zhuji = new CultivationProgress { Mortal = false, RealmIndex = 1, Layer = 1 };
+            check(CultivationCombatPower.DamageFactor(zhuji) > CultivationCombatPower.DamageFactor(new CultivationProgress { Mortal = false, Layer = 12 }),
+                "foundation establishment outguns max qi-refining");
+            return "Cultivation pacing: " + n + " checks passed (analytic model; no timers, no files).";
         }
     }
 }
