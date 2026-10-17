@@ -1019,7 +1019,7 @@ namespace NetBunny
             AdvanceBaiye(now);
             // A consent revocation whose file update failed is retried until the
             // stale grant is gone — even while the pet is hidden.
-            if ((consentRetryCleanup || consentRetryMemory) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
+            if ((consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
             DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
             if (!demonstrationOnly && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
             if (!enabled) return; effects.Tick(dt);
