@@ -84,6 +84,18 @@ namespace NetBunny
                 catch(Exception e) { Console.Error.WriteLine(e); Environment.ExitCode=1; }
                 return;
             }
+            if (args.Length > 0 && args[0] == "--mortal-gui-accept")
+            {
+                // 凡人主动战斗真实 GUI 验收：生产控制器+真实窗口消息驱动；
+                // 请以隔离账户运行（存档随账户隔离），日志写到指定路径。
+                try
+                {
+                    SetProcessDPIAware(); Application.EnableVisualStyles();
+                    Environment.ExitCode = AdventureController.MortalGuiAccept(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets"), args.Length > 1 ? args[1] : "mortal-gui-accept.log");
+                }
+                catch (Exception e) { Console.Error.WriteLine(e); Environment.ExitCode = 1; }
+                return;
+            }
             if(args.Length>0 && args[0]=="--skins-preview")
             {
                 try { SetProcessDPIAware(); Application.EnableVisualStyles(); AdventureRenderer.ExportPreview(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Assets"),args.Length>1?args[1]:"skins-preview.png"); }
