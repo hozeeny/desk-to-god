@@ -61,6 +61,8 @@ namespace NetBunny
         internal bool IsVirtual;
         internal bool IsBoss, IsDiskBoss, Authorized, Cleaning, CleanupStarted, Failed, Defeated;
         internal bool VisualDefeated, VisualDirty = true, FacingRight = true, Dragging;
+        // 最近一次实际栅格化时的帧量化签名（P0 渲染优化）：签名不变只移窗口不重绘。
+        internal string PaintedSignature;
         internal bool KillRewarded;
         // 仅在真实战斗（Strike 致死，含群攻溅射）中倒下时置位；
         // 一键清场等未经历战斗的结算不置位——凡人历练只认真正完成的有效战斗。

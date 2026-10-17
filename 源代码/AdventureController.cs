@@ -1121,6 +1121,14 @@ namespace NetBunny
             bool probe = PerfProbe.Enabled;
             if (probe) { PerfProbe.BeginTotal(); PerfProbe.Begin(); }
             double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
+            // P1 自适应节拍：战斗动画/拖拽/演示/战利品期间保持 15ms；
+            // 静态桌面降到 33ms（30fps 对桌宠足够流畅），整拍 CPU 近半。
+            bool busyFrame = demoStarted >= 0 || demoPending || dragging || attackAnimation > 0 || actualMoveSpeed > 1 || lootViews.Count > 0 || now < blackholeUntil;
+            if (!busyFrame)
+                foreach (AdventureEnemy e in battle.Enemies)
+                    if (!e.IsVisuallyHidden && (e.AttackFlash > .05 || e.HitFlash > 0 || e.VisualDefeated || e.Dragging)) { busyFrame = true; break; }
+            int wantedInterval = busyFrame ? 15 : 33;
+            if (timer.Interval != wantedInterval) timer.Interval = wantedInterval;
             // Cultivation uses the raw elapsed time, never the render-clamped dt.
             AdvanceCultivation(now);
             if (probe) { PerfProbe.End(SecCultivation); PerfProbe.Begin(); }
@@ -1474,7 +1482,33 @@ namespace NetBunny
         private void PositionLandmark() { landmarkWindow.Location = new Point(area.Left + 16, area.Bottom - LandmarkSize.Height - 16); }
         private void PaintWindow(KnightLayeredWindow window, AdventureRenderState state)
         {
+            PresentedFrames++;
             window.Present(renderer.Render(state)); if (!window.Visible) window.Show();
+        }
+        // 实际栅格化计数（性能探针用）：每次 PaintWindow +1，跳绘不计。
+        internal long PresentedFrames;
+        private string lastHeroSignature;
+        // P0 动画帧量化：战斗特效期间 24fps，跑动 24fps/12 步循环，静态 12fps；
+        // 签名（帧、相位、朝向、血量档位、标签等）任一不变则跳过栅格化，仅更新窗口位置。
+        private string HeroSignature(AdventureRenderState s)
+        {
+            double now = clock.Elapsed.TotalSeconds;
+            int q = attackAnimation > 0 || now < blackholeUntil || s.MoveSpeed > 1 ? 24 : 12;
+            double cycleFrac = s.Cycle - Math.Floor(s.Cycle);
+            return s.Phase + "|" + s.WeaponId + "|" + (demonstrationOnly ? demoTheme : region.CurrentCode) + "|" + s.Size.Width
+                + "|" + (int)(s.Time * q) + "|" + (int)(cycleFrac * (s.MoveSpeed > 1 ? 12 : 24)) + "|" + (int)(s.MoveSpeed / 25)
+                + "|" + (s.FacingRight ? 1 : 0) + "|" + s.Level + "|" + (int)(s.HealthRatio * 40)
+                + "|" + (int)(s.GlowProgress * 24) + "|" + (int)(s.AttackProgress * q) + "|" + (int)(s.PhaseTime * q) + "|" + s.Label;
+        }
+        private string EnemySignature(AdventureEnemy enemy, string label, double deathProgress)
+        {
+            int q = enemy.AttackFlash > .05 || enemy.HitFlash > 0 ? 24 : 10;
+            return (enemy.IsDiskBoss ? "D" : !String.IsNullOrEmpty(enemy.EvilTheme) ? "E" : enemy.IsBoss ? "B" : "S")
+                + "|" + enemy.MonsterKind + "|" + (enemy.BossWeapon ?? "") + "|" + (enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode))
+                + "|" + EnemySize(enemy).Width + "|" + (enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle")
+                + "|" + (int)(enemy.AnimationTime * q) + "|" + (int)(enemy.DeathElapsed * q) + "|" + (int)(deathProgress * 12)
+                + "|" + (enemy.FacingRight ? 1 : 0) + "|" + (int)(enemy.MoveSpeed / 10)
+                + "|" + enemy.Health + "/" + enemy.MaxHealth + "|" + enemy.QueueNumber + "|" + label;
         }
         private AdventureRenderState HeroVisual(double now)
         {
@@ -1496,7 +1530,10 @@ namespace NetBunny
             {
                 if (demoStarted >= 0) { RenderDemo(enemies || clock.Elapsed.TotalSeconds - lastEnemyPaint >= .066); return; }
                 if (probe) PerfProbe.Begin();
-                heroWindow.Location = new Point((int)x, (int)y); PaintWindow(heroWindow, HeroVisual(renderTime));
+                heroWindow.Location = new Point((int)x, (int)y);
+                AdventureRenderState heroState = HeroVisual(renderTime);
+                string heroSig = HeroSignature(heroState);
+                if (heroSig != lastHeroSignature || !heroWindow.Visible) { lastHeroSignature = heroSig; PaintWindow(heroWindow, heroState); }
                 double paintNow = clock.Elapsed.TotalSeconds;
                 if (enemies || !landmarkWindow.Visible || paintNow - lastLandmarkPaint >= .25)
                 {
@@ -1534,6 +1571,17 @@ namespace NetBunny
                     if (!enemies && !newWindow && !enemy.VisualDirty && !enemy.VisualDefeated && (enemyIndex - paintStart + enemyCount) % enemyCount >= 4) continue;
                     string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "邪恶分身 · " + AdventureWeapon.Find(enemy.BossWeapon).Name : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name + (enemy.Batch != null && enemy.Batch.Candidates.Any(f=>!f.EligibleForCleanup) ? " · 近期文件" : "");
                     double deathProgress = enemy.VisualDefeated ? Math.Min(1, enemy.DeathElapsed / AdventureEnemy.ShatterSeconds) : 0;
+                    // P0：完全静止且无特效的妖物整体跳绘（姿态冻结）；活动妖物按帧量化签名跳绘。
+                    bool idleStatic = !enemy.VisualDefeated && enemy.AttackFlash <= .05 && enemy.HitFlash <= 0 && enemy.MoveSpeed <= 1;
+                    string enemySig = null;
+                    if (!newWindow && window.Visible && !enemy.VisualDirty)
+                    {
+                        if (idleStatic) continue;
+                        enemySig = EnemySignature(enemy, label, deathProgress);
+                        if (enemySig == enemy.PaintedSignature) continue;
+                    }
+                    if (!idleStatic && enemySig == null) enemySig = EnemySignature(enemy, label, deathProgress);
+                    enemy.PaintedSignature = enemySig;
                     PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
                     enemy.VisualDirty = false;
                 }
@@ -1615,6 +1663,7 @@ namespace NetBunny
             timer.Dispose(); if (connectivity != null) connectivity.Dispose(); region.Changed -= RegionChanged; region.Dispose();
             if (equipment != null) equipment.Dispose(); if (stele != null) stele.Dispose(); if (lingyuForm != null) lingyuForm.Dispose(); if (breakthroughForm != null) breakthroughForm.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
         }        internal AdventureBattle Battle { get { return battle; } }
+        internal int CurrentTickInterval { get { return timer.Interval; } }
         internal string DetailText { get { return cleanupNotice + "\r\n" + scanStatus + "\r\n" + (diskSnapshot.Available ? "C 盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) + " / " + AdventureBattle.FormatBytes(diskSnapshot.TotalBytes) : diskSnapshot.Error) + "\r\n" + connectivityDetail + "\r\n" + region.Status; } }
         internal string ThemeMode { get { return battle.Progress.ThemeMode; } }
         internal bool IsDemo { get { return demoStarted >= 0 || demoPending; } }
@@ -1727,10 +1776,12 @@ namespace NetBunny
                     c.RenderWorld(true); check(c.enemyWindows.Count == 8 && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies), "full field contains six ordinary monsters and the two distinct bosses");
                     System.Reflection.FieldInfo currentFrame = typeof(KnightLayeredWindow).GetField("current", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                     HashSet<string> repainted = new HashSet<string>(); bool boundedPaint = true, positionsCurrent = true;
+                    // 移动中的妖物（MoveSpeed>1）：帧量化签名每拍变化，轮换预算内每只到点必重绘。
+                    foreach (AdventureEnemy enemy in c.battle.Enemies) enemy.MoveSpeed = 5;
                     for (int tick = 0; tick < 4; tick++)
                     {
                         Dictionary<string, object> frames = c.enemyWindows.ToDictionary(pair => pair.Key, pair => currentFrame.GetValue(pair.Value));
-                        foreach (AdventureEnemy enemy in c.battle.Enemies) { enemy.X += 2; enemy.AnimationTime += .016; }
+                        foreach (AdventureEnemy enemy in c.battle.Enemies) { enemy.X += 2; enemy.AnimationTime += .09; }
                         c.renderTime += .016; c.RenderWorld(false); int changed = 0;
                         foreach (AdventureEnemy enemy in c.battle.Enemies)
                         {
@@ -1740,9 +1791,17 @@ namespace NetBunny
                         }
                         boundedPaint &= changed == 4;
                     }
-                    check(boundedPaint, "normal rendering spreads eight monsters across four rasterizations per tick");
+                    check(boundedPaint, "normal rendering spreads eight moving monsters across four rasterizations per tick");
                     check(positionsCurrent, "all monster positions follow movement even when their pose is cached");
                     check(repainted.Count == 8, "round-robin rendering never starves a monster pose");
+                    // P0 静止跳绘：完全静止、无特效、非脏的妖物一拍零栅格化，窗口位置仍然跟随。
+                    foreach (AdventureEnemy enemy in c.battle.Enemies) { enemy.MoveSpeed = 0; enemy.AttackFlash = 0; enemy.HitFlash = 0; }
+                    Dictionary<string, object> idleFrames = c.enemyWindows.ToDictionary(pair => pair.Key, pair => currentFrame.GetValue(pair.Value));
+                    foreach (AdventureEnemy enemy in c.battle.Enemies) enemy.X += 3;
+                    c.RenderWorld(false);
+                    check(c.battle.Enemies.All(enemy => Object.ReferenceEquals(idleFrames[enemy.Id], currentFrame.GetValue(c.enemyWindows[enemy.Id])))
+                        && c.battle.Enemies.All(enemy => c.enemyWindows[enemy.Id].Left == (int)enemy.X),
+                        "idle monsters skip rasterization entirely while their windows still track position");
                     AdventureEnemy reaction = c.battle.Enemies.First(e => e.Id == "paint-5"); reaction.Health = reaction.MaxHealth = 100;
                     reaction.Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\reaction.tmp", Length = 4096 } }, 1);
                     c.battle.Authorize(reaction); c.battle.Cooldown = 0; c.enemyPaintCursor = 0;
@@ -2314,8 +2373,22 @@ namespace NetBunny
             return "Growth integration: " + n + " checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).";
         }
         // --perf-probe 运行器：隐藏宿主窗体 + 演示控制器（不写真实档案），
-        // 合成一个忙碌战场（虚拟妖物 + 文件怪 + 双 Boss），按 15ms 节拍驱动 Tick，
-        // 输出分模块 CPU 报表。测量与同机其他负载并存，由报告如实注明。
+        // 合成一个忙碌战场（虚拟妖物 + 文件怪 + 双 Boss），按控制器当前节拍驱动 Tick，
+        // 输出分模块 CPU 报表；随后附 30 秒静止场景（停战清场）对照自适应节拍与跳绘收益。
+        // 测量与同机其他负载并存，由报告如实注明。
+        private sealed class ProbeSnapshot
+        {
+            internal double Cpu, WorkingSetMb, PrivateMb; internal int Handles, Gdi, User; internal long Frames; internal int Ticks;
+            internal static ProbeSnapshot Capture(AdventureController c, double cpuStart)
+            {
+                Process p = Process.GetCurrentProcess();
+                return new ProbeSnapshot { Cpu = p.TotalProcessorTime.TotalSeconds - cpuStart, WorkingSetMb = p.WorkingSet64 / 1048576.0, PrivateMb = p.PrivateMemorySize64 / 1048576.0, Handles = p.HandleCount, Gdi = GetGuiResources(p.Handle, 0), User = GetGuiResources(p.Handle, 1), Frames = c.PresentedFrames };
+            }
+            internal string Describe()
+            {
+                return "CPU " + Cpu.ToString("0.0") + "s · 工作集 " + WorkingSetMb.ToString("0.0") + "MB · 私有 " + PrivateMb.ToString("0.0") + "MB · 句柄 " + Handles + " · GDI " + Gdi + " · USER " + User + " · 栅格化 " + Frames + " 帧 / " + Ticks + " 拍";
+            }
+        }
         internal static string RunPerfProbe(string assetDirectory, double minutes)
         {
             if (minutes <= 0 || minutes > 60) minutes = 3;
@@ -2335,11 +2408,11 @@ namespace NetBunny
                     AdventureEnemy memBoss = EnemyBalance.MemoryBoss(c.battle.Progress, c.battle.Weapon, new Random(5)); c.battle.Enemies.Add(memBoss); c.Spawn(memBoss);
                     AdventureEnemy diskBoss = new AdventureEnemy { Id = "probe-disk", IsBoss = true, IsDiskBoss = true, Health = 700, MaxHealth = 700 }; c.battle.Enemies.Add(diskBoss); c.Spawn(diskBoss);
                     c.battle.SetAutomatic(true);
-                    PerfProbe.Reset(); PerfProbe.Enabled = true;
+                    PerfProbe.Reset(); PerfProbe.Enabled = true; c.PresentedFrames = 0;
                     Stopwatch wall = Stopwatch.StartNew();
                     double cpuStart = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds;
                     double end = wall.Elapsed.TotalSeconds + minutes * 60;
-                    int fiendSeq = 5; double nextTopUp = 0;
+                    int fiendSeq = 5; double nextTopUp = 0; int busyTicks = 0;
                     while (wall.Elapsed.TotalSeconds < end)
                     {
                         if (wall.Elapsed.TotalSeconds >= nextTopUp)
@@ -2352,15 +2425,35 @@ namespace NetBunny
                                 c.battle.Enemies.Add(v); c.Spawn(v);
                             }
                         }
-                        c.Tick(null, EventArgs.Empty);
+                        c.Tick(null, EventArgs.Empty); busyTicks++;
                         Application.DoEvents();
-                        Thread.Sleep(15);
+                        Thread.Sleep(c.CurrentTickInterval);
                     }
-                    double cpu = Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds - cpuStart;
+                    double busyWall = wall.Elapsed.TotalSeconds;
+                    ProbeSnapshot busySnap = ProbeSnapshot.Capture(c, cpuStart); busySnap.Ticks = busyTicks;
+                    int busyActors = c.battle.Enemies.Count, busyInterval = c.CurrentTickInterval;
+                    string busyReport = PerfProbe.Report(busyWall, busySnap.Cpu);
+                    // —— 静止场景：停战清场、冻结主角移动，量 30 秒自适应节拍与跳绘 ——
+                    c.battle.SetAutomatic(false); c.battle.CancelQueue(); c.battle.Enemies.Clear();
+                    c.pauseMotionUntil = c.clock.Elapsed.TotalSeconds + 9999;
+                    PerfProbe.Reset();
+                    long framesBefore = c.PresentedFrames; double calmStart = wall.Elapsed.TotalSeconds; int calmTicks = 0;
+                    while (wall.Elapsed.TotalSeconds < calmStart + 30)
+                    {
+                        c.Tick(null, EventArgs.Empty); calmTicks++;
+                        Application.DoEvents();
+                        Thread.Sleep(c.CurrentTickInterval);
+                    }
+                    double calmWall = wall.Elapsed.TotalSeconds - calmStart;
+                    ProbeSnapshot calmSnap = ProbeSnapshot.Capture(c, cpuStart); calmSnap.Ticks = calmTicks; calmSnap.Frames = c.PresentedFrames - framesBefore;
                     PerfProbe.Enabled = false;
-                    return PerfProbe.Report(wall.Elapsed.TotalSeconds, cpu)
-                        + "战场演员: " + c.battle.Enemies.Count + "   英雄等级 Lv." + c.battle.Progress.Level
-                        + "\r\n说明: 演示模式不写真实档案；cultivation/baiye 结算在演示模式跳过（近于零），正常模式为周期性轻量运算。";
+                    string calmReport = PerfProbe.Report(calmWall, calmSnap.Cpu - busySnap.Cpu);
+                    return "== 忙碌战场（自动作战）==\r\n" + busyReport
+                        + "资源: " + busySnap.Describe() + " · 节拍 " + busyInterval + "ms\r\n"
+                        + "战场演员: " + busyActors + "   英雄等级 Lv." + c.battle.Progress.Level
+                        + "\r\n\r\n== 静止场景（停战清场 · 自适应节拍）==\r\n" + calmReport
+                        + "资源: " + calmSnap.Describe() + " · 节拍 " + c.CurrentTickInterval + "ms\r\n"
+                        + "\r\n说明: 演示模式不写真实档案；cultivation/baiye 结算在演示模式跳过（近于零），正常模式为周期性轻量运算。静止场景期间若环境妖物自然刷新，计入真实负载。";
                 }
             }
         }
