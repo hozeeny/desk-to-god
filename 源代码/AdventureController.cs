@@ -146,6 +146,10 @@ namespace NetBunny
             {
                 MaintenanceConsentStore persisted = MaintenanceConsentStore.Load(consentPath);
                 consent.CleanupEnabled = persisted.CleanupEnabled; consent.MemoryEnabled = persisted.MemoryEnabled;
+                // 无人值守自动维护同样是持久授权：授权文件是事实源，显式授予
+                // 并落盘成功的 automaint 在重启后按文件恢复；撤销若写盘失败会
+                // 持续重试（见 TryFlushConsentRevocation），不给残留文件复活机会。
+                consent.AutoMaintenanceEnabled = persisted.AutoMaintenanceEnabled;
                 // Unattended self-battle is the default and independent from
                 // real maintenance consent; a dead hero first finishes resting.
                 if (cultivation.AutoBattle && !battle.Progress.Dead) battle.SetAutomatic(true);
@@ -218,7 +222,7 @@ namespace NetBunny
         // a persistence failure must never skip the cancellation — and the
         // stale grant file is retried until removed so a restart cannot
         // resurrect the authorization.
-        private bool consentRetryCleanup, consentRetryMemory;
+        private bool consentRetryCleanup, consentRetryMemory, consentRetryAutoMaint;
         private double consentRetryAt = -1;
         internal bool SetCleanupConsent(bool value)
         {
@@ -278,18 +282,26 @@ namespace NetBunny
             if (!persisted)
             {
                 scanStatus = "授权状态暂未保存：" + error;
-                battle.LastReward = value ? "授权文件写入失败，为安全起见无人值守自动维护保持关闭" : "无人值守自动维护已在本机关闭，但授权文件未能更新；若重启后仍显示已授权请手动删除 " + consentPath;
-                if (!value) RetireAutomaticRealEffectJobs();
+                if (!value)
+                {
+                    // 与另两项授权同一承诺：本机立即生效、任务先取消，
+                    // 残留授权文件持续重试清除，重启不得复活授权。
+                    consentRetryAutoMaint = true; consentRetryAt = clock.Elapsed.TotalSeconds;
+                    battle.LastReward = "无人值守自动维护已在本机立即关闭并撤销待办，但授权文件未能更新；将自动重试清除，若重启后仍显示已授权请手动删除 " + consentPath;
+                    RetireAutomaticRealEffectJobs();
+                }
+                else battle.LastReward = "授权文件写入失败，为安全起见无人值守自动维护保持关闭";
                 return false;
             }
             if (!value)
             {
+                consentRetryAutoMaint = false;
                 // Queued-but-unstarted automatic targets with real effects retire;
                 // auto battle itself continues against virtual fiends.
                 RetireAutomaticRealEffectJobs();
                 battle.LastReward = "无人值守自动维护已关闭：自动作战继续，但只结算虚拟奖励；真实清理/回收需要手动击杀或重新开启";
             }
-            else battle.LastReward = "无人值守自动维护已开启：自动作战击败文件怪/内存 Boss 时将执行对应的真实清理或回收（仍须对应授权保持开启）";
+            else battle.LastReward = "无人值守自动维护已开启：自动作战击败文件怪/内存 Boss 时将执行对应的真实清理或回收（仍须对应授权保持开启）；重启后按授权文件恢复，可随时关闭";
             return true;
         }
         private void RetireAutomaticRealEffectJobs()
@@ -314,11 +326,12 @@ namespace NetBunny
         private string consentPathOverride;
         private void TryFlushConsentRevocation()
         {
-            if (!consentRetryCleanup && !consentRetryMemory) return;
+            if (!consentRetryCleanup && !consentRetryMemory && !consentRetryAutoMaint) return;
             string ignored;
             if (consentRetryCleanup && consent.SetCleanup(ConsentWritePath, false, out ignored)) consentRetryCleanup = false;
             if (consentRetryMemory && consent.SetMemory(ConsentWritePath, false, out ignored)) consentRetryMemory = false;
-            if (!consentRetryCleanup && !consentRetryMemory) scanStatus = "授权关闭状态已重试保存成功";
+            if (consentRetryAutoMaint && consent.SetAutoMaintenance(ConsentWritePath, false, out ignored)) consentRetryAutoMaint = false;
+            if (!consentRetryCleanup && !consentRetryMemory && !consentRetryAutoMaint) scanStatus = "授权关闭状态已重试保存成功";
         }
         private void CancelCleanupWork(string notice)
         {
@@ -369,11 +382,13 @@ namespace NetBunny
         }
         // B1 破境材料安全结算：扣除任何材料之前，先统一校验角色状态、境界、
         // 圆满条件与破境契机（核心 CanAttemptBreakthrough），材料种类与库存以
-        // 当前境界配置为准。消耗按跨存档幂等事务入账：btmat-<境界>-<尝试序号>
-        // 同时写入灵域台账与修仙 ExternalGrants；修仙档先行保存（资格与感悟的
-        // 权威），灵域材料档随后。崩溃在任一保存点只产生一种不一致形态
-        // （修仙已记账、灵域未扣），由启动对账 ReconcileBreakthroughMaterials 补平；
-        // 两份都未落盘则整笔回滚，重放同一序号仍幂等。
+        // 当前境界配置为准。事务采用灵域档预留先行 + 启动双向对账：
+        //   1) 内存扣料并记 btmat-<境界>-<尝试序号> 双台账后，灵域档立即落盘
+        //      （材料预留权威先行）；
+        //   2) 修仙档随后落盘（突破结果权威）。
+        // 崩溃在任一落盘点只产生一种可识别形态，由启动对账
+        // ReconcileBreakthroughMaterials 双向补平：修仙已记账灵域未扣→补扣；
+        // 灵域已扣修仙未记账→回滚返还。材料与突破结果永不永久不一致。
         internal bool TryBreakthrough(bool useMaterial)
         {
             if (disposed || IsDemo) return false;
@@ -399,10 +414,15 @@ namespace NetBunny
                         lingyu.Materials[def.MaterialId] = stock - need;
                         if (lingyu.Materials[def.MaterialId] <= 0) lingyu.Materials.Remove(def.MaterialId);
                         lingyu.Grants[grantId] = DateTime.UtcNow.Ticks;
+                        // 材料预留先行落盘：此点之后崩溃，启动对账按双向规则补平。
+                        // 演示/烟测运行永不写真实档案（LingyuWritePath 指向真实路径）。
+                        if (!demonstrationOnly)
+                            try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
                     }
                     cultivation.ExternalGrants.Add(grantId);
                     materialUsed = true;
-                    lastLingsuiCount = BreakthroughMaterialCount; // 消耗即刻对齐增量基线，下一滴灵髓仍是新入手时刻
+                    // 消耗即刻对齐持久化增量基线，下一滴灵髓仍是新入手时刻。
+                    cultivation.OppBaselineLingsui = BreakthroughMaterialCount;
                 }
             }
             bool success = cultivation.TryBreakthrough(random, materialUsed);
@@ -410,9 +430,15 @@ namespace NetBunny
             if (success && enabled) RenderWorld(true);
             return success;
         }
-        // B1 启动对账（幂等）：修仙档有 btmat-* 记账而灵域台账缺失时，按对应
-        // 境界的材料定义补扣并补台账；库存已被其他路径消耗时只补台账防重复，
-        // 绝不扣成负数。纯逻辑静态方法，便于用临时档案直接测试崩溃/重启场景。
+        // B1 启动对账（幂等，双向）：任一方向的崩溃半截写入都被补平，
+        // 材料与突破结果永不永久不一致。
+        // 方向一（补扣）：修仙档有 btmat-* 记账而灵域台账缺失——按对应境界的
+        //   材料定义补扣并补台账；库存已被其他路径消耗时只补台账防重复，
+        //   绝不扣成负数。
+        // 方向二（回滚）：灵域台账有 btmat-* 而修仙档无对应记账——说明灵域档
+        //   写入成功而修仙档（突破结果的权威）未能落盘，该次尝试视为未发生：
+        //   返还材料并移除孤儿台账；同序号重试仍幂等（attempts 未变，grantId 相同）。
+        // 纯逻辑静态方法，便于用临时档案直接测试崩溃/重启场景。
         internal static bool ReconcileBreakthroughMaterials(CultivationProgress cultivation, LingyuProgress lingyu)
         {
             if (cultivation == null || lingyu == null) return false;
@@ -420,47 +446,77 @@ namespace NetBunny
             foreach (string grant in cultivation.ExternalGrants)
             {
                 if (!grant.StartsWith("btmat-", StringComparison.Ordinal) || lingyu.Grants.ContainsKey(grant)) continue;
-                string[] parts = grant.Split('-');
-                int realmIdx;
-                if (parts.Length == 3 && Int32.TryParse(parts[1], out realmIdx))
-                {
-                    CultivationRealmDef def = CultivationRealms.For(realmIdx);
-                    if (def.MaterialId.Length > 0)
-                    {
-                        int need = Math.Max(1, def.MaterialCount);
-                        int stock;
-                        lingyu.Materials.TryGetValue(def.MaterialId, out stock);
-                        if (stock >= need)
-                        {
-                            lingyu.Materials[def.MaterialId] = stock - need;
-                            if (lingyu.Materials[def.MaterialId] <= 0) lingyu.Materials.Remove(def.MaterialId);
-                        }
-                    }
-                }
+                ApplyMaterialDelta(lingyu, grant, -1);
                 lingyu.Grants[grant] = DateTime.UtcNow.Ticks;
                 changed = true;
             }
+            List<string> orphans = null;
+            foreach (KeyValuePair<string, long> pair in lingyu.Grants)
+                if (pair.Key.StartsWith("btmat-", StringComparison.Ordinal) && !cultivation.ExternalGrants.Contains(pair.Key))
+                    (orphans ?? (orphans = new List<string>())).Add(pair.Key);
+            if (orphans != null)
+                foreach (string orphan in orphans)
+                {
+                    ApplyMaterialDelta(lingyu, orphan, +1); // 回滚：材料返还库存
+                    lingyu.Grants.Remove(orphan);
+                    changed = true;
+                }
             return changed;
+        }
+        // sign=-1 补扣 / sign=+1 回滚返还；库存不足补扣时不动库存（只补台账）。
+        private static void ApplyMaterialDelta(LingyuProgress lingyu, string grantId, int sign)
+        {
+            string[] parts = grantId.Split('-');
+            int realmIdx;
+            if (parts.Length != 3 || !Int32.TryParse(parts[1], out realmIdx)) return;
+            CultivationRealmDef def = CultivationRealms.For(realmIdx);
+            if (def.MaterialId.Length == 0) return;
+            int need = Math.Max(1, def.MaterialCount);
+            int stock;
+            lingyu.Materials.TryGetValue(def.MaterialId, out stock);
+            if (sign < 0)
+            {
+                if (stock < need) return;
+                stock -= need;
+                if (stock <= 0) lingyu.Materials.Remove(def.MaterialId); else lingyu.Materials[def.MaterialId] = stock;
+            }
+            else lingyu.Materials[def.MaterialId] = stock + need;
         }
         // 破境契机评估（B2 时刻授予，幂等，四条路径并行不互斥）：
         // 秘境寻宝 = 蜃楼通关时刻；天材地宝 = 水月灵髓入手时刻；百业悟道见下；
-        // 长期苦修由核心按感悟自动领悟。契机绑定获得时的境界——只在"新通关 /
-        // 新入手"的增量时刻授予，破境后旧成就不会自动变成新境界的资格。
-        // 首次评估按历史库存一次性补发（旧档迁移，钉住当前境界，不向后放大）。
-        private int lastQianmianVisits = -1, lastLingsuiCount = -1;
+        // 长期苦修由核心按感悟自动领悟。契机绑定获得时的境界与来源事件编号。
+        // 评估基线随修仙档持久化（oppsrc.*）：重启只认增量事件，历史蜃楼成绩
+        // 与旧灵髓永不会被重新认定为当前境界的新机缘。
+        // 基线为 -1 的旧档在首次评估时一次性钉住当前计数并迁移补发（仅此一次）。
         private void EvaluateBreakthroughOpportunities()
         {
-            if (cultivation == null || lingyu == null || cultivation.Mortal) { lastQianmianVisits = -1; lastLingsuiCount = -1; return; }
+            if (cultivation == null || lingyu == null || cultivation.Mortal) return;
             int visits = lingyu.Visits("qianmian");
             int lingsui = BreakthroughMaterialCount;
-            bool migrating = lastQianmianVisits < 0;
-            bool newClear = migrating ? visits >= 1 : visits > lastQianmianVisits;
-            bool newLingsui = migrating ? lingsui > 0 : lingsui > lastLingsuiCount;
-            if (newClear && cultivation.GrantOpportunity("realm"))
-                battle.LastReward = "破境契机 · 秘境寻宝：蜃楼一行，窥见" + cultivation.RealmName + "门径";
-            if (newLingsui && cultivation.GrantOpportunity("treasure"))
-                battle.LastReward = "破境契机 · 天材地宝：水月灵髓蕴藏一缕先天灵机";
-            lastQianmianVisits = visits; lastLingsuiCount = lingsui;
+            bool migrating = cultivation.OppBaselineQianmian < 0 || cultivation.OppBaselineLingsui < 0;
+            bool changed = false;
+            if (migrating)
+            {
+                // 旧档迁移：历史成绩钉住当前境界补发一次（不向后放大），基线落定后不再触发。
+                if (visits >= 1 && cultivation.GrantOpportunity("realm", "migrate-qv" + visits))
+                { battle.LastReward = "破境契机 · 秘境寻宝：蜃楼一行，窥见" + cultivation.RealmName + "门径"; changed = true; }
+                if (lingsui > 0 && cultivation.GrantOpportunity("treasure", "migrate-ls" + lingsui))
+                { battle.LastReward = "破境契机 · 天材地宝：水月灵髓蕴藏一缕先天灵机"; changed = true; }
+            }
+            else
+            {
+                if (visits > cultivation.OppBaselineQianmian && cultivation.GrantOpportunity("realm", "qv" + visits))
+                { battle.LastReward = "破境契机 · 秘境寻宝：蜃楼一行，窥见" + cultivation.RealmName + "门径"; changed = true; }
+                if (lingsui > cultivation.OppBaselineLingsui && cultivation.GrantOpportunity("treasure", "ls" + lingsui))
+                { battle.LastReward = "破境契机 · 天材地宝：水月灵髓蕴藏一缕先天灵机"; changed = true; }
+            }
+            if (migrating || visits != cultivation.OppBaselineQianmian || lingsui != cultivation.OppBaselineLingsui)
+            {
+                cultivation.OppBaselineQianmian = visits;
+                cultivation.OppBaselineLingsui = lingsui;
+                changed = true;
+            }
+            if (changed) Save();
         }
         private bool BaiyeWudaoEligible()
         {
@@ -512,8 +568,10 @@ namespace NetBunny
             // 已登堂（Lv.3）的积累或天机阵图传承凝作当前境界的破境灵机；
             // 破境后须等下一次真实悟道时刻，旧等级不会自动化作新境界的资格。
             if ((leveledUp || unlocked.Count > 0) && cultivation != null && !cultivation.Mortal
-                && !cultivation.HasOpportunity("baiye") && BaiyeWudaoEligible() && cultivation.GrantOpportunity("baiye"))
+                && !cultivation.HasOpportunity("baiye") && BaiyeWudaoEligible()
+                && cultivation.GrantOpportunity("baiye", unlocked.Count > 0 ? "enc-" + unlocked[0].Id : "bw" + DateTime.UtcNow.Ticks))
             {
+                cultivation.OppBaselineBaiye = DateTime.UtcNow.Ticks;
                 baiyeNotice = battle.LastReward = "破境契机 · 百业悟道：红尘百业凝作一缕悟道灵机";
                 Save();
             }
@@ -1673,6 +1731,27 @@ namespace NetBunny
                     }
                     c.TryFlushConsentRevocation();
                     check(!c.consentRetryCleanup, "stale consent removal is retried until the file can no longer resurrect it");
+                    // 无人值守自动维护同款承诺：撤销写盘失败 → 本机立即生效并持续重试清除；
+                    // 授权文件是事实源——显式落盘的授权重启后按文件恢复。
+                    string blockedAuto = Path.Combine(Path.GetTempPath(), "consent-automaint-" + Guid.NewGuid().ToString("N") + ".txt");
+                    File.WriteAllText(blockedAuto, "cleanup=0\nmemory=0\nautomaint=1\n", new UTF8Encoding(false));
+                    FileStream autoLock = new FileStream(blockedAuto, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                    try
+                    {
+                        c.consentPathOverride = blockedAuto;
+                        c.consent.AutoMaintenanceEnabled = true;
+                        check(!c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && c.consentRetryAutoMaint,
+                            "failed automaint revocation applies in memory at once and schedules the stale-grant retry");
+                    }
+                    finally { autoLock.Dispose(); }
+                    c.TryFlushConsentRevocation(); // 锁已释放：重试写回 blockedAuto
+                    check(!c.consentRetryAutoMaint && !MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled,
+                        "the retried removal leaves no file that could resurrect automaint after a restart");
+                    c.consentPathOverride = null;
+                    File.WriteAllText(blockedAuto, "cleanup=0\nmemory=0\nautomaint=1\n", new UTF8Encoding(false));
+                    check(MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled,
+                        "an explicitly persisted automaint grant is exactly what a restart restores");
+                    try { File.Delete(blockedAuto); } catch { }
                     // Hide/show and demo transitions never detach runtime state from
                     // the persisted unattended-battle preference.
                     c.cultivation.AutoBattle = true; c.battle.SetAutomatic(true);
@@ -1914,6 +1993,18 @@ namespace NetBunny
                     check(ReconcileBreakthroughMaterials(crashedCult, crashedLingyu)
                         && crashedLingyu.Grants.ContainsKey("btmat-0-4") && !crashedLingyu.Materials.ContainsKey("shuiyue-lingsui"),
                         "reconcile never drives the stock negative when the material is already gone");
+                    // 方向二（回滚）：灵域档已扣已记账、修仙档（结果权威）未记账——
+                    // 即"修仙档写入失败、灵域材料档写入成功"的崩溃窗口：
+                    // 孤儿台账回滚返还材料，该次尝试视为未发生，且回滚幂等。
+                    CultivationProgress orphanCult = new CultivationProgress();
+                    orphanCult.Mortal = false; orphanCult.EnsureIdentity(new Random(13));
+                    LingyuProgress orphanLingyu = new LingyuProgress();
+                    orphanLingyu.Grants["btmat-0-7"] = DateTime.UtcNow.Ticks; // 灵域已扣（库存 0），修仙无记录
+                    check(ReconcileBreakthroughMaterials(orphanCult, orphanLingyu)
+                        && orphanLingyu.Materials["shuiyue-lingsui"] == 1 && !orphanLingyu.Grants.ContainsKey("btmat-0-7"),
+                        "an orphan ledger rolls the material back instead of losing it");
+                    check(!ReconcileBreakthroughMaterials(orphanCult, orphanLingyu)
+                        && orphanLingyu.Materials["shuiyue-lingsui"] == 1, "the orphan rollback is idempotent");
                     // 真实临时档案：崩溃现场落盘 → 重载 → 对账补平 → 再落盘重载核对（重启对账链路）。
                     string cultTmp = Path.Combine(Path.GetTempPath(), "btmat-cult-" + Guid.NewGuid().ToString("N") + ".txt");
                     string lingTmp = Path.Combine(Path.GetTempPath(), "btmat-ling-" + Guid.NewGuid().ToString("N") + ".txt");
@@ -1955,22 +2046,39 @@ namespace NetBunny
                     check(outcome ? g.cultivation.RealmIndex == 1
                             : g.cultivation.RealmIndex == 0 && g.cultivation.Layer == 12 && g.cultivation.BreakthroughInsight > 0 && g.cultivation.HasOpportunity("realm"),
                         "every attempt either advances the realm or deepens insight without loss");
-                    // —— B2 契机境界分层（端到端）：历史成就迁移补发一次；无新时刻不白捡；新通关重新悟得 ——
+                    // —— B2 契机境界分层 + 事件编号（端到端）：历史成就迁移补发一次；
+                    // 基线随档案持久化，重启绝不把旧成绩重新认定为新机缘 ——
                     g.cultivation.Mortal = false; g.cultivation.RealmIndex = 1; g.cultivation.Layer = 9; g.cultivation.Qi = 0;
-                    g.cultivation.BreakthroughOpportunities.Clear(); g.cultivation.ExternalGrants.Clear();
+                    g.cultivation.BreakthroughOpportunities.Clear(); g.cultivation.OpportunityEvents.Clear(); g.cultivation.ExternalGrants.Clear();
+                    g.cultivation.OppBaselineQianmian = -1; g.cultivation.OppBaselineLingsui = -1; // 模拟无基线的旧档
                     g.lingyu.Grants.Clear(); g.lingyu.RealmVisits["qianmian"] = 1;
                     g.EvaluateBreakthroughOpportunities(); // 首次评估 = 旧档迁移补发（钉住当前境界）
-                    check(g.cultivation.HasOpportunity("realm") && g.cultivation.CanAttemptBreakthrough,
-                        "legacy mirage clears migrate to the current realm exactly once");
-                    g.cultivation.BreakthroughOpportunities.Clear();
+                    check(g.cultivation.HasOpportunity("realm") && g.cultivation.CanAttemptBreakthrough
+                        && g.cultivation.OpportunityEvents["realm"].StartsWith("migrate-qv", StringComparison.Ordinal),
+                        "legacy mirage clears migrate to the current realm exactly once, event-numbered");
+                    check(g.cultivation.OppBaselineQianmian == 1 && g.cultivation.OppBaselineLingsui >= 0,
+                        "the first evaluation pins the persisted baselines");
+                    // 存档 → 重载（模拟重启）：境界、事件编号与基线完整恢复，历史不重估。
+                    string oppTmp = Path.Combine(Path.GetTempPath(), "opp-v4-" + Guid.NewGuid().ToString("N") + ".txt");
+                    try
+                    {
+                        g.cultivation.Save(oppTmp);
+                        CultivationProgress reloadedOpp = CultivationProgress.Load(oppTmp);
+                        check(reloadedOpp.BreakthroughOpportunities["realm"] == 1
+                            && reloadedOpp.OpportunityEvents["realm"] == g.cultivation.OpportunityEvents["realm"]
+                            && reloadedOpp.OppBaselineQianmian == 1 && reloadedOpp.OppBaselineLingsui >= 0,
+                            "opportunity realm, event id and baselines survive a restart");
+                    }
+                    finally { try { File.Delete(oppTmp); } catch { } }
+                    g.cultivation.BreakthroughOpportunities.Clear(); g.cultivation.OpportunityEvents.Clear();
                     g.EvaluateBreakthroughOpportunities();
                     check(!g.cultivation.HasOpportunity("realm") && !g.cultivation.CanAttemptBreakthrough,
-                        "without a new mirage moment the old clear is never re-granted");
+                        "without a new mirage moment the old clear is never re-granted, even after restart");
                     g.lingyu.RealmVisits["qianmian"] = 2; // 新的通关时刻
                     g.EvaluateBreakthroughOpportunities();
                     check(g.cultivation.HasOpportunity("realm") && g.cultivation.CanAttemptBreakthrough
-                        && g.cultivation.BreakthroughOpportunities["realm"] == 1,
-                        "a fresh clear re-earns the opportunity pinned to the new realm");
+                        && g.cultivation.BreakthroughOpportunities["realm"] == 1 && g.cultivation.OpportunityEvents["realm"] == "qv2",
+                        "a fresh clear re-earns the opportunity pinned to the new realm with its event number");
                     // 境界-战斗强度联动：Tick 每拍同步系数（凡人偏弱 / 炼气渐强 / 筑基质变）。
                     g.cultivation.RealmIndex = 0; g.cultivation.Layer = 1; g.cultivation.Mortal = true;
                     g.Tick(null, EventArgs.Empty);

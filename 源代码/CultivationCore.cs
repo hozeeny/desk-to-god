@@ -317,7 +317,11 @@ namespace NetBunny
         // Version 3: opp.* lines now record the realm index at which the
         // opportunity was earned (opp.<id>=<realmIndex>); v2 archives carry the
         // boolean form (opp.<id>=1) and are read as qi-refining opportunities.
-        internal const int FormatVersion = 3;
+        // Version 4: opp.<id>=<realmIndex>:<eventId> additionally binds the
+        // earning event number (e.g. qv2 = second mirage clear), and the new
+        // oppsrc.* baselines persist the last-evaluated event counters so a
+        // restart can never re-credit a historical feat as a new opportunity.
+        internal const int FormatVersion = 4;
         internal static readonly string[] Realms =
             { "炼气", "筑基", "金丹", "元婴", "化神", "合道", "渡劫", "飞升" };
 
@@ -340,6 +344,13 @@ namespace NetBunny
         // B2：契机绑定获得时的大境界（id → RealmIndex）——筑基机缘不能充当
         // 结丹、结婴资格，新境界的突破门槛须由新的机缘时刻重新满足。
         internal readonly Dictionary<string, int> BreakthroughOpportunities = new Dictionary<string, int>(StringComparer.Ordinal);
+        // B2 延伸：每条契机同时记录来源事件编号（id → eventId，如 qv2 / ls1），
+        // 与 oppsrc.* 持久化基线配合，重启后历史战绩不会被重复认定为新机缘。
+        internal readonly Dictionary<string, string> OpportunityEvents = new Dictionary<string, string>(StringComparer.Ordinal);
+        // 机缘评估基线（-1 = 从未评估，旧档首次评估时一次性钉住并补发迁移契机）。
+        // 蜃楼通关次数 / 灵髓库存 / 百业悟道时刻，随档案持久化。
+        internal int OppBaselineQianmian = -1, OppBaselineLingsui = -1;
+        internal long OppBaselineBaiye = -1;
         // Empty means "not yet awakened". A saved non-mortal archive (including
         // migrated v1 archives) always carries a valid root, never overwritten here.
         internal string SpiritRoot = "";
@@ -382,9 +393,14 @@ namespace NetBunny
         }
         // 时刻授予：仅当该契机属于本境界机缘池时记录，并钉住获得时的境界。
         // 其他境界的旧记录不挡路——新境界的悟道时刻会把它刷新为当前境界。
-        internal bool GrantOpportunity(string id)
+        // eventId 为来源事件编号（蜃楼通关次数 qv<N>、灵髓库存 ls<N>、百业悟道
+        // 时刻 bw<N>、感悟阈值 insight<N>），随档案持久化供审计与增量判定。
+        internal bool GrantOpportunity(string id) { return GrantOpportunity(id, ""); }
+        internal bool GrantOpportunity(string id, string eventId)
         {
-            if (String.IsNullOrEmpty(id) || id.Length > 24 || id.IndexOfAny(new[] { '\r', '\n', '=', '|' }) >= 0) return false;
+            if (String.IsNullOrEmpty(id) || id.Length > 24 || id.IndexOfAny(new[] { '\r', '\n', '=', '|', ':' }) >= 0) return false;
+            if (eventId == null) eventId = "";
+            if (eventId.Length > 32 || eventId.IndexOfAny(new[] { '\r', '\n', '=', '|', ':' }) >= 0) return false;
             string[] pool = RealmDef.OpportunityPool;
             bool inPool = false;
             for (int i = 0; i < pool.Length; i++) if (pool[i] == id) { inPool = true; break; }
@@ -392,6 +408,7 @@ namespace NetBunny
             int earnedRealm;
             if (BreakthroughOpportunities.TryGetValue(id, out earnedRealm) && earnedRealm == RealmIndex) return false;
             BreakthroughOpportunities[id] = RealmIndex;
+            OpportunityEvents[id] = eventId;
             return true;
         }
         internal int BreakthroughPercent(bool useMaterial, bool materialAvailable)
@@ -527,6 +544,7 @@ namespace NetBunny
                 Layer = 1; Qi = 0; FractionalQi = 0;
                 BreakthroughInsight = 0;
                 BreakthroughOpportunities.Clear(); // 新境界的瓶颈需要新的契机
+                OpportunityEvents.Clear();
                 LastNotice = "破境成功，踏入" + RealmName + "！";
                 return true;
             }
@@ -577,19 +595,30 @@ namespace NetBunny
                     else if (key == "mkills" && Int32.TryParse(value, out n) && n >= 0) next.MortalKills = Math.Min(n, CultivationBalance.MortalAwakenKills);
                     else if (key == "deferred" && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out number) && number >= 0) next.DeferredQi = number;
                     else if (key == "insight" && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out number) && number >= 0) next.BreakthroughInsight = number;
+                    else if (key == "oppsrc.qianmian" && Int32.TryParse(value, out n) && n >= -1) next.OppBaselineQianmian = Math.Min(n, 1000000);
+                    else if (key == "oppsrc.lingsui" && Int32.TryParse(value, out n) && n >= -1) next.OppBaselineLingsui = Math.Min(n, 1000000);
+                    else if (key == "oppsrc.baiye" && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out number) && number >= -1) next.OppBaselineBaiye = number;
                     else if (key.StartsWith("opp.", StringComparison.Ordinal))
                     {
                         string opportunityId = key.Substring(4);
+                        // v4 起值为 <realmIndex>:<eventId>；v3 为纯 realmIndex；
+                        // v2 的 opp.<id>=1 是布尔标记：一律解释为炼气（境界0）时代获得。
+                        // 读档不经 GrantOpportunity——历史契机保留原境界记录，
+                        // 是否有效由 HasOpportunity/CanAttemptBreakthrough 判定。
+                        string realmPart = value, eventId = "";
+                        int colon = value.IndexOf(':');
+                        if (colon >= 0) { realmPart = value.Substring(0, colon); eventId = value.Substring(colon + 1); }
                         int earnedRealm;
-                        if (!Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out earnedRealm)) earnedRealm = 0;
-                        // v2 档案的 opp.<id>=1 是布尔标记：一律解释为炼气（境界0）时代获得；
-                        // v3 起值为获得时的大境界序号。读档不经 GrantOpportunity——历史契机
-                        // 保留原境界记录，是否有效由 HasOpportunity/CanAttemptBreakthrough 判定。
-                        if (version < 3) earnedRealm = 0;
+                        if (!Int32.TryParse(realmPart, NumberStyles.Integer, CultureInfo.InvariantCulture, out earnedRealm)) earnedRealm = 0;
+                        if (version < 3) { earnedRealm = 0; eventId = ""; }
                         if (opportunityId.Length > 0 && opportunityId.Length <= 24
-                            && opportunityId.IndexOfAny(new[] { '\r', '\n', '=', '|' }) < 0
-                            && earnedRealm >= 0 && earnedRealm < Realms.Length)
+                            && opportunityId.IndexOfAny(new[] { '\r', '\n', '=', '|', ':' }) < 0
+                            && earnedRealm >= 0 && earnedRealm < Realms.Length
+                            && eventId.Length <= 32 && eventId.IndexOfAny(new[] { '\r', '\n', '=', '|', ':' }) < 0)
+                        {
                             next.BreakthroughOpportunities[opportunityId] = earnedRealm;
+                            next.OpportunityEvents[opportunityId] = eventId;
+                        }
                     }
                     else if (key == "root" && CultivationIdentity.IsValidRoot(value)) next.SpiritRoot = value;
                     else if (key == "path" && CultivationIdentity.IsValidPath(value)) next.DaoPath = value;
@@ -648,7 +677,13 @@ namespace NetBunny
                 "\ndeferred=" + DeferredQi.ToString(CultureInfo.InvariantCulture) +
                 "\ninsight=" + BreakthroughInsight.ToString(CultureInfo.InvariantCulture) + "\n";
             foreach (KeyValuePair<string, int> opportunity in BreakthroughOpportunities)
-                data += "opp." + opportunity.Key + "=" + opportunity.Value.ToString(CultureInfo.InvariantCulture) + "\n";
+            {
+                string eventId;
+                data += "opp." + opportunity.Key + "=" + opportunity.Value.ToString(CultureInfo.InvariantCulture) +
+                    (OpportunityEvents.TryGetValue(opportunity.Key, out eventId) && eventId.Length > 0 ? ":" + eventId : "") + "\n";
+            }
+            data += "oppsrc.qianmian=" + OppBaselineQianmian + "\noppsrc.lingsui=" + OppBaselineLingsui +
+                "\noppsrc.baiye=" + OppBaselineBaiye.ToString(CultureInfo.InvariantCulture) + "\n";
             foreach (string grant in ExternalGrants) data += "grant." + grant + "=1\n";
             File.WriteAllText(tmp, data, new UTF8Encoding(false));
             if (File.Exists(path)) File.Replace(tmp, path, path + ".bak");
@@ -866,6 +901,27 @@ namespace NetBunny
                 CultivationProgress v3Back = Load(file);
                 check(v3Back.BreakthroughOpportunities.Count == 1 && v3Back.HasOpportunity("baiye") && v3Back.CanAttemptBreakthrough,
                     "v3 opportunities round trip with their earning realm intact");
+                // v4 往返：契机携带境界 + 事件编号，oppsrc.* 评估基线一同落档读回。
+                CultivationProgress v4 = new CultivationProgress { Mortal = false, RealmIndex = 1, Layer = 9 };
+                v4.GrantOpportunity("realm", "qv3"); v4.GrantOpportunity("insight", "insight2000");
+                v4.OppBaselineQianmian = 3; v4.OppBaselineLingsui = 2; v4.OppBaselineBaiye = 123456789L;
+                v4.Save(file);
+                CultivationProgress v4Back = Load(file);
+                check(v4Back.HasOpportunity("realm") && v4Back.OpportunityEvents["realm"] == "qv3"
+                    && v4Back.OpportunityEvents["insight"] == "insight2000"
+                    && v4Back.OppBaselineQianmian == 3 && v4Back.OppBaselineLingsui == 2 && v4Back.OppBaselineBaiye == 123456789L,
+                    "v4 opportunities round trip with realm, event id and baselines intact");
+                // v3 旧档（无事件编号、无基线）：读回事件编号为空、基线保持未评估。
+                File.WriteAllText(file, "version=3\nrealm=0\nlayer=12\nqi=0\nlifetime=0\ncarry=0\nattempts=0\nroot=wood\npath=sword\ntech=breath\ntitle=t\nautobattle=1\nmkills=10\nopp.realm=0\n", new UTF8Encoding(false));
+                if (File.Exists(file + ".bak")) File.Delete(file + ".bak");
+                CultivationProgress v3Old = Load(file);
+                check(v3Old.HasOpportunity("realm") && v3Old.OpportunityEvents["realm"] == ""
+                    && v3Old.OppBaselineQianmian == -1 && v3Old.OppBaselineLingsui == -1,
+                    "v3 archives load with empty event ids and unevaluated baselines");
+                // 非法事件编号与带冒号的契机 id 一律拒收。
+                CultivationProgress strict = new CultivationProgress { Mortal = false };
+                check(!strict.GrantOpportunity("realm", "bad:id") && !strict.GrantOpportunity("rea:lm", "qv1"),
+                    "malformed event ids and colons in opportunity ids are refused");
             }
             finally
             {
