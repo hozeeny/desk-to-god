@@ -14,7 +14,7 @@ namespace NetBunny
         private readonly ResourceGrowthCard resourceGrowth = new ResourceGrowthCard();
         private readonly CultivationCard cultivation = new CultivationCard();
         private readonly ComboBox techniques = new ComboBox();
-        private readonly Button breakthrough = new Button(), pauseCultivation = new Button(), baiyeStele = new Button();
+        private readonly Button breakthrough = new Button(), pauseCultivation = new Button(), baiyeStele = new Button(), lingyuStele = new Button();
         private readonly CheckBox cleanupConsent = new CheckBox(), memoryConsent = new CheckBox(), autoMaintenanceConsent = new CheckBox();
         private readonly ListBox weapons = new ListBox();
         private readonly RadioButton automatic = new RadioButton(), manual = new RadioButton();
@@ -53,7 +53,9 @@ namespace NetBunny
             Configure(pauseCultivation, "暂停修炼", 110, delegate { controller.SetCultivationPaused(!controller.CultivationPaused); RefreshData(); });
             Configure(baiyeStele, "百业道碑", 110, delegate { controller.OpenBaiyeStele(); });
             hints.SetToolTip(baiyeStele, "现实中的工作、学习、创作与娱乐化为后天道途；只识别应用类别，可随时关闭。");
-            practice.Controls.AddRange(new Control[] { techniques, breakthrough, pauseCultivation, baiyeStele }); content.Controls.Add(practice);
+            Configure(lingyuStele, "灵域历练", 110, delegate { controller.OpenLingyu(); });
+            hints.SetToolTip(lingyuStele, "软件灵域探索与机缘：进入秘境只生成虚拟妖物，绝不触碰真实文件与进程；进度即时保存，可随时暂离。");
+            practice.Controls.AddRange(new Control[] { techniques, breakthrough, pauseCultivation, baiyeStele, lingyuStele }); content.Controls.Add(practice);
             FlowLayoutPanel consentRow = Row();
             cleanupConsent.Text = "授权文件清理：击败文件怪后，删除其绑定的、超过 24 小时的本用户临时文件";
             cleanupConsent.Width = 470; cleanupConsent.Height = 30; cleanupConsent.BackColor = Color.Transparent;

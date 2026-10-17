@@ -60,6 +60,9 @@ namespace NetBunny
         // as pure combat: they never own files and never touch the cleanup worker.
         internal bool IsVirtual;
         internal bool IsBoss, IsDiskBoss, Authorized, Cleaning, CleanupStarted, Failed, Defeated;
+        // 秘境镜妖免疫一键清场：蜃楼战斗必须真实打完（或力竭失败），
+        // 不能被范围清场直接跳过；满员腾名额时也不可被选为退休对象。
+        internal bool NoFieldClear;
         internal bool VisualDefeated, VisualDirty = true, FacingRight = true, Dragging;
         internal bool KillRewarded;
         internal int KillExperience;
@@ -253,7 +256,7 @@ namespace NetBunny
             Automatic = false; // This action authorizes one fixed snapshot, never future spawns.
             foreach (AdventureEnemy enemy in Enemies.ToArray())
             {
-                if (enemy.Defeated || enemy.Failed || (enemy.IsBoss && !enemy.IsDiskBoss && !String.IsNullOrEmpty(enemy.EvilTheme))) continue;
+                if (enemy.Defeated || enemy.Failed || enemy.NoFieldClear || (enemy.IsBoss && !enemy.IsDiskBoss && !String.IsNullOrEmpty(enemy.EvilTheme))) continue;
                 if (enemy.IsDiskWarning) { LastReward = DiskWarningMessage; continue; }
                 if (enemy.Cleaning) { if (enemy.Authorized) enemy.Authorization = AdventureAuthorization.ClearField; continue; }
                 if (!enemy.Authorized) Authorize(enemy, AdventureAuthorization.ClearField);
@@ -495,6 +498,14 @@ namespace NetBunny
             sweep.Damage(99999); check(sweep.ClearFieldSnapshot().Count == 0 && !sweep.Authorize(future), "dead hero cannot authorize a new clear or manual target");
             sweep.SetAutomatic(true); check(!sweep.Automatic && sweep.PlanNext(0, 0) == null, "death prevents automatic restart");
             sweep.Revive(); check(!sweep.Automatic, "manual revival leaves automatic mode off");
+            AdventureBattle mirageSweep = new AdventureBattle(new AdventureProgress());
+            AdventureEnemy mirrorFiend = new AdventureEnemy { Id = "lingyu-fiend", IsVirtual = true, NoFieldClear = true, MonsterKind = "skeleton", Health = 60, MaxHealth = 60 };
+            AdventureEnemy fodder = new AdventureEnemy { Id = "fodder", Health = 40, MaxHealth = 40 };
+            mirageSweep.Enemies.AddRange(new[] { mirrorFiend, fodder });
+            List<AdventureEnemy> mirageClear = mirageSweep.ClearFieldSnapshot();
+            check(mirageClear.Count == 1 && mirageClear[0] == fodder && mirrorFiend.Health == 60 && !mirrorFiend.Defeated && !mirrorFiend.Authorized,
+                "one-click clear skips the field-clear-immune mirror fiend but sweeps everything else");
+            check(mirageSweep.Authorize(mirrorFiend), "the immune fiend stays manually targetable for a real fight");
             Random seeded = new Random(527); HashSet<string> kinds = new HashSet<string>(); bool stableKinds = true;
             CleanupBatch emptyBatch = new CleanupBatch(new List<CleanupCandidate>(), 1);
             for (int i = 0; i < 80; i++)
