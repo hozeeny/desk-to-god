@@ -2471,6 +2471,52 @@ namespace NetBunny
                     check(g.DongtianPlant(0, "linggu") && !g.DongtianHarvest(0), "planting starts real-time growth and refuses early harvest");
                     g.Dongtian.Fields[0] = "linggu,1";
                     check(g.DongtianHarvest(0) && g.Dongtian.CountOf("linggu") == 2, "a ripe field harvests into the bag");
+                    // —— 洞天面板刷新：低频定时、完成态自动出现领取、控件实例稳定、长开无 GDI/USER 泄漏 ——
+                    using (DongtianForm panel = new DongtianForm(g))
+                    {
+                        panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000);
+                        panel.Show(); Application.DoEvents(); panel.RefreshData();
+                        Control[] firstSet = panel.ActionControlsSnapshot();
+                        check(firstSet.Length > 0 && firstSet.Any(b => b.Text.StartsWith("种", StringComparison.Ordinal))
+                            && firstSet.All(b => b.Text != "收丹" && b.Text != "收器" && !b.Text.StartsWith("收获", StringComparison.Ordinal)),
+                            "the cave panel opens with planting actions and no pending collect");
+                        int gdiBefore = GetGuiResources(Process.GetCurrentProcess().Handle, 0);
+                        int userBefore = GetGuiResources(Process.GetCurrentProcess().Handle, 1);
+                        for (int cycle = 0; cycle < 240; cycle++) { panel.RefreshData(); if ((cycle & 31) == 0) Application.DoEvents(); }
+                        check(firstSet.SequenceEqual(panel.ActionControlsSnapshot()),
+                            "an unchanged action set reuses the same button instances across 240 refreshes");
+                        check(GetGuiResources(Process.GetCurrentProcess().Handle, 0) <= gdiBefore + 4
+                            && GetGuiResources(Process.GetCurrentProcess().Handle, 1) <= userBefore + 4,
+                            "a long-open panel leaks no GDI/USER objects across refreshes");
+                        string signatureBeforeRipe = panel.ActionSignatureForTest;
+                        // 灵田成熟：窗口保持打开，下一次低频刷新自动出现「收获田1」
+                        g.Dongtian.Fields[0] = "linggu,1";
+                        panel.RefreshData();
+                        Control[] ripeSet = panel.ActionControlsSnapshot();
+                        check(ripeSet.Any(b => b.Text == "收获田1") && panel.ActionSignatureForTest != signatureBeforeRipe,
+                            "a ripe field surfaces its harvest action while the window stays open");
+                        for (int cycle = 0; cycle < 30; cycle++) panel.RefreshData();
+                        check(ripeSet.SequenceEqual(panel.ActionControlsSnapshot()), "the rebuilt set also stays instance-stable");
+                        // 丹炉完成：收丹按钮自动出现，点击走真实控制器路径结算
+                        check(g.DongtianStartPill("ninglu"), "brewing restarts for the collect-path check");
+                        g.Dongtian.Furnace = "ninglu,1"; // 直接写成已成槽位，走真实收丹路径
+                        panel.RefreshData();
+                        Button collectPill = panel.ActionControlsSnapshot().FirstOrDefault(b => b.Text == "收丹") as Button;
+                        check(collectPill != null, "a finished furnace surfaces the collect-pill action while the window stays open");
+                        if (collectPill != null) { collectPill.PerformClick(); Application.DoEvents(); }
+                        check(g.Dongtian.Furnace == null && g.Dongtian.BuffActive("buff-ninglu", DateTime.UtcNow),
+                            "clicking the surfaced collect-pill action settles the pill for real");
+                        // 器位完成：收器按钮自动出现并真实结算（器灵常驻生效）
+                        g.Dongtian.Forge = "putuan,1";
+                        panel.RefreshData();
+                        Button collectGear = panel.ActionControlsSnapshot().FirstOrDefault(b => b.Text == "收器") as Button;
+                        check(collectGear != null, "a finished forge surfaces the collect-gear action while the window stays open");
+                        if (collectGear != null) { collectGear.PerformClick(); Application.DoEvents(); }
+                        check(g.Dongtian.Forge == null && g.Dongtian.HasGear("putuan"),
+                            "clicking the surfaced collect-gear action settles the gear for real");
+                        panel.Hide();
+                    }
+                    g.Dongtian.Fields[0] = null; // 还原现场，后续故障注入段自带夹具
                     // —— 洞天存档故障注入：写盘失败不静默、待确认重试、库存与重复请求守恒 ——
                     string dtFixture = Path.Combine(Path.GetTempPath(), "dongtian-smoke-" + Guid.NewGuid().ToString("N"));
                     Directory.CreateDirectory(dtFixture);
