@@ -68,9 +68,10 @@ namespace NetBunny
             return null;
         }
         // 满足任一条件即可进入：道途达标，或境界达标（游戏内途径）。
+        // 凡人尚未完成灵根觉醒，不能绕过正常成长规则进入高阶修仙秘境。
         internal static bool CanEnter(LingyuRealmDef realm, BaiyeProgress baiye, CultivationProgress cultivation)
         {
-            if (realm == null || baiye == null || cultivation == null) return false;
+            if (realm == null || baiye == null || cultivation == null || cultivation.Mortal) return false;
             for (int i = 0; i < realm.LinkedBaiyePaths.Length; i++)
                 if (baiye.LevelOf(realm.LinkedBaiyePaths[i]) >= realm.UnlockBaiyeLevel) return true;
             return cultivation.RealmIndex > realm.UnlockRealmIndex ||
@@ -84,6 +85,7 @@ namespace NetBunny
                 case "jinghua-shuiyue": return "镜花水月";
                 case "suijing-jing": return "碎镜晶";
                 case "jinghua": return "镜花";
+                case "shuiyue-lingsui": return "水月灵髓";
                 default: return id;
             }
         }
@@ -624,6 +626,12 @@ namespace NetBunny
                 if (!progress.Heritages.Contains("shuiyue-mirror")) { clear.HeritageId = "shuiyue-mirror"; clear.HeritageName = "水月镜符"; clear.Text += " · 传承「水月镜符」"; }
                 LingyuSettlement.TryGrant(progress, "mirage-clear-" + progress.Visits("qianmian").ToString(CultureInfo.InvariantCulture), clear, DateTime.UtcNow);
                 progress.LogLine("蜃楼主镜碎裂，蜃楼暂退——" + clear.Text);
+                // 筑基机缘：炼气十层以上的修士首胜蜃楼主，主镜凝出「水月灵髓」。
+                // 与真实战斗结果绑定、台账幂等——一次性突破奖励，不可重复刷取。
+                if (ctx != null && ctx.Layer >= CultivationBalance.LingsuiMinLayer &&
+                    LingyuSettlement.TryGrant(progress, "mirage-lingsui",
+                        new LingyuReward { MaterialId = "shuiyue-lingsui", MaterialCount = 1, Text = "筑基秘宝「水月灵髓」×1" }, DateTime.UtcNow))
+                    progress.LogLine("主镜深处凝出一滴水月灵髓——筑基秘宝已收入收藏");
                 progress.ExpeditionFlags.Clear(); progress.ExpeditionDepth = 0;
                 progress.ExpeditionNode = "ferry"; // 可继续重访
             }
@@ -685,6 +693,8 @@ namespace NetBunny
                 LingyuRealmDef qm = LingyuCatalog.FindRealm("qianmian");
                 check(!LingyuCatalog.CanEnter(qm, baiye, cult), "mirage locked before any progress");
                 baiye.AddYun("youli", 60, DateTime.UtcNow); // 游历道 L1
+                check(cult.Mortal && !LingyuCatalog.CanEnter(qm, baiye, cult), "a mortal stays locked out even with a qualified dao path");
+                cult.Mortal = false; // 灵根觉醒之后才算真正踏入仙途
                 check(LingyuCatalog.CanEnter(qm, baiye, cult), "dao path level unlocks regardless of cultivation");
                 BaiyeProgress none = new BaiyeProgress();
                 cult.Layer = 9;
@@ -789,6 +799,26 @@ namespace NetBunny
                 check(bossFights == 1 && lastLabel == "蜃楼主 · 万镜幻影", "the final fight is the mirage lord");
                 check(combats >= 3 && run.Materials.ContainsKey("jinghua-shuiyue") && run.Materials["jinghua-shuiyue"] >= 4, "node fights and the clear pay materials");
                 check(run.PendingQi.Count >= 3, "qi rewards queue for cross-archive settlement");
+
+                // 4b) 筑基机缘「水月灵髓」：绑定主镜战斗结果、层数门槛、一次性幂等。
+                check(run.Grants.ContainsKey("mirage-lingsui") && run.Materials.ContainsKey("shuiyue-lingsui") && run.Materials["shuiyue-lingsui"] == 1,
+                    "the layer-12 full run earns the breakthrough lingsui from the mirage lord");
+                LingyuProgress lsLow = new LingyuProgress();
+                lsLow.ExpeditionActive = true; lsLow.ExpeditionNode = "atrium";
+                lsLow.CombatPending = true; lsLow.CombatOutcome = "final";
+                MirageEngine engLow = new MirageEngine(lsLow, new Random(23));
+                JiyuanContext lowCtx = Ctx("fire", 9, 0, new BaiyeProgress(), lsLow);
+                engLow.Enter(lowCtx);
+                engLow.OnCombatWon(lowCtx);
+                check(lsLow.Visits("qianmian") == 1 && !lsLow.Grants.ContainsKey("mirage-lingsui") && !lsLow.Materials.ContainsKey("shuiyue-lingsui"),
+                    "clearing below layer 10 pays no lingsui");
+                // 二次击败蜃楼主：通关奖励照发，灵髓不重复凝出。
+                run.ExpeditionNode = "atrium"; run.CombatPending = true; run.CombatOutcome = "final";
+                MirageEngine engAgain = new MirageEngine(run, new Random(29));
+                engAgain.Enter(runCtx);
+                engAgain.OnCombatWon(runCtx);
+                check(run.Visits("qianmian") == 2 && run.Materials["shuiyue-lingsui"] == 1,
+                    "a second lord victory pays the clear reward but never duplicates the lingsui");
 
                 // 5) 战斗中断 → 保存 → 重启重访：补发战斗并按持久化语义结算。
                 LingyuProgress trip = new LingyuProgress();

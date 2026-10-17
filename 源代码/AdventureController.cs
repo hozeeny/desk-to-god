@@ -58,6 +58,7 @@ namespace NetBunny
         private readonly LingyuProgress lingyu;
         private readonly MirageEngine mirage;
         private LingyuForm lingyuForm;
+        private BreakthroughForm breakthroughForm;
         private string pendingLingyuEnemyId;
         // Two independent real-maintenance scopes; neither is implied by combat
         // or by the (separately persisted) unattended auto-battle preference.
@@ -337,13 +338,61 @@ namespace NetBunny
             cultivation.LastNotice = "改修「" + cultivation.Technique.Name + "」，修行路线仍可随时调整";
             Save();
         }
-        internal bool TryBreakthrough()
+        // 筑基破境材料：蜃楼主镜机缘「水月灵髓」。勾选使用且有库存即消耗
+        // （成败皆消耗——灵髓入炉化入药力），加成与保底由修仙核心配置决定。
+        internal const string BreakthroughMaterialId = "shuiyue-lingsui";
+        internal int BreakthroughMaterialCount
         {
-            if (disposed || IsDemo || demonstrationOnly) return false;
-            bool success = cultivation.TryBreakthrough(random);
+            get
+            {
+                if (lingyu == null) return 0;
+                int count;
+                return lingyu.Materials.TryGetValue(BreakthroughMaterialId, out count) ? count : 0;
+            }
+        }
+        // 灵根觉醒：凡人十次有效击杀后引气入体。旧档修士永不走此路径（Mortal=false）。
+        // demonstrationOnly 允许：示范运行只在内存中推进（Save 自带演示保护），烟测走同一入口。
+        internal bool AwakenSpiritRoot()
+        {
+            if (disposed || IsDemo || !cultivation.CanAwaken) return false;
+            bool awakened = cultivation.Awaken(random);
+            Save();
+            if (awakened && enabled) RenderWorld(true);
+            return awakened;
+        }
+        internal bool TryBreakthrough(bool useMaterial)
+        {
+            if (disposed || IsDemo) return false;
+            bool materialUsed = false;
+            if (useMaterial && BreakthroughMaterialCount > 0)
+            {
+                materialUsed = true;
+                lingyu.Materials[BreakthroughMaterialId]--;
+                if (lingyu.Materials[BreakthroughMaterialId] <= 0) lingyu.Materials.Remove(BreakthroughMaterialId);
+                // 示范运行不写真实灵域档案；正常模式保存失败只记状态，不吞掉突破本身。
+                if (!demonstrationOnly) { try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; } }
+            }
+            bool success = cultivation.TryBreakthrough(random, materialUsed);
             Save();
             if (success && enabled) RenderWorld(true);
             return success;
+        }
+        // 破境契机评估（幂等，四条路径并行不互斥）：
+        // 秘境寻宝 = 蜃楼通关；天材地宝 = 水月灵髓在手；百业悟道见下；长期苦修由核心按感悟自动领悟。
+        private void EvaluateBreakthroughOpportunities()
+        {
+            if (cultivation == null || lingyu == null || cultivation.Mortal) return;
+            if (lingyu.Visits("qianmian") >= 1 && cultivation.GrantOpportunity("realm"))
+                battle.LastReward = "破境契机 · 秘境寻宝：蜃楼一行，窥见筑基门径";
+            if (BreakthroughMaterialCount > 0 && cultivation.GrantOpportunity("treasure"))
+                battle.LastReward = "破境契机 · 天材地宝：水月灵髓蕴藏一缕先天灵机";
+        }
+        private bool BaiyeWudaoEligible()
+        {
+            if (baiye == null) return false;
+            for (int i = 0; i < BaiyeCatalog.Paths.Length; i++)
+                if (baiye.LevelOf(BaiyeCatalog.Paths[i].Id) >= 3) return true;
+            return baiye.Heritages.Contains("tianji-chart");
         }
         // Real elapsed seconds feed cultivation exactly once per tick, independent of
         // the render-frame dt clamp, the pet's visibility and the network state.
@@ -384,6 +433,13 @@ namespace NetBunny
                 SettleBaiyeRewards();
             }
             if (leveledUp) Save();
+            // 破境契机 · 百业悟道：任一道途登堂（Lv.3）或已获天机阵图传承，红尘道果凝作破境灵机。
+            if (cultivation != null && !cultivation.Mortal && !cultivation.HasOpportunity("baiye")
+                && BaiyeWudaoEligible() && cultivation.GrantOpportunity("baiye"))
+            {
+                baiyeNotice = battle.LastReward = "破境契机 · 百业悟道：红尘百业凝作一缕悟道灵机";
+                Save();
+            }
             if (baiyeRewardRetry) SettleBaiyeRewards(); // 上次写盘失败的机缘奖励持续补试
             if (lingyuRewardRetry) SettleLingyuRewards(); // 灵域修为奖励同款补试
         }
@@ -461,6 +517,12 @@ namespace NetBunny
             if (disposed) return;
             if (lingyuForm == null || lingyuForm.IsDisposed) lingyuForm = new LingyuForm(this);
             lingyuForm.RefreshData(); lingyuForm.Show(); lingyuForm.BringToFront(); lingyuForm.Activate();
+        }
+        public void OpenBreakthrough()
+        {
+            if (disposed) return;
+            if (breakthroughForm == null || breakthroughForm.IsDisposed) breakthroughForm = new BreakthroughForm(this);
+            breakthroughForm.RefreshData(); breakthroughForm.Show(); breakthroughForm.BringToFront(); breakthroughForm.Activate();
         }
         // ---- 灵域历练（P3）：进入门控 / 节点选择 / 暂离；秘境战斗只生成虚拟妖物 ----
         internal string LingyuWritePath { get { return lingyuPathOverride ?? lingyuPath; } }
@@ -563,21 +625,43 @@ namespace NetBunny
                 SpawnLevel = battle.Progress.Level
             };
             fiend.MaxHealth = EnemyBalance.OrdinaryHealth(battle.Progress.Level, kind.HealthFactor, 0);
+            // 境界-战斗强度联动：炼气中期起偶有精英妖物，更耐打、击杀修为翻倍。
+            if (cultivation != null && !cultivation.Mortal && cultivation.RealmIndex == 0
+                && cultivation.Layer >= CultivationBalance.EliteMinLayer && random.NextDouble() < CultivationBalance.EliteChance)
+            {
+                fiend.Elite = true;
+                fiend.MaxHealth = (int)(fiend.MaxHealth * CultivationBalance.EliteHealthFactor);
+            }
             fiend.Health = fiend.MaxHealth;
             Spawn(fiend); battle.Enemies.Add(fiend);
-            battle.LastReward = "一只" + kind.Name + "被洞天灵气吸引而来 · 击败可获得修为";
+            battle.LastReward = fiend.Elite
+                ? "一头精英" + kind.Name + "被洞天灵气吸引而来 · 击败可获得双倍修为"
+                : "一只" + kind.Name + "被洞天灵气吸引而来 · 击败可获得修为";
         }
         private void SettleVirtual(AdventureEnemy enemy)
         {
             int qi = encounters.RollKillQi(enemy.IsBoss);
+            if (enemy.Elite) qi *= CultivationBalance.EliteQiFactor;
             cultivation.AddQi(qi);
             battle.CompleteVirtual(enemy, qi);
+            // 凡人期：每一次有效击杀都是红尘历练，十次圆满即可觉醒灵根。
+            // 历练提示覆盖修为播报——凡人的修为暂存灵明，觉醒时才真正转化。
+            if (cultivation.Mortal)
+            {
+                if (cultivation.RecordMortalKill())
+                    battle.LastReward = cultivation.CanAwaken
+                        ? "十次红尘历练已满 · 打开修炼面板，觉醒灵根"
+                        : "红尘历练 " + cultivation.MortalKills + "/" + CultivationBalance.MortalAwakenKills + " · 凡躯渐生灵明";
+                else if (cultivation.CanAwaken)
+                    battle.LastReward = "灵明已足 · 打开修炼面板，觉醒灵根";
+            }
             if (pendingLingyuEnemyId != null && enemy.Id == pendingLingyuEnemyId)
             {
                 pendingLingyuEnemyId = null;
                 // 蜃楼战斗胜利：秘境节点/机缘按持久化语义结算，修为随后跨存档对账。
                 mirage.OnCombatWon(BuildJiyuanContext());
                 SettleLingyuRewards();
+                EvaluateBreakthroughOpportunities();
             }
             Save();
         }
@@ -585,6 +669,7 @@ namespace NetBunny
         {
             int qi = encounters.RollKillQi(enemy.IsBoss);
             cultivation.AddQi(qi);
+            if (cultivation.Mortal) cultivation.RecordMortalKill(); // 未授权虚拟结算同样算有效击杀；保留「未授权」提示
             battle.CompleteHeld(enemy, qi);
             Save();
         }
@@ -597,7 +682,7 @@ namespace NetBunny
                 if (!enabled) return "骑士与怪物已隐藏";
                 if (demoPending) return "正在停止清理，准备安全演示";
                 if (demoStarted >= 0) return "冒险演示 · 不清理文件，不改变经验和装备";
-                if (battle.Progress.Dead) return "修士力竭 · 入定调息约 " + Math.Max(1, (int)(CultivationBalance.ReviveRestSeconds - battle.DeathTime)) + " 秒后自行恢复";
+                if (battle.Progress.Dead) return "修士力竭 · 入定调息约 " + Math.Max(1, (int)(CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation) - battle.DeathTime)) + " 秒后自行恢复";
                 if (lastConnectivity == KnightConnectivity.Offline) return "断网 · 修士入定吐纳，本地修炼与战斗继续";
                 if (networkState.Phase == KnightPhase.Revive) return "网络恢复 · 从坟地爬出";
                 if (battle.QueueCount > 0) return (battle.Target == null ? "后台清理 · " : battle.Automatic ? "自动规划 · " + tacticalStatus + " · " : "清理队列 · ") + battle.QueueCount + " 个目标 · " + battle.Weapon.Name + " · 战斗Lv." + battle.Progress.Level;
@@ -803,12 +888,16 @@ namespace NetBunny
             // cultivator or stops local battle; the pet meditates (Pant) instead.
             networkState.Tick(dt, bytesPerSecond, monitoringAvailable && now - lastTelemetry < 6,
                 online == KnightConnectivity.Offline ? KnightConnectivity.Unknown : online);
+            // 境界-战斗强度联动：每拍同步修仙战力系数（凡人偏弱、觉醒渐强、筑基攻防质变）。
+            battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation);
+            battle.CultivationDefenseFactor = CultivationCombatPower.DefenseFactor(cultivation);
             battle.Tick(dt);
             // 蜃楼战斗中修士力竭：镜妖遁入镜中，机缘战斗按已选落空，秘境不软锁。
             LingyuDeathCheck();
             // Unattended recovery: a defeated cultivator always meditates back to
             // full health; no manual revival and no fixed online schedule needed.
-            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds)
+            // 筑基修士恢复加倍（CultivationCombatPower.ReviveFactor）。
+            if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation))
             {
                 battle.Revive();
                 if (cultivation.AutoBattle) battle.SetAutomatic(true);
@@ -1241,7 +1330,7 @@ namespace NetBunny
             if (baiyeTracker != null) baiyeTracker.Seal();
             Save(); disposed = true;
             timer.Dispose(); if (connectivity != null) connectivity.Dispose(); region.Changed -= RegionChanged; region.Dispose();
-            if (equipment != null) equipment.Dispose(); if (stele != null) stele.Dispose(); if (lingyuForm != null) lingyuForm.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
+            if (equipment != null) equipment.Dispose(); if (stele != null) stele.Dispose(); if (lingyuForm != null) lingyuForm.Dispose(); if (breakthroughForm != null) breakthroughForm.Dispose(); heroWindow.Dispose(); landmarkWindow.Dispose(); foreach (KnightLayeredWindow w in enemyWindows.Values) w.Dispose(); enemyWindows.Clear(); ClearLoot(); effects.Dispose(); renderer.Dispose(); cancellation.Dispose();
         }        internal AdventureBattle Battle { get { return battle; } }
         internal string DetailText { get { return cleanupNotice + "\r\n" + scanStatus + "\r\n" + (diskSnapshot.Available ? "C 盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) + " / " + AdventureBattle.FormatBytes(diskSnapshot.TotalBytes) : diskSnapshot.Error) + "\r\n" + connectivityDetail + "\r\n" + region.Status; } }
         internal string ThemeMode { get { return battle.Progress.ThemeMode; } }
@@ -1543,9 +1632,13 @@ namespace NetBunny
                     // —— 灵域历练（P3）：进入门控 / 节点转移 / 虚拟战斗回调 / 机缘 / 战败出口；示范运行不写真实灵域档 ——
                     if (c.battle.Progress.Dead) { c.battle.Progress.Dead = false; c.battle.Progress.Health = c.battle.Progress.MaxHealth; }
                     c.lingyuPathOverride = Path.Combine(Path.GetTempPath(), "lingyu-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    // 成长体系：示范档案开局是凡人——凡人永远进不了灵域；完成觉醒后才测修士门控。
+                    check(c.cultivation.Mortal && !c.LingyuEnter("qianmian"), "a mortal is always locked out of the mirage");
+                    c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(4));
                     check(!c.LingyuEnter("qianmian"), "the mirage stays locked before any dao progress");
                     check(!c.LingyuEnter("tiangong"), "unplayable realms refuse entry");
                     c.baiye.AddYun("youli", 60, DateTime.UtcNow); // 游历道 L1 → 蜃楼解锁
+                    c.cultivation.Layer = 12; // 炼气后期：蜃楼主镜之战可凝筑基灵髓
                     check(c.LingyuEnter("qianmian") && c.Lingyu.ExpeditionActive && c.Lingyu.ExpeditionNode == "ferry",
                         "the wandering dao opens the mirage at the ferry");
                     Func<AdventureEnemy> mirrorFiend = delegate
@@ -1581,6 +1674,10 @@ namespace NetBunny
                     check(c.Lingyu.Grants.Keys.Any(key => key.StartsWith("mirage-clear-", StringComparison.Ordinal)), "the clear reward is ledgered");
                     check(c.Lingyu.PendingQi.Count >= 3, "demonstration queues lingyu qi for settlement without paying the cultivation side");
                     check(mirrorFiend() == null, "no lingyu fiend survives its own fight");
+                    check(c.Lingyu.Materials.ContainsKey("shuiyue-lingsui") && c.Lingyu.Materials["shuiyue-lingsui"] == 1,
+                        "the layer-12 clear condenses the breakthrough lingsui through the controller");
+                    check(c.cultivation.HasOpportunity("realm") && c.cultivation.HasOpportunity("treasure"),
+                        "mirage progress grants the realm and treasure breakthrough opportunities");
                     // 蜃楼战斗中修士力竭：镜妖散去、奖励不落、探索不软锁。
                     int fightGuard = 0;
                     while (!c.Lingyu.CombatPending && fightGuard < 200)
@@ -1633,7 +1730,77 @@ namespace NetBunny
         }
         private static string ResourceSmoke(string assetDirectory)
         {
-            return LiveSmoke(assetDirectory) + "\r\n" + TacticsSmoke(assetDirectory);
+            return LiveSmoke(assetDirectory) + "\r\n" + TacticsSmoke(assetDirectory) + "\r\n" + GrowthSmoke(assetDirectory);
+        }
+        // 成长体系闭环（示范运行 + 合成战斗，不写任何真实档案）：
+        // 凡人开局 → 十次有效击杀 → 灵根觉醒 → 圆满瓶颈 → 契机/材料 → 破境结算，另验战力联动接线。
+        private static string GrowthSmoke(string assetDirectory)
+        {
+            int n = 0; Action<bool, string> check = delegate(bool ok, string label) { if (!ok) throw new InvalidOperationException("Growth smoke: " + label); n++; };
+            using (Form owner = new Form())
+            {
+                IntPtr handle = owner.Handle;
+                using (AdventureController g = new AdventureController(owner, assetDirectory, true))
+                {
+                    g.timer.Stop(); g.enabled = true; g.demoStarted = -1; g.demoPending = false;
+                    g.area = new Rectangle(-24000, -24000, 1600, 1000); g.x = -23600; g.y = -23400;
+                    check(g.cultivation.Mortal && g.cultivation.MortalKills == 0 && !g.cultivation.CanAwaken, "a fresh archive begins as a mortal");
+                    check(!g.LingyuEnter("qianmian"), "mortals cannot enter the mirage");
+                    check(!g.AwakenSpiritRoot(), "the ritual stays locked before ten settled kills");
+                    Action killVirtual = delegate
+                    {
+                        AdventureEnemy fiend = new AdventureEnemy { Id = "growth-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = "imp", Health = 1, MaxHealth = 1 };
+                        g.battle.Enemies.Add(fiend); g.Spawn(fiend); g.battle.Authorize(fiend); g.battle.Cooldown = 0; g.battle.Strike(fiend); g.BeginCleanup(fiend); g.battle.Tick(.31);
+                    };
+                    for (int i = 0; i < 9; i++) killVirtual();
+                    check(g.cultivation.Mortal && g.cultivation.MortalKills == 9 && g.cultivation.DeferredQi > 0 && g.cultivation.Qi == 0 && !g.cultivation.CanAwaken,
+                        "nine kills temper the mortal body while gains stay deferred");
+                    killVirtual();
+                    check(g.cultivation.MortalKills == 10 && g.cultivation.CanAwaken, "ten settled kills open the awakening ritual");
+                    long deferredBefore = g.cultivation.DeferredQi;
+                    check(g.AwakenSpiritRoot() && !g.cultivation.Mortal && CultivationIdentity.IsValidRoot(g.cultivation.SpiritRoot)
+                        && CultivationTechnique.IsValid(g.cultivation.TechniqueId) && g.cultivation.DaoTitle.Length > 0,
+                        "the ritual assigns root, technique and dao title");
+                    check(g.cultivation.DeferredQi == 0 && (g.cultivation.Qi > 0 || g.cultivation.Layer > 1) && g.cultivation.LifetimeQi >= deferredBefore,
+                        "deferred gains convert to real cultivation on awakening");
+                    check(!g.AwakenSpiritRoot(), "the awakening ritual never fires twice");
+                    // 破境闭环：未圆满不可破；圆满缺契机不可破；任一契机可开；保底必成；材料成败皆消耗。
+                    check(!g.TryBreakthrough(false), "an incomplete realm cannot break through");
+                    g.cultivation.Layer = 12; g.cultivation.Qi = 0;
+                    check(g.cultivation.RealmComplete && !g.cultivation.CanAttemptBreakthrough && !g.TryBreakthrough(false),
+                        "a complete realm without an opportunity refuses the ritual");
+                    g.cultivation.GrantOpportunity("insight");
+                    check(g.cultivation.CanAttemptBreakthrough, "any single opportunity opens the ritual");
+                    check(g.BreakthroughMaterialCount == 0, "no lingsui without the mirage feat");
+                    g.lingyu.Materials["shuiyue-lingsui"] = 1;
+                    check(g.BreakthroughMaterialCount == 1 && g.cultivation.BreakthroughPercent(true, true) > g.cultivation.BreakthroughPercent(false, false),
+                        "an owned lingsui raises the measured chance");
+                    g.cultivation.BreakthroughInsight = g.cultivation.RealmDef.GuaranteedInsight;
+                    check(g.cultivation.BreakthroughPercent(false, false) >= 100, "deep insight guarantees the breakthrough");
+                    check(g.TryBreakthrough(true) && g.cultivation.RealmIndex == 1 && g.cultivation.Layer == 1
+                        && g.cultivation.BreakthroughOpportunities.Count == 0 && g.cultivation.BreakthroughInsight == 0,
+                        "the guaranteed ritual succeeds and clears opportunities for the new realm");
+                    check(g.BreakthroughMaterialCount == 0, "the consumed lingsui leaves the collection");
+                    // 失败分支：不保底时结果不定，但要么晋境、要么加感悟，根基与契机无损。
+                    g.cultivation.RealmIndex = 0; g.cultivation.Layer = 12; g.cultivation.Qi = 0; g.cultivation.BreakthroughInsight = 0;
+                    g.cultivation.GrantOpportunity("realm");
+                    bool outcome = g.TryBreakthrough(false);
+                    check(outcome ? g.cultivation.RealmIndex == 1
+                            : g.cultivation.RealmIndex == 0 && g.cultivation.Layer == 12 && g.cultivation.BreakthroughInsight > 0 && g.cultivation.HasOpportunity("realm"),
+                        "every attempt either advances the realm or deepens insight without loss");
+                    // 境界-战斗强度联动：Tick 每拍同步系数（凡人偏弱 / 炼气渐强 / 筑基质变）。
+                    g.cultivation.RealmIndex = 0; g.cultivation.Layer = 1; g.cultivation.Mortal = true;
+                    g.Tick(null, EventArgs.Empty);
+                    check(g.battle.CultivationDamageFactor < 1.0, "mortal battles run at the mortal disadvantage");
+                    g.cultivation.Mortal = false; g.cultivation.Layer = 12; g.Tick(null, EventArgs.Empty);
+                    check(g.battle.CultivationDamageFactor > 1.5, "late qi-refining sharpens every strike");
+                    g.cultivation.RealmIndex = 1; g.Tick(null, EventArgs.Empty);
+                    check(g.battle.CultivationDefenseFactor < 1.0 && g.battle.CultivationDamageFactor > 2.0, "foundation establishment brings real power");
+                    check(g.connectivity == null && g.battle.Progress.FreedBytes == 0 && !File.Exists(g.LingyuWritePath),
+                        "growth simulation never touches network, files, or real archives");
+                }
+            }
+            return "Growth integration: " + n + " checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).";
         }
         private static string LiveSmoke(string assetDirectory)
         {
@@ -1740,6 +1907,11 @@ namespace NetBunny
                     c.battle.Progress.Level = 7; c.battle.Progress.Health = 150; c.battle.Progress.Experience = 62; c.battle.Progress.Score = 2840; c.battle.Progress.FreedBytes = 1375731712;
                     c.battle.Progress.Inventory = AdventureWeapon.All.Select(w => w.Id).ToList(); c.battle.Progress.WeaponId = "blackhole";
                     c.battle.LastReward = "预览示例：获得「星渊黑洞」· 不读取或清理真实文件";
+                    // 成长体系预览画面：炼气十二层圆满、破境契机已至的修士（示范档案开局是凡人，需先觉醒）。
+                    c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(4));
+                    c.cultivation.Layer = 12; c.cultivation.Qi = 0; c.cultivation.BreakthroughInsight = 500;
+                    c.cultivation.GrantOpportunity("insight");
+                    c.cultivation.LastNotice = "预览示例：炼气圆满，破境感悟 500 · 契机已至";
                     c.memoryAvailable = true; c.memoryPercent = 47.2; c.diskSnapshot = DiskSpaceSnapshot.FromValues(256L * 1024 * 1024 * 1024, 24L * 1024 * 1024 * 1024); c.scanStatus = "预览示例数据；真实临时文件只在正常启动后扫描。";
                     using (AdventureEquipmentForm panel = new AdventureEquipmentForm(c))
                     using (Bitmap capture = new Bitmap(panel.Width, panel.Height))
@@ -1796,6 +1968,8 @@ namespace NetBunny
                     c.lingyu.LogLine("镜妖碎作流光（修为 +40 · 镜花水月 ×1）");
                     c.lingyu.LogLine("来到回声壁");
                     // 合成「回声壁机缘待定」画面：Enter 保留已存节点并评估机缘。
+                    // 成长体系：示范档案开局是凡人，灵域门控面向修士，先完成觉醒。
+                    c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(4));
                     c.lingyu.ExpeditionActive = true; c.lingyu.ExpeditionNode = "echo"; c.lingyu.ExpeditionDepth = 2;
                     c.LingyuEnter("qianmian");
                     using (LingyuForm panel = new LingyuForm(c))
@@ -1806,7 +1980,30 @@ namespace NetBunny
                     }
                 }
             }
-        }        public static void ExportPreview(string assetDirectory, string output)
+        }
+        // 破境仪式预览：全部使用合成数据，不读真实存档、不接触系统探针。
+        public static void ExportBreakthroughPreview(string assetDirectory, string output)
+        {
+            using (Form owner = new Form())
+            {
+                IntPtr ownerHandle = owner.Handle;
+                using (AdventureController c = new AdventureController(owner, assetDirectory, true))
+                {
+                    // 炼气十二层圆满、三契机在手、灵髓有库存的可破境画面。
+                    c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(4));
+                    c.cultivation.Layer = 12; c.cultivation.Qi = 0; c.cultivation.BreakthroughInsight = 500;
+                    c.cultivation.GrantOpportunity("insight"); c.cultivation.GrantOpportunity("realm"); c.cultivation.GrantOpportunity("treasure");
+                    c.lingyu.Materials["shuiyue-lingsui"] = 1;
+                    using (BreakthroughForm panel = new BreakthroughForm(c))
+                    using (Bitmap capture = new Bitmap(panel.Width, panel.Height))
+                    {
+                        panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000); panel.Show(); Application.DoEvents(); panel.RefreshData();
+                        panel.DrawToBitmap(capture, new Rectangle(Point.Empty, panel.Size)); capture.Save(output, ImageFormat.Png);
+                    }
+                }
+            }
+        }
+        public static void ExportPreview(string assetDirectory, string output)
         {
             using (AdventureRenderer r = new AdventureRenderer(assetDirectory))
             using (Bitmap canvas = new Bitmap(1280, 760))

@@ -68,6 +68,7 @@ namespace NetBunny
         internal int PatrolSector = -1;
         internal string MonsterKind = "skeleton";
         internal string EvilTheme, BossWeapon;
+        internal bool Elite; // 精英虚拟妖物：更耐打、击杀修为更高（炼气中期起刷新）
         internal int SpawnLevel = 1;
         internal double AttackFlash;
         internal AdventureAuthorization Authorization;
@@ -188,6 +189,8 @@ namespace NetBunny
         internal double LevelGlow, AttackEffect, DeathTime, Cooldown;
         internal string LastReward = "点击怪物依次出击，或在装备栏选择自动规划 / 一键清场";
         internal bool Automatic;
+        // 修仙境界对战斗的实时加成（控制器每拍同步；默认 1 不影响任何旧行为）。
+        internal double CultivationDamageFactor = 1.0, CultivationDefenseFactor = 1.0;
         private readonly Random killRandom;
         private double lastBossAt = -1000;
         internal AdventureBattle(AdventureProgress progress, Random killRandom = null) { Progress = progress; this.killRandom = killRandom ?? new Random(); }
@@ -290,7 +293,8 @@ namespace NetBunny
                 targets.AddRange(queue.Where(e => e != primary && !e.Cleaning && !e.Failed && !e.Defeated && !e.IsDiskWarning && e.Authorized && Distance(e.X, e.Y, primary.X, primary.Y) <= (weapon.Id == "blackhole" ? 3000 : weapon.Range * .8)));
             foreach (AdventureEnemy enemy in targets)
             {
-                enemy.Health = Math.Max(0, enemy.Health - weapon.Damage - (Progress.Level - 1) * 3); enemy.HitFlash = .25; enemy.VisualDirty = true;
+                int blow = (int)Math.Round((weapon.Damage + (Progress.Level - 1) * 3) * CultivationDamageFactor);
+                enemy.Health = Math.Max(0, enemy.Health - blow); enemy.HitFlash = .25; enemy.VisualDirty = true;
                 if (enemy.Health == 0) { enemy.Cleaning = true; enemy.StartShatter(); GrantKillExperience(enemy); defeated.Add(enemy); }
             }
             return defeated;
@@ -382,7 +386,8 @@ namespace NetBunny
         internal void Damage(int amount)
         {
             if (Progress.Dead) return;
-            Progress.Health = Math.Max(0, Progress.Health - Math.Max(0, amount));
+            int taken = (int)Math.Round(Math.Max(0, amount) * CultivationDefenseFactor);
+            Progress.Health = Math.Max(0, Progress.Health - taken);
             if (Progress.Health == 0) { Progress.Dead = true; DeathTime = 0; Automatic = false; LastReward = "骑士战死。右键墓碑打开装备栏，选择复活"; }
         }
         internal void Revive() { Progress.Dead = false; Progress.Health = Progress.MaxHealth; DeathTime = 0; LastReward = "骑士已复活，继续冒险"; }
