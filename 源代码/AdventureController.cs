@@ -1957,8 +1957,10 @@ namespace NetBunny
                     check(c.battle.PlanNext(c.x, c.y, c.AutoMaintenanceEligibility) == gatedFile, "explicit unattended-maintenance consent admits real-effect targets");
                     check(c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && !gatedFile.Authorized && c.battle.Automatic, "revoking unattended maintenance retires its queued automatic targets but keeps auto battle");
                     c.battle.CancelQueue(); c.battle.Enemies.Remove(gatedFile); c.battle.Enemies.Remove(freeFiend);
-                    // A failed revocation write still applies in memory, cancels the
-                    // in-flight worker at once, and retries the stale grant removal.
+                    // A revocation against a locked grant file still applies in
+                    // memory at once and cancels the in-flight worker; instead of
+                    // only scheduling a retry it pins a revocation marker so a
+                    // force-quit cannot let the stale grant resurrect consent.
                     string blockedConsent = Path.Combine(Path.GetTempPath(), "consent-blocked-" + Guid.NewGuid().ToString("N") + ".txt");
                     File.WriteAllText(blockedConsent, "cleanup=1\nmemory=1\nautomaint=0\n", new UTF8Encoding(false));
                     FileStream consentLock = new FileStream(blockedConsent, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -1971,21 +1973,28 @@ namespace NetBunny
                         AdventureEnemy inFlight = new AdventureEnemy { Id = "in-flight-revoke", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\inflight.tmp", Length = 777 } }, 1), Health = 1, MaxHealth = 1 };
                         c.battle.Enemies.Add(inFlight); c.Spawn(inFlight); c.battle.Authorize(inFlight); c.battle.Cooldown = 0; c.battle.Strike(inFlight); c.BeginCleanup(inFlight);
                         check(c.cleanupTask != null && c.workCancellation != null, "in-flight cleanup worker started for the revocation-failure test");
-                        check(!c.SetCleanupConsent(false) && !c.consent.CleanupEnabled && c.consentRetryCleanup, "failed revocation write reports failure yet still applies in memory and schedules a retry");
+                        check(c.SetCleanupConsent(false) && !c.consent.CleanupEnabled && !c.consentRetryCleanup && File.Exists(blockedConsent + ".revoked"),
+                            "revocation against a locked grant applies in memory at once and pins a revocation marker instead of failing");
                         check(c.workCancellation.IsCancellationRequested, "in-flight cleanup is cancelled even when the consent file update fails");
                         c.DrainCleanup();
                         check(inFlight.Failed && c.battle.Progress.FreedBytes == freed && c.battle.LastReward.Contains("取消"), "cancelled worker reports its actual result without inventing freed bytes");
+                        // Simulate a restart right now: the stale grant file still
+                        // says cleanup=1, and while the lock keeps it unreadable
+                        // the only safe answer is fully closed — never resurrected.
+                        check(!MaintenanceConsentStore.Load(blockedConsent).CleanupEnabled && !MaintenanceConsentStore.Load(blockedConsent).MemoryEnabled,
+                            "a restart after the revoked disable fails fully closed while the stale grant is locked");
                     }
                     finally
                     {
                         c.consentPathOverride = null; c.simulatedCleaner = null;
                         consentLock.Dispose();
                         try { File.Delete(blockedConsent); } catch { }
+                        try { File.Delete(blockedConsent + ".revoked"); } catch { }
                     }
                     c.TryFlushConsentRevocation();
                     check(!c.consentRetryCleanup, "stale consent removal is retried until the file can no longer resurrect it");
-                    // 无人值守自动维护同款承诺：撤销写盘失败 → 本机立即生效并持续重试清除；
-                    // 授权文件是事实源——显式落盘的授权重启后按文件恢复。
+                    // 无人值守自动维护同款承诺：锁定的授权文件撤销时同样钉入撤销
+                    // 标记——本机立即生效，重启不会复活；显式落盘的授权仍按文件恢复。
                     string blockedAuto = Path.Combine(Path.GetTempPath(), "consent-automaint-" + Guid.NewGuid().ToString("N") + ".txt");
                     File.WriteAllText(blockedAuto, "cleanup=0\nmemory=0\nautomaint=1\n", new UTF8Encoding(false));
                     FileStream autoLock = new FileStream(blockedAuto, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -1993,18 +2002,19 @@ namespace NetBunny
                     {
                         c.consentPathOverride = blockedAuto;
                         c.consent.AutoMaintenanceEnabled = true;
-                        check(!c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && c.consentRetryAutoMaint,
-                            "failed automaint revocation applies in memory at once and schedules the stale-grant retry");
+                        check(c.SetAutoMaintenanceConsent(false) && !c.consent.AutoMaintenanceEnabled && !c.consentRetryAutoMaint && File.Exists(blockedAuto + ".revoked"),
+                            "automaint revocation against a locked grant applies in memory at once and pins the revocation marker");
                     }
                     finally { autoLock.Dispose(); }
-                    c.TryFlushConsentRevocation(); // 锁已释放：重试写回 blockedAuto
-                    check(!c.consentRetryAutoMaint && !MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled,
-                        "the retried removal leaves no file that could resurrect automaint after a restart");
+                    c.TryFlushConsentRevocation(); // 锁已释放：无需重试，Load 会修正并清理
+                    check(!c.consentRetryAutoMaint && !MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled && !File.Exists(blockedAuto + ".revoked"),
+                        "after the lock clears, loading persists the corrected grant and retires the marker");
                     c.consentPathOverride = null;
                     File.WriteAllText(blockedAuto, "cleanup=0\nmemory=0\nautomaint=1\n", new UTF8Encoding(false));
                     check(MaintenanceConsentStore.Load(blockedAuto).AutoMaintenanceEnabled,
                         "an explicitly persisted automaint grant is exactly what a restart restores");
                     try { File.Delete(blockedAuto); } catch { }
+                    try { File.Delete(blockedAuto + ".revoked"); } catch { }
                     // Hide/show and demo transitions never detach runtime state from
                     // the persisted unattended-battle preference.
                     c.cultivation.AutoBattle = true; c.battle.SetAutomatic(true);
