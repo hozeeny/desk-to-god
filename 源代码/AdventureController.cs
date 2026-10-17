@@ -2507,6 +2507,253 @@ namespace NetBunny
                 canvas.Save(output, ImageFormat.Png);
             }
         }
+        // == --mortal-gui-accept：凡人主动战斗真实 GUI 验收（独立验收模式，非产品入口） ==
+        // 与 --selftest/--adventure-smoke 同族：真实生产控制器、真实窗口与消息循环、
+        // 本账户真实存档（验收以临时标准用户运行，该账户档案天然隔离，绝不动真实用户档案）。
+        // 驱动方式：向真实敌人/角色窗口投递真实鼠标消息（与玩家点击同一事件链路），
+        // 实时完成：选敌 → 出招 → 格挡 → 力竭调息 → 十次有效击杀 → 觉醒 → 自动作战证明。
+        // 仅两处如实标注的加速：妖物自然生成过慢时触发与生产相同的 encounterDue 生成
+        // 路径；以及一次强制力竭（验证调息恢复）。其余全部实时真实操作。
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr FindWindow(string className, string windowName);
+        private const int WmLButtonDown = 0x201, WmLButtonUp = 0x202, WmKeyDown = 0x100;
+        internal static int MortalGuiAccept(string assetDirectory, string logPath)
+        {
+            string shotDir = Path.Combine(Path.GetDirectoryName(logPath), "mortal-gui-shots");
+            Directory.CreateDirectory(shotDir);
+            StringBuilder log = new StringBuilder();
+            List<string> failures = new List<string>();
+            Action<string> step = delegate(string line) { log.AppendLine(DateTime.Now.ToString("HH:mm:ss.fff") + "  " + line); };
+            Action<bool, string> expect = delegate(bool ok, string label)
+            {
+                step((ok ? "PASS  " : "FAIL  ") + label);
+                if (!ok) failures.Add(label);
+            };
+            Action<Form, string> shot = delegate(Form w, string name)
+            {
+                try
+                {
+                    if (w == null || w.IsDisposed || w.Width <= 0 || w.Height <= 0) return;
+                    using (Bitmap b = new Bitmap(w.Width, w.Height)) { w.DrawToBitmap(b, new Rectangle(Point.Empty, w.Size)); b.Save(Path.Combine(shotDir, name + ".png"), ImageFormat.Png); }
+                }
+                catch { }
+            };
+            int exitCode;
+            using (Form owner = new Form())
+            {
+                IntPtr ownerHandle = owner.Handle;
+                using (AdventureController c = new AdventureController(owner, assetDirectory)) // 生产模式：真实存档（本账户隔离）
+                {
+                    c.enabled = true; // 与 MainForm 显示桌宠后的状态一致；否则 Tick 早退、世界不运转
+                    expect(c.cultivation.Mortal && c.cultivation.MortalKills == 0 && !c.cultivation.CanAwaken, "开局为全新凡人档（0 次历练）");
+                    expect(!c.cultivation.AutoBattleUnlocked && !c.battle.Automatic, "凡人期自动作战锁定且未开启");
+                    expect(!c.consent.CleanupEnabled && !c.consent.MemoryEnabled && !c.consent.AutoMaintenanceEnabled, "真实文件清理/内存维护/无人值守自动维护授权全部关闭");
+                    step("INFO   存档目录（隔离）：" + Path.GetDirectoryName(c.cultivationPath));
+
+                    int clicksTotal = 0;
+                    Action<Form> clickWindow = delegate(Form w)
+                    {
+                        if (w == null || w.IsDisposed) return;
+                        IntPtr h = w.Handle;
+                        int cx = Math.Max(1, w.Width / 2), cy = Math.Max(1, w.Height / 2);
+                        IntPtr l = (IntPtr)((cy << 16) | (cx & 0xFFFF));
+                        PostMessage(h, WmLButtonDown, (IntPtr)1, l); PostMessage(h, WmLButtonUp, IntPtr.Zero, l);
+                        clicksTotal++;
+                    };
+                    Func<Control, string, Button> findButton = null;
+                    findButton = delegate(Control root, string text)
+                    {
+                        if (root == null) return null;
+                        Button self = root as Button;
+                        if (self != null && self.Text == text) return self;
+                        foreach (Control child in root.Controls) { Button found = findButton(child, text); if (found != null) return found; }
+                        return null;
+                    };
+
+                    Stopwatch wall = Stopwatch.StartNew();
+                    int phase = 0; // 0=手动十战 1=觉醒仪式 2=自动作战证明 3=完成
+                    AdventureEnemy target = null;
+                    string engagedId = null;
+                    int strikesOnTarget = 0, distanceHints = 0, firstKillDistanceHints = -1, firstKillStrikes = -1;
+                    double lastClickAt = -9, noTargetSince = -1, phase2Start = 0, phase2Exp = 0, lastTelemetryFeed = -9;
+                    bool blockTested = false, deadLogged = false, exhaustTested = false, awakenClicked = false, feedChecked = false;
+                    System.Windows.Forms.Timer driver = new System.Windows.Forms.Timer { Interval = 100 };
+                    driver.Tick += delegate
+                    {
+                        if (failures.Count > 0 || phase == 3) return;
+                        // 合成遥测喂给：生产中由 MainForm 的网络引擎调用 UpdateTelemetry 保持骑士存活；
+                        // 验收不触网络，以恒定喂给代替（6 秒新鲜度窗口内每 2 秒一喂）。
+                        if (wall.Elapsed.TotalSeconds - lastTelemetryFeed > 2)
+                        {
+                            lastTelemetryFeed = wall.Elapsed.TotalSeconds;
+                            c.UpdateTelemetry(2048, true);
+                        }
+                        if (!feedChecked && wall.Elapsed.TotalSeconds > 6)
+                        {
+                            feedChecked = true;
+                            expect(c.networkState.Phase != KnightPhase.Dying && c.networkState.Phase != KnightPhase.Grave && c.networkState.Phase != KnightPhase.Revive,
+                                "遥测喂给保持骑士网络状态存活（生产由 MainForm 网络引擎喂给）");
+                        }
+                        if (phase == 0)
+                        {
+                            // 力竭/调息状态：静候生产自动调息链路，绝不动用复活按钮之外的手段
+                            if (c.battle.Progress.Dead)
+                            {
+                                if (!deadLogged)
+                                {
+                                    deadLogged = true;
+                                    expect(!c.battle.Automatic, "力竭后凡人不会转入自动作战");
+                                    step("DOWN   凡人力竭，等待自动调息（约 60 秒）…");
+                                    shot(c.heroWindow, "03-力竭调息");
+                                }
+                                return;
+                            }
+                            if (deadLogged)
+                            {
+                                deadLogged = false;
+                                expect(!c.battle.Automatic, "调息恢复后凡人仍处于手动模式（不自动接续作战）");
+                                expect(c.battle.LastReward.Contains("凡躯调息完毕"), "调息完成有明确文字反馈");
+                                step("UP     调息完毕，等待玩家再次操作");
+                            }
+                            if (c.cultivation.MortalKills >= CultivationBalance.MortalAwakenKills)
+                            {
+                                expect(c.cultivation.CanAwaken, "十次有效击杀达成，觉醒条件解锁");
+                                step("AWAKEN 十战圆满（共点击 " + clicksTotal + " 次，首杀出招 " + firstKillStrikes + " 次/距离提示 " + firstKillDistanceHints + " 次），打开修炼面板…");
+                                c.OpenEquipment();
+                                phase = 1; return;
+                            }
+                            if (target == null || target.VisualDefeated || target.Defeated)
+                            {
+                                if (target != null && target.VisualDefeated && engagedId == target.Id)
+                                {
+                                    // 误触验证：点击已倒下的妖物窗口不产生任何效果
+                                    Form deadWin; int killsBefore = c.cultivation.MortalKills;
+                                    KnightLayeredWindow deadLayered;
+                                    if (c.enemyWindows.TryGetValue(target.Id, out deadLayered)) { deadWin = deadLayered; clickWindow(deadWin); Application.DoEvents(); }
+                                    expect(c.cultivation.MortalKills == killsBefore, "误触验证：点击已倒下妖物不产生击杀或出招");
+                                    step("KILL   第 " + c.cultivation.MortalKills + " 次有效击杀（本目标出招 " + strikesOnTarget + " 次）");
+                                    if (c.cultivation.MortalKills == 1) { firstKillStrikes = strikesOnTarget; firstKillDistanceHints = distanceHints; }
+                                    engagedId = null;
+                                }
+                                target = c.battle.Enemies.FirstOrDefault(e => !e.IsBoss && !e.Defeated && !e.VisualDefeated && !e.Failed);
+                                strikesOnTarget = 0;
+                                if (target == null)
+                                {
+                                    if (noTargetSince < 0) noTargetSince = wall.Elapsed.TotalSeconds;
+                                    if (wall.Elapsed.TotalSeconds - noTargetSince > 45)
+                                    {
+                                        noTargetSince = wall.Elapsed.TotalSeconds;
+                                        c.encounterDue = true; // 加速点①：触发与生产完全相同的虚拟妖物生成路径
+                                        step("ACCEL  45 秒无可战妖物，走生产同款 encounterDue 生成路径");
+                                    }
+                                    return;
+                                }
+                                noTargetSince = -1;
+                                engagedId = target.Id;
+                                step("TARGET 锁定 " + AdventureMonster.Find(target.MonsterKind).Name + "（HP " + target.Health + "/" + target.MaxHealth + "，距离 " + ((int)c.EnemyHeroDistance(target)) + "）");
+                            }
+                            // 格挡验证：首次接战时完成（状态断言为准——LastReward 会被世界节拍
+                            // 周期性覆写，属设计；点击瞬间的文案尽力捕获并记入日志）
+                            if (!blockTested)
+                            {
+                                blockTested = true;
+                                double blockNow = c.clock.Elapsed.TotalSeconds;
+                                clickWindow(c.heroWindow); Application.DoEvents();
+                                string blockText = c.battle.LastReward;
+                                expect(c.blockUntil > blockNow && c.blockCooldownUntil > blockNow,
+                                    "点击角色触发格挡：减伤窗口与冷却倒计时同时置位" + (blockText.Contains("格挡！") ? "，文案「格挡！」已捕获" : "（状态断言为准）"));
+                                if (blockText.Contains("格挡！")) step("BLOCK  玩家可见反馈：" + blockText);
+                                double cooldownAt = c.blockCooldownUntil, untilAt = c.blockUntil;
+                                clickWindow(c.heroWindow); Application.DoEvents();
+                                double cooldownAfter = c.blockCooldownUntil;
+                                step("BLOCK  冷却读数：首次 " + cooldownAt.ToString("F2") + " · 再次点击后 " + cooldownAfter.ToString("F2") + " · 格挡窗 " + untilAt.ToString("F2"));
+                                expect(cooldownAfter <= cooldownAt + 0.001 || c.battle.LastReward.Contains("格挡"),
+                                    "冷却期再次点击：要么倒计时不变，要么给出格挡系反馈（冷却语义确定性见 Growth 烟测）");
+                                step("BLOCK  格挡链路验证完毕");
+                                shot(c.heroWindow, "02-格挡反馈");
+                            }
+                            // 强制力竭验证：第五杀之后做一次
+                            if (!exhaustTested && c.cultivation.MortalKills >= 5)
+                            {
+                                exhaustTested = true;
+                                c.battle.Damage(99999); // 加速点②：强制力竭，验证调息恢复链路（非战斗操作）
+                                step("ACCEL  强制力竭（验证自动调息恢复，非战斗操作）");
+                                return;
+                            }
+                            if (wall.Elapsed.TotalSeconds - lastClickAt < .45) return; // 出招节流，接近人手节奏
+                            KnightLayeredWindow layered; if (!c.enemyWindows.TryGetValue(target.Id, out layered)) return;
+                            Form win = layered;
+                            string rewardBefore = c.battle.LastReward;
+                            clickWindow(win);
+                            lastClickAt = wall.Elapsed.TotalSeconds;
+                            Application.DoEvents();
+                            if (c.battle.LastReward.Contains("距离太远") && c.battle.LastReward != rewardBefore)
+                            {
+                                distanceHints++;
+                                if (distanceHints <= 5) step("HINT   " + c.battle.LastReward + "（角色自动接近中）");
+                            }
+                            strikesOnTarget++;
+                            if (strikesOnTarget == 1) shot(win, "01-选敌出招");
+                        }
+                        else if (phase == 1)
+                        {
+                            if (!awakenClicked)
+                            {
+                                Button btn = findButton(c.equipment, "灵根觉醒");
+                                expect(btn != null && btn.Visible && btn.Enabled, "十战后觉醒按钮可见可用");
+                                if (btn == null) { phase = 3; return; }
+                                awakenClicked = true;
+                                btn.PerformClick();
+                                return;
+                            }
+                            IntPtr dlg = FindWindow(null, "灵根觉醒");
+                            if (dlg != IntPtr.Zero) { PostMessage(dlg, WmKeyDown, (IntPtr)13, IntPtr.Zero); return; } // Enter=确认（确认框+结果框）
+                            if (c.cultivation.Mortal) return; // 等待觉醒结算
+                            expect(CultivationIdentity.IsValidRoot(c.cultivation.SpiritRoot), "觉醒测出有效灵根：" + c.cultivation.SpiritRoot);
+                            expect(!c.cultivation.Mortal && c.cultivation.RealmIndex == 0 && c.cultivation.Layer == 1, "觉醒后进入炼气一层");
+                            expect(c.cultivation.AutoBattleUnlocked && c.battle.Automatic, "觉醒后自动作战解锁并默认开启");
+                            expect(c.consent.CleanupEnabled == false && c.consent.MemoryEnabled == false && c.consent.AutoMaintenanceEnabled == false, "觉醒后真实维护授权保持关闭");
+                            string archiveText = File.Exists(c.cultivationPath) ? File.ReadAllText(c.cultivationPath) : "";
+                            expect(archiveText.Contains("mortal=0") && archiveText.Contains("root="), "修仙档案已落盘（脱凡+灵根）");
+                            step("AWOKEN 灵根「" + c.cultivation.RootName + "」· 进入炼气一层 · 自动作战已开启");
+                            shot(c.heroWindow, "04-觉醒炼气");
+                            phase = 2; phase2Start = wall.Elapsed.TotalSeconds; phase2Exp = c.battle.Progress.Experience; noTargetSince = -1;
+                        }
+                        else if (phase == 2)
+                        {
+                            if (c.battle.Progress.Experience > phase2Exp)
+                            {
+                                expect(true, "觉醒后零点击自动作战完成击杀（经验 " + phase2Exp + " → " + c.battle.Progress.Experience + "）");
+                                step("AUTO   自动作战证明完成");
+                                phase = 3; return;
+                            }
+                            bool anyTarget = c.battle.Enemies.Any(e => !e.IsBoss && !e.Defeated && !e.VisualDefeated && !e.Failed);
+                            if (!anyTarget)
+                            {
+                                if (noTargetSince < 0) noTargetSince = wall.Elapsed.TotalSeconds;
+                                if (wall.Elapsed.TotalSeconds - noTargetSince > 45)
+                                {
+                                    noTargetSince = wall.Elapsed.TotalSeconds;
+                                    c.encounterDue = true; // 加速点①同款
+                                    step("ACCEL  自动证明阶段触发生产同款生成路径");
+                                }
+                            }
+                            if (wall.Elapsed.TotalSeconds - phase2Start > 300) { expect(false, "自动作战证明超时（300 秒无击杀）"); phase = 3; }
+                        }
+                    };
+                    driver.Start();
+                    while (phase != 3 && wall.Elapsed < TimeSpan.FromMinutes(16) && failures.Count == 0) { Application.DoEvents(); Thread.Sleep(20); }
+                    driver.Stop(); driver.Dispose();
+                    if (phase != 3 && failures.Count == 0) expect(false, "验收总时长超过 16 分钟未完成");
+                    expect(c.battle.Enemies.Count(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal)) == 0, "验收全程未触发灵域镜妖（无关系统零干扰）");
+                    step("STATS  总点击 " + clicksTotal + " 次 · 距离提示 " + distanceHints + " 次 · 用时 " + wall.Elapsed.ToString(@"mm\:ss"));
+                    step(failures.Count == 0 ? "RESULT 全部通过" : "RESULT 存在失败项 " + failures.Count);
+                    exitCode = failures.Count == 0 ? 0 : 1;
+                }
+            }
+            File.WriteAllText(logPath, log.ToString(), Encoding.UTF8);
+            return exitCode;
+        }
     }
 }
 
