@@ -474,6 +474,16 @@ namespace NetBunny
             progress.LogLine("暂离蜃楼，进度已存");
             progress.ExpeditionActive = false;
         }
+        // 重启/异常恢复专用入口：战斗未决时仅补发一次镜妖生成请求，
+        // 不写进入日志、不重掷机缘、不改节点。结算语义读自持久化的
+        // CombatOutcome，主镜战重启后仍是主镜战；是否真正生成、重复
+        // 生成去重与敌场预算由订阅方（控制器）负责。
+        internal bool ResumePendingCombat()
+        {
+            if (!progress.ExpeditionActive || !progress.CombatPending) return false;
+            RequestCombat(progress.CombatOutcome == "final");
+            return true;
+        }
         internal void Choose(int index, JiyuanContext ctx)
         {
             if (progress.CombatPending) return;

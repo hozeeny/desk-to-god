@@ -506,6 +506,14 @@ namespace NetBunny
             sweep.Damage(99999); check(sweep.ClearFieldSnapshot().Count == 0 && !sweep.Authorize(future), "dead hero cannot authorize a new clear or manual target");
             sweep.SetAutomatic(true); check(!sweep.Automatic && sweep.PlanNext(0, 0) == null, "death prevents automatic restart");
             sweep.Revive(); check(!sweep.Automatic, "manual revival leaves automatic mode off");
+            AdventureBattle mirageSweep = new AdventureBattle(new AdventureProgress());
+            AdventureEnemy mirrorFiend = new AdventureEnemy { Id = "lingyu-fiend", IsVirtual = true, NoFieldClear = true, MonsterKind = "skeleton", Health = 60, MaxHealth = 60 };
+            AdventureEnemy fodder = new AdventureEnemy { Id = "fodder", Health = 40, MaxHealth = 40 };
+            mirageSweep.Enemies.AddRange(new[] { mirrorFiend, fodder });
+            List<AdventureEnemy> mirageClear = mirageSweep.ClearFieldSnapshot();
+            check(mirageClear.Count == 1 && mirageClear[0] == fodder && mirrorFiend.Health == 60 && !mirrorFiend.Defeated && !mirrorFiend.Authorized,
+                "one-click clear skips the field-clear-immune mirror fiend but sweeps everything else");
+            check(mirageSweep.Authorize(mirrorFiend), "the immune fiend stays manually targetable for a real fight");
             Random seeded = new Random(527); HashSet<string> kinds = new HashSet<string>(); bool stableKinds = true;
             CleanupBatch emptyBatch = new CleanupBatch(new List<CleanupCandidate>(), 1);
             for (int i = 0; i < 80; i++)
