@@ -1,0 +1,4 @@
+Dependency-root injection: only six default archive initializers are replaced; no smoke assertions/branches are changed.
+This harness does not validate an unmodified production binary.
+source 13E9183256573871584E5F4F2E0D02B5E10D1B4538D8A984C51D8AF537381777 E:\03工作内容\coding\桌面修仙\desk-to-god-art\源代码\AdventureController.cs
+fixture D16F452813FB955D7E5AD3B3EE0EA39C56DAA23E2D57F2FADBE013AC607D7D5B E:\03工作内容\coding\桌面修仙\desk-to-god-art\artifacts\smoke-isolation-green\AdventureController.fixture.cs

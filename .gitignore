@@ -9,6 +9,7 @@
 *.tmp
 Thumbs.db
 .DS_Store
+/artifacts/
 
 # Generated top-level distribution and validation executables
 /骑士助手-*.zip

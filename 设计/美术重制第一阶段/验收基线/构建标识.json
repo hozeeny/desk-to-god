@@ -1,0 +1,168 @@
+{
+  "sources": [
+    {
+      "sha256": "8D28951A8D1380428CFA932910E6418490A8FD698FFB4068C68736BFE101CFC0",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\AdventureArt.cs"
+    },
+    {
+      "sha256": "13E9183256573871584E5F4F2E0D02B5E10D1B4538D8A984C51D8AF537381777",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\AdventureController.cs"
+    },
+    {
+      "sha256": "336C3E7F91A31AD9F9EFD207A681885679542A4393F34B71EC1A367939E5337E",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\AdventureEffects.cs"
+    },
+    {
+      "sha256": "BFB89C77F898EA0099CAA2C83E8F229C42035339B784A7F795A5DA1410AAD11F",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\AdventureEquipment.cs"
+    },
+    {
+      "sha256": "C2EF4054B0D0157770EFA046F87AC163668BD18B4EBC8ABA2E6DFFA4E5FECF6B",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\AdventureModel.cs"
+    },
+    {
+      "sha256": "0D347B6F7D42EF68D993667FC1AF8E636F4DA774CEC38D030808A51392981528",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\BaiyeCore.cs"
+    },
+    {
+      "sha256": "831F69DFD793493955E6F913232B52529B03B8A45FE10D13C81ABBCED2F100F7",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\BaiyeSteleForm.cs"
+    },
+    {
+      "sha256": "4E634B794FEB2202609CE4875D4A2320844E302C86B1F18C0D4DCBD31F97F56C",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\BreakthroughForm.cs"
+    },
+    {
+      "sha256": "728420CB3B8110286DD1AEE163762F4FD1550F5E0AA680750C49F590F207B090",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\CleanupWorld.cs"
+    },
+    {
+      "sha256": "2CDCB45B1CA54A328C9FEE564EB19CBD869F73CD0D722C2CD6BC8D497EC193BB",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\CombatTactics.cs"
+    },
+    {
+      "sha256": "8CE86CCD7A3B2CBDA099B2D45AAD33AFFCA7A0B42DFB57179E8F870DF93F595A",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\CultivationCore.cs"
+    },
+    {
+      "sha256": "0E5A76B8CE04C113D692C1017401845ED3D5120E34AA1E860F92C542FFC5992C",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\DesktopFrameCapture.cs"
+    },
+    {
+      "sha256": "03738F5992F393BB2C3EE34390458E6FE1B0A34B9396000D2AEAC192C491A21B",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\DiskSpace.cs"
+    },
+    {
+      "sha256": "D531F7F359CF326EC8C68C7C53EC48CCCF6C670CE2C1EC392CF3C4701FA1DDE6",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\DiskSpaceBar.cs"
+    },
+    {
+      "sha256": "7E1F7FE630DD6156B7AB18C16BC00F5CF69EB45995C33C426B5C4E060F629773",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\DongtianCore.cs"
+    },
+    {
+      "sha256": "66FB50A63226504D0B9FE43549539FB5082C907B73216D32CECD1523F72C66E5",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\DongtianForm.cs"
+    },
+    {
+      "sha256": "B2D186D4C3B3D268D8050B3DAF3D3CA7C3F9F7A9E4E996A0DEBB5E05305BBC7B",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\EnemyBalance.cs"
+    },
+    {
+      "sha256": "2BF5E1D4E331CDB28EEB4FC804EC024E7C3F919C7D85C3539B6CA2D8B7E4F98D",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\EnemyFieldBudget.cs"
+    },
+    {
+      "sha256": "381408D4C953B484A76E40F28FE4310ADB295B48B24BB4CB527543C0ECAE5884",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\FirewallManager.cs"
+    },
+    {
+      "sha256": "BAF27E0B6245B071E0AF07113EAFCD0C4407D1427D1BEFB495311806AF2DA9C8",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\HeroPoseRig.cs"
+    },
+    {
+      "sha256": "2BBFA0B8AC490DAB9F697A224B833651CC7536619D0EC0FD8BF2E9AE5992AD7C",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\KnightBrand.cs"
+    },
+    {
+      "sha256": "FEEF4E4F6B742D2F9DE877B95FF5698F6412340DE9C86A5D5DEB47732FA858AD",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\KnightPet.cs"
+    },
+    {
+      "sha256": "599C7D632166A54763D2319792C9E390512A546C668316B3A7B3FDF1E177ECED",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\LingyuCore.cs"
+    },
+    {
+      "sha256": "8C4EA44274763788326E0D1820F7E4D94E66EC624F3E6FBDBB98BA557F81630B",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\LingyuForm.cs"
+    },
+    {
+      "sha256": "0605BB23BB7A93B6378720604D1CDE690C6BAF19EA01C7EB18DAEEDEF8AC4963",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\LiveTempPopulation.cs"
+    },
+    {
+      "sha256": "89794B72A748D0F3770BE36CBED80A7550C554C7C1DB5473C7E4BDC651D13AE3",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\MaintenanceConsent.cs"
+    },
+    {
+      "sha256": "F372E47FB02B325AD37F19C47E1E3088FA4C9B80FA02E7E611126C49E430D416",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\MemoryReclaimer.cs"
+    },
+    {
+      "sha256": "964B10C5D40438D0CA5D05EC97D0398A5FC5C602C8258348B1A9CE9A2BF08F5E",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\NetworkCenter.cs"
+    },
+    {
+      "sha256": "1128D48D9EAAB00B1B418C1B648DF7E0149355809A63F3384D68D913150D3218",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\NetworkEngine.cs"
+    },
+    {
+      "sha256": "18A419F12514AB9D29A2119DDCCEC49E081BA783EF7EDAC7C2E5E1F3DC015171",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\NetworkTools.cs"
+    },
+    {
+      "sha256": "1CA12DE702D417A78D9AAA1B0A8AAC65CBA0E7BC587D534C490F9F241422B02A",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\PerfProbe.cs"
+    },
+    {
+      "sha256": "4C27A4CD369CF68D30C811A10C4341DFA91C5F70C8E8BCB3E7A377E9D1158ECF",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\Program.cs"
+    },
+    {
+      "sha256": "40AA7E3A177304BF6575839A1B8665BE6532C569E1FCA76512E04BA841B83B92",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\RasterActorRenderer.cs"
+    },
+    {
+      "sha256": "AF892B28876525F073BE31987F4BA9A893CD75293452E418034C36F29785A509",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\RasterAtlas.cs"
+    },
+    {
+      "sha256": "75827F22D9E1168861D3ECEA6A37257D1B85B4CF672BC9F811DBCE0AA668DF80",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\RegionTheme.cs"
+    },
+    {
+      "sha256": "7D30E783B94234D3641984F9EE8E0945FBDB4E31E7E8D5E3ADCE1C0F7852A9F0",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\ResourceWaveState.cs"
+    },
+    {
+      "sha256": "E83B10D966E20EC95CA704CBB06E4CD73682877F00B6B562E15520AE14A9E4B4",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\SpeedTest.cs"
+    },
+    {
+      "sha256": "84FC6979AA2106D295F44FBECAB569EEFF50D56699D6A7C87892CF5083E00985",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\TrafficDashboard.cs"
+    },
+    {
+      "sha256": "82176167A46CB6D288F0C04C4D7483CED43B868A48A1D3EC797CA94750E4FAF3",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\VersionInfo.cs"
+    },
+    {
+      "sha256": "C6C086A0D7E3D6D026FF7BE81F219603CC91EA512F86744427ABB89E9EB3672A",
+      "path": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\源代码\\验证工具\\ArtCaptureProbe.cs"
+    }
+  ],
+  "head": "5f8151ab46b84c5a53c00a3f5569297b8ec7e266",
+  "branch": "feature/v6-art-foundation",
+  "sourceMode": "working-tree",
+  "executableSha256": "D8D6E1408E28FF91E56D9EEA351200380A491D033FE2D9B0681C3DAE887F9D60"
+}

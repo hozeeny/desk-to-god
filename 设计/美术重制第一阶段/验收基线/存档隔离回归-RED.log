@@ -1,0 +1,7 @@
+existing-lingyu: 13 -> 13 files; all bytes/timestamps/directories unchanged=True; write events=0
+Adventure native smoke: 116 checks passed; no real cleanup, network query, or progress save.
+Live field integration: 20 checks passed (synthetic files and memory reclaim).
+Automatic combat integration: 22 checks passed (seven weapons, synthetic enemies, no real cleanup or progress writes).
+Growth integration: 81 checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).
+missing-lingyu: 12 -> 12 files; all bytes/timestamps/directories unchanged=True; write events=0
+Smoke isolation regression: FAIL (dependency-root injection; both pre-existing and missing lingyu archives).

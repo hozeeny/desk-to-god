@@ -2072,10 +2072,11 @@ namespace NetBunny
                         "zhen + tianji trigger the first resonance through the controller");
                     check(c.battle.LastReward.Contains("天机演算") && c.BaiyeNotice != null && c.BaiyeNotice.Contains("机缘"),
                         "resonance surfaces a reward notice instead of a bare popup");
-                    check(!File.Exists(c.BaiyeWritePath), "demonstration runs never write the real baiye archive");
+                    check(!File.Exists(baiyeSmokeArchive), "demonstration runs leave the isolated baiye archive absent");
                     // —— 灵域历练（P3）：进入门控 / 节点转移 / 虚拟战斗回调 / 机缘 / 战败出口；示范运行不写真实灵域档 ——
                     if (c.battle.Progress.Dead) { c.battle.Progress.Dead = false; c.battle.Progress.Health = c.battle.Progress.MaxHealth; }
-                    c.lingyuPathOverride = Path.Combine(Path.GetTempPath(), "lingyu-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    string lingyuSmokeArchive = Path.Combine(Path.GetTempPath(), "lingyu-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    c.lingyuPathOverride = lingyuSmokeArchive;
                     // 成长体系：示范档案开局是凡人——凡人永远进不了灵域；完成觉醒后才测修士门控。
                     check(c.cultivation.Mortal && !c.LingyuEnter("qianmian"), "a mortal is always locked out of the mirage");
                     c.cultivation.Mortal = false; c.cultivation.EnsureIdentity(new Random(4));
@@ -2140,7 +2141,7 @@ namespace NetBunny
                         "a fallen cultivator releases the fight without paying or soft-locking");
                     check(c.Lingyu.ExpeditionActive && c.Mirage.CurrentChoices().Length > 0, "the expedition continues after a lost fight");
                     c.Resurrect();
-                    check(!File.Exists(c.LingyuWritePath), "demonstration runs never write the real lingyu archive");
+                    check(!File.Exists(lingyuSmokeArchive), "demonstration runs leave the isolated lingyu archive absent");
                     // —— 蜃楼重启软锁回归：战斗中退出 → 真实读档 → 控制器/界面补发镜妖 → 预算与去重 ——
                     string mirageArchive = Path.Combine(Path.GetTempPath(), "lingyu-restart-" + Guid.NewGuid().ToString("N") + ".txt");
                     c.lingyuPathOverride = mirageArchive;
@@ -2203,7 +2204,7 @@ namespace NetBunny
                     while (mirrorFiend() != null && winGuard++ < 8) killMirrorFiend();
                     check(!c.Lingyu.CombatPending && mirrorFiend() == null, "a resumed fight settles its win and releases the expedition");
                     c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("filler-", StringComparison.Ordinal));
-                    c.lingyuPathOverride = Path.Combine(Path.GetTempPath(), "lingyu-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    c.lingyuPathOverride = lingyuSmokeArchive;
                     try { File.Delete(mirageArchive); } catch { }
                     // Unattended recovery: a defeated cultivator always rests back.
                     c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
@@ -2643,8 +2644,8 @@ namespace NetBunny
                         g.dongtianPathOverride = null; g.lingyuPathOverride = null;
                         try { Directory.Delete(dtFixture, true); } catch { }
                     }
-                    check(g.connectivity == null && g.battle.Progress.FreedBytes == 0 && !File.Exists(g.LingyuWritePath),
-                        "growth simulation never touches network, files, or real archives");
+                    check(g.connectivity == null && g.battle.Progress.FreedBytes == 0 && !Directory.Exists(dtFixture),
+                        "growth simulation avoids real maintenance and removes its temporary archives");
                 }
             }
             return "Growth integration: " + n + " checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).";
@@ -3003,10 +3004,13 @@ namespace NetBunny
             {
                 try
                 {
-                    if (w == null || w.IsDisposed || w.Width <= 0 || w.Height <= 0) return;
-                    using (Bitmap b = new Bitmap(w.Width, w.Height)) { w.DrawToBitmap(b, new Rectangle(Point.Empty, w.Size)); b.Save(Path.Combine(shotDir, name + ".png"), ImageFormat.Png); }
+                    using (Bitmap b = DesktopFrameCapture.CaptureWindow(w))
+                    {
+                        b.Save(Path.Combine(shotDir, name + ".png"), ImageFormat.Png);
+                        step("SHOT   " + name + " · desktop composition " + b.Width + "x" + b.Height);
+                    }
                 }
-                catch { }
+                catch (Exception e) { expect(false, "画面采集失败 " + name + "：" + e.Message); }
             };
             int exitCode;
             using (Form owner = new Form())
