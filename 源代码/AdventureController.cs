@@ -61,6 +61,8 @@ namespace NetBunny
         private LingyuForm lingyuForm;
         private BreakthroughForm breakthroughForm;
         private string pendingLingyuEnemyId;
+        // 启动时排队一次的蜃楼战斗恢复标记：避免在构造期生成妖物。
+        private bool lingyuCombatResumeQueued;
         // Two independent real-maintenance scopes; neither is implied by combat
         // or by the (separately persisted) unattended auto-battle preference.
         private readonly MaintenanceConsentStore consent = new MaintenanceConsentStore();
@@ -93,7 +95,7 @@ namespace NetBunny
         private Rectangle area;
         private bool enabled, roaming = true, disposed, dragging, scanBusy, memoryBusy, monitoringAvailable, heroFacing = true;
         private double x, y, targetX, targetY, bytesPerSecond, lastTick, lastTelemetry = -100, lastScan = -100, lastMemory = -100, lastRegion = -100, lastSave, lastEnemyPaint, demoStarted = -1, pauseMotionUntil;
-        private double memoryPercent, attackAnimation, renderTime, runCycle, actualMoveSpeed, blackholeUntil, blackholeX, blackholeY;
+        private double memoryPercent, attackAnimation, renderTime, runCycle, actualMoveSpeed, blackholeUntil, blackholeX, blackholeY, blockUntil = -1, blockCooldownUntil = -1;
         private float displayScale = 1f;
         private string scanStatus = "等待扫描临时文件", connectivityDetail = "正在确认网络", failure;
         private long candidateBytes;
@@ -146,6 +148,9 @@ namespace NetBunny
                     try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; }
                     SaveDongtian();
                 }
+                // 蜃楼重启恢复排队：上次退出时战斗未决（ExpeditionActive + CombatPending
+                // 已持久化）的，首个主节拍补发镜妖——界面与渲染此时尚未就绪，不能在此生成。
+                lingyuCombatResumeQueued = lingyu.ExpeditionActive && lingyu.CombatPending;
             }
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
@@ -160,7 +165,8 @@ namespace NetBunny
                 consent.AutoMaintenanceEnabled = persisted.AutoMaintenanceEnabled;
                 // Unattended self-battle is the default and independent from
                 // real maintenance consent; a dead hero first finishes resting.
-                if (cultivation.AutoBattle && !battle.Progress.Dead) battle.SetAutomatic(true);
+                // 凡人未觉醒：运行时绝不自动索敌（AutoBattleUnlocked）。
+                if (cultivation.AutoBattle && cultivation.AutoBattleUnlocked && !battle.Progress.Dead) battle.SetAutomatic(true);
             }
             if (!demonstrationOnly) region.SelectMode(battle.Progress.LastThemeCode);
             region.SelectMode(demonstrationOnly ? "OFF" : battle.Progress.ThemeMode);
@@ -170,8 +176,11 @@ namespace NetBunny
             heroWindow.Size = HeroSize; landmarkWindow.Size = LandmarkSize;
             x = area.Right - HeroSize.Width - 40; y = area.Bottom - HeroSize.Height - 30; ClampHero(); PickTarget();
             heroWindow.ContextRequested = OpenEquipment;
+            Point heroPressedAt = Point.Empty; bool heroDragged = false;
+            heroWindow.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { heroPressedAt = Cursor.Position; heroDragged = false; } };
+            heroWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !heroDragged && !IsDemo) { TryBlock(); RenderWorld(true); } };
             heroWindow.DragChanged = delegate(bool active) { dragging = active; if (!active) { area = Screen.FromPoint(heroWindow.Location).WorkingArea; pauseMotionUntil = clock.Elapsed.TotalSeconds + 2; ClampHero(); PickTarget(); PositionLandmark(); } };
-            heroWindow.DragMoved = delegate(Point p) { x = p.X; y = p.Y; heroWindow.Location = p; };
+            heroWindow.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(heroPressedAt.X, heroPressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) heroDragged = true; x = p.X; y = p.Y; heroWindow.Location = p; };
             landmarkWindow.ContextRequested = OpenEquipment;
             landmarkWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenEquipment(); };
             // 15 ms avoids this WinForms timer rounding a 16 ms request to a
@@ -197,7 +206,8 @@ namespace NetBunny
         private void RestoreAutoBattlePreference()
         {
             if (demoStarted >= 0 || demoPending) return;
-            battle.SetAutomatic(cultivation.AutoBattle && !battle.Progress.Dead);
+            // 凡人未觉醒：偏好保持存档原样，但运行时绝不自动索敌。
+            battle.SetAutomatic(cultivation.AutoBattle && cultivation.AutoBattleUnlocked && !battle.Progress.Dead);
         }
         public bool Roaming { get { return roaming; } set { roaming = value; if (value) PickTarget(); } }
         public bool AutoPlanning { get { return battle.Automatic; } }
@@ -316,9 +326,9 @@ namespace NetBunny
         {
             // Cycle automatic mode: unstarted automatic targets (including defeated
             // ones awaiting the cleanup worker) are retired; manual orders survive.
-            bool resume = battle.Automatic || cultivation.AutoBattle;
+            bool resume = battle.Automatic || (cultivation.AutoBattle && cultivation.AutoBattleUnlocked);
             battle.SetAutomatic(false); RemoveCancelledAutomaticJobs();
-            if (resume) battle.SetAutomatic(!battle.Progress.Dead);
+            if (resume) battle.SetAutomatic(cultivation.AutoBattleUnlocked && !battle.Progress.Dead);
         }
         // Automatic planning must never start unattended real maintenance on its
         // own: real-effect targets require the separate auto-maintenance consent.
@@ -384,6 +394,8 @@ namespace NetBunny
         {
             if (disposed || IsDemo || !cultivation.CanAwaken) return false;
             bool awakened = cultivation.Awaken(random);
+            // 觉醒即解锁并默认开启自动作战（核心已置 AutoBattle=true），力竭中待恢复后自行接续。
+            if (awakened && cultivation.AutoBattle && !battle.Progress.Dead) battle.SetAutomatic(true);
             Save();
             if (awakened && enabled) RenderWorld(true);
             return awakened;
@@ -822,6 +834,16 @@ namespace NetBunny
             battle.LastReward = label + "现身桌面 · 击败它继续蜃楼之行";
             RenderWorld(true);
         }
+        // 蜃楼战斗恢复入口（重启后首拍自动排队一次；灵域面板刷新时也会触发）：
+        // 战斗未决且桌面没有存活镜妖时补发一只，玩家从真实界面即可恢复战斗。
+        // 已有存活镜妖时不重复生成；满员由生成路径内部退休闲置普通妖物腾位。
+        internal bool TryResumeLingyuCombat()
+        {
+            if (disposed || IsDemo || lingyu == null) return false;
+            if (!lingyu.ExpeditionActive || !lingyu.CombatPending) return false;
+            if (pendingLingyuEnemyId != null && battle.Enemies.Any(e => e.Id == pendingLingyuEnemyId)) return false;
+            return mirage.ResumePendingCombat();
+        }
         // 蜃楼战斗失败出口：修士力竭时镜妖遁入镜中，解除挂起，秘境不软锁。
         internal void LingyuDeathCheck()
         {
@@ -1164,6 +1186,8 @@ namespace NetBunny
             battle.CultivationDamageFactor = CultivationCombatPower.DamageFactor(cultivation) * DongtianDamageFactor();
             battle.CultivationDefenseFactor = CultivationCombatPower.DefenseFactor(cultivation);
             battle.Tick(dt);
+            // 蜃楼重启恢复：构造期仅排队（渲染未就绪），首拍补发未决战斗的镜妖。
+            if (lingyuCombatResumeQueued) { lingyuCombatResumeQueued = false; TryResumeLingyuCombat(); }
             // 蜃楼战斗中修士力竭：镜妖遁入镜中，机缘战斗按已选落空，秘境不软锁。
             LingyuDeathCheck();
             // Unattended recovery: a defeated cultivator always meditates back to
@@ -1172,8 +1196,9 @@ namespace NetBunny
             if (battle.Progress.Dead && !IsDemo && battle.DeathTime >= CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation) * DongtianReviveFactor())
             {
                 battle.Revive();
-                if (cultivation.AutoBattle) battle.SetAutomatic(true);
-                battle.LastReward = "修士调息完毕，伤势尽复，继续自主修行";
+                // 凡人力竭后照常自行调息恢复，但恢复后保持手动待机，等待玩家主动出手。
+                if (cultivation.AutoBattle && cultivation.AutoBattleUnlocked) battle.SetAutomatic(true);
+                battle.LastReward = cultivation.AutoBattleUnlocked ? "修士调息完毕，伤势尽复，继续自主修行" : "凡躯调息完毕，伤势尽复；点击妖物继续历练";
                 Save();
             }
             ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
@@ -1204,7 +1229,9 @@ namespace NetBunny
                     else
                     {
                         heroFacing = target.X >= x;
-                        if (battle.Cooldown <= 0) StrikeTarget(target, now);
+                        // 凡人手动战斗：接近可以自动，出招必须玩家点击（TryMortalStrike），
+                        // 绝不能点一下就自动看完整场战斗；觉醒后手动模式保持原样。
+                        if (!cultivation.Mortal && battle.Cooldown <= 0) StrikeTarget(target, now);
                     }
                     }
                 }
@@ -1267,6 +1294,27 @@ namespace NetBunny
                 enemy.Health = Math.Max(1,(int)Math.Ceiling(enemy.MaxHealth*remaining)); enemy.SpawnLevel=battle.Progress.Level; enemy.VisualDirty=true;
             }
         }
+        // 格挡：点击角色触发，1 秒内来袭伤害大幅减免，10 秒冷却；凡人期关键生存操作，修士期同样可用。
+        internal bool TryBlock()
+        {
+            if (disposed || battle.Progress.Dead) return false;
+            double now = clock.Elapsed.TotalSeconds;
+            if (now < blockCooldownUntil) { battle.LastReward = "格挡调息中（约 " + Math.Max(1, (int)Math.Ceiling(blockCooldownUntil - now)) + " 秒后再用）"; return false; }
+            blockUntil = now + 1.0; blockCooldownUntil = now + 10;
+            battle.LastReward = "格挡！凝住气血，接下一瞬的来势将被卸去大半";
+            return true;
+        }
+
+        // 凡人主动攻击：点击已选目标且进入射程、冷却就绪时出一招；每招都要玩家出手，禁止站桩自动打完整场战斗。
+        private void TryMortalStrike(AdventureEnemy target)
+        {
+            if (disposed || IsDemo || battle.Automatic || battle.Progress.Dead) return;
+            if (battle.Target != target || battle.Cooldown > 0) return;
+            if (EnemyHeroDistance(target) > battle.Weapon.Range * displayScale * .8 + .01) { battle.LastReward = "距离太远：角色会先自动接近，再点击出招"; return; }
+            heroFacing = target.X >= x;
+            StrikeTarget(target, clock.Elapsed.TotalSeconds);
+        }
+
         private void StrikeTarget(AdventureEnemy target, double now)
         {
             attackAnimation = 1;
@@ -1454,7 +1502,9 @@ namespace NetBunny
             enemy.AttackTime += dt;
             if (enemy.AttackTime < cooldown) return;
             enemy.AttackTime = 0; enemy.VisualDirty = true; enemy.AttackFlash = 1;
-            battle.Damage(!String.IsNullOrEmpty(enemy.EvilTheme) ? 2 + enemy.SpawnLevel / 12 : enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage);
+            int incoming = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2 + enemy.SpawnLevel / 12 : enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage;
+            if (clock.Elapsed.TotalSeconds < blockUntil) { incoming = Math.Max(1, incoming / 5); battle.LastReward = "格挡成功：来势被卸去大半（伤害 " + incoming + "）"; }
+            battle.Damage(incoming);
             if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
         }
         private static void FaceEnemy(AdventureEnemy enemy, double dx)
@@ -1562,7 +1612,7 @@ namespace NetBunny
                         AdventureEnemy captured = enemy; window = NewWindow(enemy.IsDiskBoss ? "C 盘空间危机 Boss" : enemy.IsBoss ? "邪恶分身 Boss" : AdventureMonster.Find(enemy.MonsterKind).Name + " · 临时文件怪物"); enemyWindows.Add(enemy.Id, window);
                         Point pressedAt = Point.Empty; bool dragged = false;
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
-                        window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else battle.Authorize(captured); RenderWorld(true); } };
+                        window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
                         window.ContextRequested = OpenEquipment;
                         window.DragChanged = delegate(bool active) { captured.Dragging = active; };
                         window.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(pressedAt.X, pressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) dragged = true; captured.X = p.X; captured.Y = p.Y; BoundEnemy(captured); };
@@ -1677,6 +1727,12 @@ namespace NetBunny
         public void SetAutoPlan(bool value)
         {
             if (disposed || IsDemo || demonstrationOnly) return;
+            // 凡人期禁止自动作战：十次主动历练、灵根觉醒后方可解锁。
+            if (value && !cultivation.AutoBattleUnlocked)
+            {
+                battle.LastReward = "凡人需亲历红尘战斗：完成十次主动历练、灵根觉醒后方解锁自动作战";
+                return;
+            }
             if (value && !enabled) Enabled = true;
             battle.SetAutomatic(value); RemoveCancelledAutomaticJobs();
             // The unattended-battle preference persists independently from both
@@ -1888,6 +1944,8 @@ namespace NetBunny
                     c.CancelPending(); c.actualMoveSpeed = 0;
                     // Auto battle is filtered away from real-effect targets unless the
                     // separate unattended-maintenance consent is explicitly on.
+                    // 本小节聚焦修士期的自动战斗与维护授权交互：直接切入觉醒后状态（凡人本就不能自动作战）。
+                    c.cultivation.Mortal = false;
                     c.consent.CleanupEnabled = true; c.consent.AutoMaintenanceEnabled = false;
                     c.battle.Enemies.Clear(); c.battle.CancelQueue(); c.battle.SetAutomatic(true);
                     AdventureEnemy gatedFile = new AdventureEnemy { Id = "gated-file", Batch = new CleanupBatch(new List<CleanupCandidate> { new CleanupCandidate { Path = @"C:\KnightAssistantSynthetic\gated.tmp", Length = 512 } }, 1), Health = 5, MaxHealth = 100, X = c.x + 100, Y = c.y };
@@ -1963,6 +2021,8 @@ namespace NetBunny
                     check(!c.CultivationPaused && c.cultivation.LastNotice.Contains("继续"), "cultivation resumes on request");
                     // 百业证道（示范运行 + 合成数据源）：首启说明门槛、模式门控、
                     // 结算、空闲停算、手动标记与第一条机缘都经控制器入口生效。
+                    // 回到示范档案的初始凡人态：凡人道途悟道尚不能凝作破境契机，机缘提示保持原样。
+                    c.cultivation.Mortal = true;
                     Action<double> feedBaiye = delegate(double seconds) { for (double s = 0; s < seconds; s += 3) c.TickBaiyeForTest(3); };
                     string baiyeSmokeArchive = Path.Combine(Path.GetTempPath(), "baiye-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
                     c.baiyePathOverride = baiyeSmokeArchive;
@@ -2060,6 +2120,70 @@ namespace NetBunny
                     check(c.Lingyu.ExpeditionActive && c.Mirage.CurrentChoices().Length > 0, "the expedition continues after a lost fight");
                     c.Resurrect();
                     check(!File.Exists(c.LingyuWritePath), "demonstration runs never write the real lingyu archive");
+                    // —— 蜃楼重启软锁回归：战斗中退出 → 真实读档 → 控制器/界面补发镜妖 → 预算与去重 ——
+                    string mirageArchive = Path.Combine(Path.GetTempPath(), "lingyu-restart-" + Guid.NewGuid().ToString("N") + ".txt");
+                    c.lingyuPathOverride = mirageArchive;
+                    int resumeGuard = 0; // 真实界面入口 API（与「继续探索」按钮同一路径）进入一场未决战斗
+                    while (!c.Lingyu.CombatPending && resumeGuard < 200)
+                    {
+                        resumeGuard++;
+                        if (c.Mirage.PendingJiyuan != null) { c.LingyuChoose(0); continue; }
+                        string resumeNode = c.Lingyu.ExpeditionNode;
+                        if (resumeNode == "ferry" || resumeNode == "corridor") c.LingyuChoose(0);
+                        else c.LingyuChoose(1);
+                    }
+                    check(c.Lingyu.CombatPending && mirrorFiend() != null, "restart fixture: a mirror fiend holds the fight before exit");
+                    string outcomeBeforeRestart = c.Lingyu.CombatOutcome;
+                    c.lingyu.Save(c.LingyuWritePath); // 与生产 Save() 相同的写盘点：模拟退出落盘
+                    check(File.Exists(mirageArchive), "restart fixture: expedition archive persisted to disk");
+                    // 真实重启读档：新进度对象走生产 LingyuProgress.Load 同一代码路径。
+                    LingyuProgress reloaded = LingyuProgress.Load(mirageArchive);
+                    check(reloaded.ExpeditionActive && reloaded.CombatPending && reloaded.CombatOutcome == outcomeBeforeRestart,
+                        "a restart reloads the pending fight with its settlement semantics intact");
+                    int resumeRequests = 0; bool resumeBoss = false;
+                    MirageEngine resumeEngine = new MirageEngine(reloaded, new Random(53));
+                    resumeEngine.CombatRequested += delegate(string label, bool boss) { resumeRequests++; resumeBoss = boss; };
+                    check(resumeEngine.ResumePendingCombat() && resumeRequests == 1 && resumeBoss == (outcomeBeforeRestart == "final"),
+                        "resume re-issues exactly one combat request and a boss fight stays a boss fight");
+                    LingyuProgress calmProgress = new LingyuProgress { ExpeditionActive = true };
+                    MirageEngine calmEngine = new MirageEngine(calmProgress, new Random(59));
+                    bool calmFired = false; calmEngine.CombatRequested += delegate(string label, bool boss) { calmFired = true; };
+                    check(!calmEngine.ResumePendingCombat() && !calmFired, "resume refuses when no fight is pending");
+                    // 控制器层恢复：镜妖对象丢失（进程重启后的真实情形）→ 补发一只且仅一只。
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal));
+                    check(c.TryResumeLingyuCombat() && mirrorFiend() != null && mirrorFiend().NoFieldClear,
+                        "controller resume respawns one field-clear-immune mirror fiend");
+                    string respawnedId = mirrorFiend() == null ? null : mirrorFiend().Id;
+                    check(!c.TryResumeLingyuCombat() && mirrorFiend() != null && mirrorFiend().Id == respawnedId
+                        && c.battle.Enemies.Count(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal)) == 1,
+                        "resume is idempotent while the fiend lives - no duplicates");
+                    // 敌场预算：填满普通名额后补发仍不超编（退休一只未交战普通妖物腾位）。
+                    while (EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies))
+                    {
+                        AdventureEnemy filler = new AdventureEnemy { Id = "filler-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = AdventureMonster.All[0].Id, SpawnLevel = 1 };
+                        filler.MaxHealth = filler.Health = 10;
+                        c.battle.Enemies.Add(filler);
+                    }
+                    check(!EnemyFieldBudget.CanAddOrdinary(c.battle.Enemies), "restart fixture: field filled to the ordinary budget");
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal));
+                    check(c.TryResumeLingyuCombat() && EnemyFieldBudget.IsWithinBudget(c.battle.Enemies)
+                        && c.battle.Enemies.Count(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal)) == 1,
+                        "a full field still admits the resumed fiend by retiring an idle ordinary, never exceeding budget");
+                    // 真实界面入口恢复：先移除镜妖模拟缺失，打开灵域面板即由 500ms 刷新路径补发。
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("lingyu-", StringComparison.Ordinal));
+                    using (LingyuForm panel = new LingyuForm(c))
+                    {
+                        panel.StartPosition = FormStartPosition.Manual; panel.Location = new Point(-24000, -24000);
+                        panel.Show(); Application.DoEvents(); panel.RefreshData();
+                        check(mirrorFiend() != null, "opening the lingyu panel restores the pending fight through the real UI");
+                        panel.Hide();
+                    }
+                    int winGuard = 0; // 恢复后的战斗胜利仍按持久化语义结算
+                    while (mirrorFiend() != null && winGuard++ < 8) killMirrorFiend();
+                    check(!c.Lingyu.CombatPending && mirrorFiend() == null, "a resumed fight settles its win and releases the expedition");
+                    c.battle.Enemies.RemoveAll(e => e.Id.StartsWith("filler-", StringComparison.Ordinal));
+                    c.lingyuPathOverride = Path.Combine(Path.GetTempPath(), "lingyu-smoke-" + Guid.NewGuid().ToString("N") + ".txt");
+                    try { File.Delete(mirageArchive); } catch { }
                     // Unattended recovery: a defeated cultivator always rests back.
                     c.battle.Enemies.Clear(); c.CancelPending(); c.battle.SetAutomatic(false);
                     c.battle.Progress.Dead = true; c.battle.Progress.Health = 0; c.battle.DeathTime = CultivationBalance.ReviveRestSeconds + 1;
@@ -2110,6 +2234,46 @@ namespace NetBunny
                     check(g.cultivation.Mortal && g.cultivation.MortalKills == 0 && !g.cultivation.CanAwaken, "a fresh archive begins as a mortal");
                     check(!g.LingyuEnter("qianmian"), "mortals cannot enter the mirage");
                     check(!g.AwakenSpiritRoot(), "the ritual stays locked before ten settled kills");
+                    // —— 凡人期主动战斗规则：自动作战未解锁、出招靠点击、格挡有冷却 ——
+                    check(!g.cultivation.AutoBattleUnlocked && !g.battle.Automatic, "a fresh mortal has auto battle locked");
+                    g.cultivation.AutoBattle = true; g.RestoreAutoBattlePreference();
+                    check(!g.battle.Automatic, "a mortal auto-battle preference never engages automatic combat");
+                    AdventureEnemy sparFiend = new AdventureEnemy { Id = "growth-spar", IsVirtual = true, MonsterKind = "slime", Health = 60, MaxHealth = 60 };
+                    sparFiend.X = g.x + g.HeroSize.Width / 2.0 - g.EnemySize(sparFiend).Width / 2.0 + 10;
+                    sparFiend.Y = g.y + g.HeroSize.Height - g.EnemySize(sparFiend).Height;
+                    g.battle.Enemies.Add(sparFiend); g.Spawn(sparFiend); g.battle.Authorize(sparFiend); g.battle.Cooldown = 0;
+                    g.Tick(null, EventArgs.Empty);
+                    check(sparFiend.Health == 60, "a mortal never auto-swings even with a selected target in range");
+                    // Tick 中敌人会游走：出招前重新把它摆回角色身边。
+                    sparFiend.X = g.x + g.HeroSize.Width / 2.0 - g.EnemySize(sparFiend).Width / 2.0 + 10;
+                    sparFiend.Y = g.y + g.HeroSize.Height - g.EnemySize(sparFiend).Height;
+                    g.battle.Cooldown = 0;
+                    g.TryMortalStrike(sparFiend);
+                    int sparAfterFirst = sparFiend.Health;
+                    check(sparAfterFirst < 60 && g.battle.Cooldown > 0, "a deliberate click lands the mortal's blow and starts the swing cooldown");
+                    g.TryMortalStrike(sparFiend);
+                    check(sparFiend.Health == sparAfterFirst, "each strike waits for the weapon cooldown - no click spam");
+                    g.battle.Enemies.Remove(sparFiend); g.battle.CancelQueue();
+                    // 格挡：1 秒窗口内来袭伤害大减，10 秒冷却。
+                    AdventureEnemy bruiser = new AdventureEnemy { Id = "growth-bruise", IsVirtual = true, MonsterKind = "imp", Health = 999, MaxHealth = 999 };
+                    bruiser.X = g.x + g.HeroSize.Width / 2.0 - g.EnemySize(bruiser).Width / 2.0 + 20;
+                    bruiser.Y = g.y + g.HeroSize.Height - g.EnemySize(bruiser).Height;
+                    int impDamage = AdventureMonster.Find("imp").Damage;
+                    int heroBeforeBlock = g.battle.Progress.Health;
+                    check(g.TryBlock() && !g.TryBlock(), "bracing works once and then sits on its cooldown");
+                    g.AttackHero(bruiser, true, 5);
+                    check(g.battle.Progress.Health == heroBeforeBlock - Math.Max(1, impDamage / 5) && g.battle.LastReward.Contains("格挡成功"),
+                        "a timed brace blunts the incoming blow");
+                    g.blockUntil = -1; g.blockCooldownUntil = -1;
+                    g.AttackHero(bruiser, true, 5);
+                    check(g.battle.Progress.Health == heroBeforeBlock - Math.Max(1, impDamage / 5) - impDamage, "without a brace the same blow lands in full");
+                    g.battle.Progress.Health = g.battle.Progress.MaxHealth;
+                    // 凡人力竭：自动调息恢复仍在，但恢复后保持手动，等待玩家主动操作。
+                    g.battle.Enemies.Clear(); g.CancelPending(); g.battle.SetAutomatic(false);
+                    g.battle.Progress.Dead = true; g.battle.Progress.Health = 0; g.battle.DeathTime = CultivationBalance.ReviveRestSeconds * 3;
+                    g.Tick(null, EventArgs.Empty);
+                    check(!g.battle.Progress.Dead && !g.battle.Automatic && g.battle.LastReward.Contains("调息"),
+                        "a fallen mortal rests back unattended but keeps combat manual");
                     Action killVirtual = delegate
                     {
                         AdventureEnemy fiend = new AdventureEnemy { Id = "growth-" + Guid.NewGuid().ToString("N"), IsVirtual = true, MonsterKind = "imp", Health = 1, MaxHealth = 1 };
@@ -2138,6 +2302,13 @@ namespace NetBunny
                     check(g.cultivation.DeferredQi == 0 && (g.cultivation.Qi > 0 || g.cultivation.Layer > 1) && g.cultivation.LifetimeQi >= deferredBefore,
                         "deferred gains convert to real cultivation on awakening");
                     check(!g.AwakenSpiritRoot(), "the awakening ritual never fires twice");
+                    // 觉醒即解锁：自动作战偏好默认开启并立即生效。
+                    check(g.cultivation.AutoBattle && g.cultivation.AutoBattleUnlocked && g.battle.Automatic,
+                        "awakening unlocks auto battle and engages it by default");
+                    // 旧档兼容：已觉醒但偏好手动的存档恢复后仍保持手动。
+                    g.cultivation.AutoBattle = false; g.battle.SetAutomatic(false); g.RestoreAutoBattlePreference();
+                    check(!g.battle.Automatic, "an awakened archive keeps a saved manual preference");
+                    g.cultivation.AutoBattle = true; g.battle.SetAutomatic(true);
                     // 破境闭环：未圆满不可破；圆满缺契机不可破；任一契机可开；保底必成；材料成败皆消耗。
                     check(!g.TryBreakthrough(false), "an incomplete realm cannot break through");
                     g.cultivation.Layer = 12; g.cultivation.Qi = 0;

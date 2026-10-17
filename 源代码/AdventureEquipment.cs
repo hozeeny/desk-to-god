@@ -220,7 +220,9 @@ namespace NetBunny
                     for (int i = 0; i < weapons.Items.Count; i++) if (((WeaponEntry)weapons.Items[i]).Id == p.WeaponId) { weapons.SelectedIndex = i; break; }
                 }
                 equip.Enabled = !controller.IsDemo; revive.Enabled = p.Dead && !controller.IsDemo; blackhole.Enabled = controller.CanClearField;
-                automatic.Checked = battle.Automatic; manual.Checked = !battle.Automatic; automatic.Enabled = manual.Enabled = !p.Dead && !controller.IsDemo;
+                automatic.Text = controller.Cultivation.AutoBattleUnlocked ? "自动作战（灵根觉醒后默认开启）" : "自动作战（未解锁 · 灵根觉醒后开启）";
+                automatic.Checked = battle.Automatic; manual.Checked = !battle.Automatic;
+                automatic.Enabled = !p.Dead && !controller.IsDemo && controller.Cultivation.AutoBattleUnlocked; manual.Enabled = !p.Dead && !controller.IsDemo;
                 themes.SelectedIndex = Array.IndexOf(ThemeCodes, controller.ThemeMode); themes.Enabled = !controller.IsDemo;
                 roam.Checked = controller.Roaming; monitors.SelectedIndex = Math.Max(0, Array.FindIndex(Screen.AllScreens, screen => screen.WorkingArea == controller.WorkingArea));
                 bool queueBusy = battle.QueueCount > 0 || battle.Enemies.Any(enemy => enemy.CleanupStarted && enemy.Cleaning);

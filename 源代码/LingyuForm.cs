@@ -126,6 +126,9 @@ namespace NetBunny
                 }
                 else
                 {
+                    // 界面恢复兜底：战斗未决而桌面镜妖缺失（重启/异常）时，
+                    // 玩家打开本面板即触发补发；已有存活镜妖时不重复生成。
+                    if (progress.CombatPending) controller.TryResumeLingyuCombat();
                     nodeTitle.Text = "千面蜃楼 · " + MirageEngine.NodeTitle(mirage.NodeId) + " · 第 " + progress.ExpeditionDepth + " 重";
                     nodeText.Text = mirage.NodeText();
                     expeditionHint.Text = progress.CombatPending ? "镜妖正在桌面游荡——自动作战会迎击，也可以手动点击妖物出击。" : (mirage.PendingJiyuan != null ? "机缘当前，请作出抉择：" : "");
