@@ -82,7 +82,7 @@ namespace NetBunny
             if (active.Length == 5) active.Append("（暂无）");
             text.AppendLine(active.ToString());
             status.Text = text.ToString();
-            notice.Text = d.LastNotice;
+            notice.Text = d.LastNotice + (controller.DongtianPersistPending ? "　［档案待落盘 · 自动重试中］" : "");
             // 操作按钮
             foreach (DongtianSeedDef seed in DongtianRecipes.Seeds)
                 for (int i = 0; i < d.UnlockedFields; i++)

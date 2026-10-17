@@ -501,8 +501,38 @@ namespace NetBunny
         internal bool DongtianUnlocked { get { return cultivation != null && !cultivation.Mortal && cultivation.RealmIndex >= 1; } }
         private void SaveDongtian()
         {
-            if (demonstrationOnly || dongtian == null) return;
-            try { dongtian.Save(DongtianWritePath); } catch (Exception e) { scanStatus = "洞天档案暂未保存：" + e.Message; }
+            SaveDongtianCore();
+        }
+        private bool dongtianPersistPending; private double dongtianPersistRetryAt = -1;
+        // 持久化状态三段式：待确认（内存生效、档案未落盘）→ 提交成功（双档落盘）。
+        // 任何真实写入失败都不静默报成功：状态栏与洞天面板明示，Tick 每 15 秒重试。
+        internal bool DongtianPersistPending { get { return dongtianPersistPending; } }
+        private bool SaveDongtianCore()
+        {
+            if (dongtian == null || (demonstrationOnly && dongtianPathOverride == null)) return true;
+            try
+            {
+                dongtian.Save(DongtianWritePath);
+                return true;
+            }
+            catch (Exception e) { dongtianPersistPending = true; scanStatus = "洞天档案暂未保存（操作待确认，将持续自动重试）：" + e.Message; return false; }
+        }
+        // 灵域档同款保存：入库协议要求灵域档先行落盘，失败同样进入待确认。
+        private bool SaveLingyuCore()
+        {
+            if (lingyu == null || (demonstrationOnly && lingyuPathOverride == null)) return true;
+            try { lingyu.Save(LingyuWritePath); return true; }
+            catch (Exception e) { dongtianPersistPending = true; scanStatus = "灵域档案暂未保存（操作待确认，将持续自动重试）：" + e.Message; return false; }
+        }
+        // 待确认重试：两份档案都落盘才算提交成功；崩溃窗口由启动对账（ReconcileTransfers）补平。
+        internal void TryFlushDongtianPersistence()
+        {
+            if (disposed || !dongtianPersistPending) return;
+            bool lingyuOk = lingyu == null || (demonstrationOnly && lingyuPathOverride == null);
+            if (!lingyuOk) { try { lingyu.Save(LingyuWritePath); lingyuOk = true; } catch { } }
+            bool dongtianOk = dongtian == null || (demonstrationOnly && dongtianPathOverride == null);
+            if (!dongtianOk) { try { dongtian.Save(DongtianWritePath); dongtianOk = true; } catch { } }
+            if (lingyuOk && dongtianOk) { dongtianPersistPending = false; if (dongtian != null) dongtian.LastNotice = "洞天与灵域档案均已落盘（提交成功）"; }
         }
         private double DongtianQiFactor() { return dongtian == null ? 1.0 : dongtian.QiRateFactor(DateTime.UtcNow); }
         private double DongtianDamageFactor() { return dongtian == null ? 1.0 : dongtian.DamageFactor(DateTime.UtcNow); }
@@ -519,20 +549,25 @@ namespace NetBunny
             stock -= 1;
             if (stock <= 0) lingyu.Materials.Remove(material); else lingyu.Materials[material] = stock;
             lingyu.Grants[grantId] = DateTime.UtcNow.Ticks;
-            if (!demonstrationOnly) { try { lingyu.Save(LingyuWritePath); } catch (Exception e) { scanStatus = "灵域档案暂未保存：" + e.Message; } }
+            bool committed = SaveLingyuCore();
             dongtian.ImportSeq++;
             dongtian.Bag[material] = dongtian.CountOf(material) + 1;
             dongtian.Grants.Add(grantId);
-            dongtian.LastNotice = "「" + DongtianRecipes.MaterialName(material) + "」已带回洞天入库";
-            SaveDongtian();
+            committed = SaveDongtianCore() && committed;
+            dongtian.LastNotice = "「" + DongtianRecipes.MaterialName(material) + "」已带回洞天入库" + (committed ? "" : "（档案待落盘，自动重试中）");
             return true;
         }
-        internal bool DongtianPlant(int slot, string seedId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Plant(slot, seedId, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
-        internal bool DongtianHarvest(int slot) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Harvest(slot, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
-        internal bool DongtianStartPill(string pillId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartPill(pillId, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
-        internal bool DongtianCollectPill() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectPill(DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
-        internal bool DongtianStartGear(string gearId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartGear(gearId, DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
-        internal bool DongtianCollectGear() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectGear(DateTime.UtcNow); if (ok) SaveDongtian(); return ok; }
+        // 六个操作入口共用同一持久化语义：内存生效即返回成功，但写盘失败必明示待确认并自动重试。
+        private void SaveDongtianWithNotice()
+        {
+            if (!SaveDongtianCore() && dongtian != null) dongtian.LastNotice += "（档案待落盘，自动重试中）";
+        }
+        internal bool DongtianPlant(int slot, string seedId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Plant(slot, seedId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianHarvest(int slot) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Harvest(slot, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianStartPill(string pillId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartPill(pillId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianCollectPill() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectPill(DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianStartGear(string gearId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartGear(gearId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianCollectGear() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectGear(DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
         private DongtianForm dongtianForm;
         internal void OpenDongtian()
         {
@@ -1095,6 +1130,8 @@ namespace NetBunny
             // A consent revocation whose file update failed is retried until the
             // stale grant is gone — even while the pet is hidden.
             if ((consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
+            // 洞天/灵域档案的待确认操作同款：每 15 秒重试直至双档落盘提交成功。
+            if (dongtianPersistPending && now >= dongtianPersistRetryAt) { dongtianPersistRetryAt = now + 15; TryFlushDongtianPersistence(); }
             DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
             if (probe) { PerfProbe.End(SecCleanupDrain); PerfProbe.Begin(); }
             if (!demonstrationOnly && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
@@ -1564,6 +1601,8 @@ namespace NetBunny
             // Final best-effort flush of any consent revocation whose file update
             // failed during the session, so a restart cannot resurrect it.
             if (consentRetryCleanup || consentRetryMemory) TryFlushConsentRevocation();
+            // 洞天待确认操作同样在退出前做最后一次落盘尝试。
+            if (dongtianPersistPending) TryFlushDongtianPersistence();
             if (tempWatcher != null) { tempWatcher.Dispose(); tempWatcher = null; }
             if (memoryReclaimTask != null) { try { memoryReclaimTask.Wait(6000); DrainMemoryReclaim(); } catch { } }
             // Clean only works under the local temporary directory and checks the
@@ -2202,6 +2241,72 @@ namespace NetBunny
                     check(g.DongtianPlant(0, "linggu") && !g.DongtianHarvest(0), "planting starts real-time growth and refuses early harvest");
                     g.Dongtian.Fields[0] = "linggu,1";
                     check(g.DongtianHarvest(0) && g.Dongtian.CountOf("linggu") == 2, "a ripe field harvests into the bag");
+                    // —— 洞天存档故障注入：写盘失败不静默、待确认重试、库存与重复请求守恒 ——
+                    string dtFixture = Path.Combine(Path.GetTempPath(), "dongtian-smoke-" + Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(dtFixture);
+                    try
+                    {
+                        g.dongtianPathOverride = Path.Combine(dtFixture, "dongtian-v1.txt");
+                        g.lingyuPathOverride = Path.Combine(dtFixture, "lingyu-v1.txt");
+                        g.lingyu.Materials.Clear(); g.lingyu.Grants.Clear();
+                        g.Dongtian.Bag.Clear(); g.Dongtian.Grants.Clear(); g.Dongtian.ImportSeq = 0;
+                        g.lingyu.Materials["shuiyue-lingsui"] = 3;
+                        check(g.DongtianImport("shuiyue-lingsui") && !g.DongtianPersistPending && File.Exists(g.DongtianWritePath) && File.Exists(g.LingyuWritePath),
+                            "a committed import lands in both archives at once");
+                        // 库存不足：不动任何台账与序号
+                        check(!g.DongtianImport("lingshi-absent") && g.Dongtian.ImportSeq == 1 && !g.DongtianPersistPending
+                            && g.lingyu.Grants.Count == 1 && g.Dongtian.Grants.Count == 1,
+                            "insufficient stock refuses the import without touching either ledger");
+                        // 重复请求：每次入库只移一份、序号唯一、总量守恒
+                        check(g.DongtianImport("shuiyue-lingsui") && g.DongtianImport("shuiyue-lingsui")
+                            && g.Dongtian.CountOf("shuiyue-lingsui") == 3 && g.LingyuMaterialCount("shuiyue-lingsui") == 0
+                            && g.Dongtian.Grants.Count == 3 && g.lingyu.Grants.Count == 3,
+                            "repeated imports move exactly one each with unique ledger ids");
+                        // 同一材料：入库后脱离破境材料口径；炼丹恰消耗一份
+                        check(g.DongtianStartPill("ninglu") && g.Dongtian.CountOf("shuiyue-lingsui") == 2, "brewing consumes the bag copy once");
+                        g.cultivation.RealmIndex = 0; // 炼气视角：破境材料只认灵域库存，洞天袋内副本不算
+                        check(g.BreakthroughMaterialCount == 0, "imported lingsui leaves the breakthrough material count");
+                        g.lingyu.Materials["shuiyue-lingsui"] = 2;
+                        check(g.BreakthroughMaterialCount == 2 && g.Dongtian.CountOf("shuiyue-lingsui") == 2,
+                            "lingyu stock and cave bag stay separate ledgers");
+                        g.cultivation.RealmIndex = 1; // 恢复筑基（洞天解锁门槛）
+                        // 多次连续写盘失败（双档皆锁）：内存生效但明示待确认，绝不静默报成功
+                        FileStream dtLock = new FileStream(g.DongtianWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        FileStream lyLock = new FileStream(g.LingyuWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        try
+                        {
+                            check(g.DongtianImport("shuiyue-lingsui") && g.DongtianPersistPending, "a failed write reports pending instead of silent success");
+                            check(g.DongtianImport("shuiyue-lingsui") && g.DongtianPersistPending, "repeated failed writes stay pending");
+                            g.TryFlushDongtianPersistence();
+                            check(g.DongtianPersistPending, "the flush keeps waiting while the files stay locked");
+                            check(g.Dongtian.CountOf("shuiyue-lingsui") == 4 && g.LingyuMaterialCount("shuiyue-lingsui") == 0,
+                                "pending imports still apply in memory exactly once");
+                        }
+                        finally { dtLock.Dispose(); lyLock.Dispose(); }
+                        g.TryFlushDongtianPersistence();
+                        check(!g.DongtianPersistPending && DongtianProgress.Load(g.DongtianWritePath).CountOf("shuiyue-lingsui") == 4
+                            && LingyuProgress.Load(g.LingyuWritePath).Grants.Count == 5,
+                            "the retry commits every pending import once the files free up");
+                        // 单档失败方向：只锁灵域档
+                        g.lingyu.Materials["shuiyue-lingsui"] = 1;
+                        FileStream lyLock2 = new FileStream(g.LingyuWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        try { check(g.DongtianImport("shuiyue-lingsui") && g.DongtianPersistPending, "a lingyu-only write failure is also explicit"); }
+                        finally { lyLock2.Dispose(); }
+                        g.TryFlushDongtianPersistence();
+                        check(!g.DongtianPersistPending, "the lingyu-side retry also commits");
+                        // 操作入口同款语义：锁档开炉炼丹 → 待确认；解锁后提交成功
+                        g.Dongtian.Furnace = null;
+                        FileStream dtLock2 = new FileStream(g.DongtianWritePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        try { check(g.DongtianStartPill("ninglu") && g.DongtianPersistPending && g.Dongtian.LastNotice.Contains("待落盘"), "brewing under a locked archive is marked pending too"); }
+                        finally { dtLock2.Dispose(); }
+                        g.TryFlushDongtianPersistence();
+                        check(!g.DongtianPersistPending && g.Dongtian.Furnace != null, "the pending brew is committed after the retry");
+                    }
+                    finally
+                    {
+                        g.dongtianPathOverride = null; g.lingyuPathOverride = null;
+                        try { Directory.Delete(dtFixture, true); } catch { }
+                    }
                     check(g.connectivity == null && g.battle.Progress.FreedBytes == 0 && !File.Exists(g.LingyuWritePath),
                         "growth simulation never touches network, files, or real archives");
                 }

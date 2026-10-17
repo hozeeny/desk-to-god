@@ -396,6 +396,37 @@ namespace NetBunny
                 LingyuProgress l3 = new LingyuProgress();
                 check(ReconcileTransfers(d3, l3) && d3.CountOf("shuiyue-lingsui") == 0 && l3.Grants.ContainsKey("dtin-shuiyue-lingsui-3"), "a spent lingyu stock removes the duplicate from the bag instead");
                 check(!ReconcileTransfers(d3, l3), "transfer reconcile is idempotent");
+                // —— 突然终止后的文件级重启重放 ——
+                // 方向一：灵域档已落（台账在）、洞天档仍是入库前旧版 → 重载对账回滚，材料返还灵域。
+                string crashD = Path.Combine(fixture, "dongtian-crash.txt"), crashL = Path.Combine(fixture, "lingyu-crash.txt");
+                DongtianProgress staleCave = new DongtianProgress(); // 洞天档未能写入：保持入库前状态
+                LingyuProgress committedLingyu = new LingyuProgress();
+                committedLingyu.Grants["dtin-shuiyue-lingsui-9"] = DateTime.UtcNow.Ticks; // 灵域档已扣已记账
+                staleCave.Save(crashD); committedLingyu.Save(crashL);
+                DongtianProgress replayCave = DongtianProgress.Load(crashD);
+                LingyuProgress replayLingyu = LingyuProgress.Load(crashL);
+                check(ReconcileTransfers(replayCave, replayLingyu) && replayLingyu.Materials["shuiyue-lingsui"] == 1
+                    && !replayLingyu.Grants.ContainsKey("dtin-shuiyue-lingsui-9") && replayCave.CountOf("shuiyue-lingsui") == 0,
+                    "restart replay rolls a lingyu-only committed import back to the lingyu stock");
+                replayLingyu.Save(crashL);
+                check(!ReconcileTransfers(DongtianProgress.Load(crashD), LingyuProgress.Load(crashL)), "the rolled-back replay is durable and idempotent");
+                // 方向二：洞天档已落（袋与台账在）、灵域档未落 → 重载对账补扣，库存已被他用则移除袋中副本。
+                DongtianProgress committedCave = new DongtianProgress();
+                committedCave.Bag["shuiyue-lingsui"] = 1; committedCave.Grants.Add("dtin-shuiyue-lingsui-10"); committedCave.ImportSeq = 10;
+                LingyuProgress staleLingyu = new LingyuProgress(); staleLingyu.Materials["shuiyue-lingsui"] = 1;
+                committedCave.Save(crashD); staleLingyu.Save(crashL);
+                replayCave = DongtianProgress.Load(crashD); replayLingyu = LingyuProgress.Load(crashL);
+                check(ReconcileTransfers(replayCave, replayLingyu) && !replayLingyu.Materials.ContainsKey("shuiyue-lingsui")
+                    && replayLingyu.Grants.ContainsKey("dtin-shuiyue-lingsui-10") && replayCave.CountOf("shuiyue-lingsui") == 1,
+                    "restart replay settles a dongtian-only committed import against the lingyu stock");
+                // 多次写盘失败：锁住的档案如实抛错，解锁后同一对象可直接落盘，内容不丢。
+                FileStream saveLock = new FileStream(crashD, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                int failures = 0;
+                for (int attempt = 0; attempt < 3; attempt++) { try { replayCave.Save(crashD); } catch { failures++; } }
+                saveLock.Dispose();
+                check(failures == 3, "every write against a locked archive surfaces a real error");
+                replayCave.Save(crashD);
+                check(DongtianProgress.Load(crashD).CountOf("shuiyue-lingsui") == 1, "the archive commits intact once the lock clears");
             }
             finally { try { if (Directory.Exists(fixture)) Directory.Delete(fixture, true); } catch { } }
             return "Dongtian: " + n + " checks passed (fields, alchemy, forge, buffs, archive fixture, two-way transfer reconcile).";
