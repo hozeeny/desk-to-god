@@ -1,0 +1,8 @@
+编辑目标是所附的单个人物图。请重新绘制成《桌面修仙传》“国漫仙侠·精致微缩风”的完整人物候选，重点修正原图过长的成人写实身材；保持该候选的发型类型、脸部身份气质、服装结构和主配色。
+最重要的硬性要求：大头、短而舒展的身体，人物必须只有约2.8—3头身，不能沿用参考图的六七头身。按头颅顶到下巴（不计算高发髻）算1个头长，从头颅顶到脚底总高约2.9个头长；头以下的脖子、躯干、腿和鞋加起来只有约1.9个头长。头部应占人物净高度约三分之一。重新构造肩、胯、肘、膝的自然结构，不是把原图机械压扁。比例小巧，面容仍是年轻东方成年人而非婴儿。
+风格：高质量2.5D国漫仙侠手游角色原画，精致手绘体积、自然五官与分组发丝、清楚的布料层叠和大褶，材质哑光且可信；避免照片、真人cosplay、写实成人长身、塑料玩偶、廉价Q版和粗黑轮廓。
+构图：独立竖版高清PNG，画面中恰好一个完整人物，头顶和双脚均完整可见，右向四分之三，双脚略分开站稳，双臂稍离躯干，空手，身体与四肢可辨，轮廓四周保留至少10%真正透明空间，特别给未来动作和武器留空间。统一左上柔和主光。
+凡人身份：朴素日常布衣，尚未觉醒，无灵气、光环、粒子、法阵、仙冠、玉饰、华丽兵器与高级首饰。
+透明：人物轮廓以外必须是真正alpha=0的透明，不要黑色背景、渐变背景、氛围光晕、地面、地面投影或棋盘格。禁止文字、水印、边框、编号、任何信息图排版。这是一张完整原画，不是12格图集。
+
+该候选应保留的差异：Candidate design: gentle scholarly novice, youthful and subtly androgynous, a softly oval face, fine straight brows, steady thoughtful eyes, quiet attentive expression without a grin. Jet-black hair gathered into a SMALL HIGH CLOTH-TIED BUN, with a clean swept fringe and one readable curved lock near the cheek, no crown or metal ornament. Clothing: a simple DUSTY BLUE-GRAY cross-collar KNEE-LENGTH SHORT ROBE over an ivory inner collar, dark ink trousers visibly separated below the robe, narrow cuff sleeves with modest volume, an ordinary plain brown cloth sash and one very small practical cloth pouch. Front hem is split enough to expose both lower legs; ordinary dark cloth ankle shoes. Main silhouette: rounded sleeves and a tidy A-line short robe, calm vertical balance. Palette: slate blue-gray + warm ivory + muted brown, black hair. Coarse matte cotton/linen rather than silk; no patterns or jewelry.

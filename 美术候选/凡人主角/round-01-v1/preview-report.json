@@ -1,0 +1,117 @@
+{
+  "source_version": "v4",
+  "method": "Proportional Lanczos resize, all nonzero alpha bounds, no drawing or source changes",
+  "candidates": [
+    {
+      "candidate": "A1",
+      "source": "raw/A1-v4.png",
+      "source_sha256": "446142d47cf670cb68d002b942be6e3eec80d5b4fe16307da989d0575aa58045",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_zero_percent": 60.3876,
+      "all_nonzero_alpha_bounds": [
+        0,
+        48,
+        1004,
+        1536
+      ],
+      "preview_size": [
+        220,
+        240
+      ],
+      "scale": 0.135752688172043,
+      "resized_size": [
+        136,
+        202
+      ],
+      "position": [
+        36,
+        20
+      ],
+      "preview": "previews/A1-220x240.png",
+      "light_preview": "previews/A1-220x240-light.png",
+      "dark_preview": "previews/A1-220x240-dark.png"
+    },
+    {
+      "candidate": "A2",
+      "source": "raw/A2-v4.png",
+      "source_sha256": "bf1bd2e4ab41f8375d911af7c1ded736d76b9c403d5478e4d534b1f63910f2c5",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_zero_percent": 58.9119,
+      "all_nonzero_alpha_bounds": [
+        0,
+        31,
+        992,
+        1536
+      ],
+      "preview_size": [
+        220,
+        240
+      ],
+      "scale": 0.13421926910299004,
+      "resized_size": [
+        133,
+        202
+      ],
+      "position": [
+        38,
+        20
+      ],
+      "preview": "previews/A2-220x240.png",
+      "light_preview": "previews/A2-220x240-light.png",
+      "dark_preview": "previews/A2-220x240-dark.png"
+    },
+    {
+      "candidate": "A3",
+      "source": "raw/A3-v4.png",
+      "source_sha256": "bb24561948ea666e8e30c7b699a1fc01287399fb170e3e89b8160b37fcdf2527",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_zero_percent": 57.0429,
+      "all_nonzero_alpha_bounds": [
+        0,
+        55,
+        1002,
+        1505
+      ],
+      "preview_size": [
+        220,
+        240
+      ],
+      "scale": 0.1393103448275862,
+      "resized_size": [
+        140,
+        202
+      ],
+      "position": [
+        34,
+        20
+      ],
+      "preview": "previews/A3-220x240.png",
+      "light_preview": "previews/A3-220x240-light.png",
+      "dark_preview": "previews/A3-220x240-dark.png"
+    }
+  ]
+}

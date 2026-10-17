@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "recorded_local_date": "2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "project": "桌面修仙传",
+  "branch": "feature/v6-art-foundation",
+  "art_baseline_commit": "3796d74ce710ab3d1e07ccd4fb9fc075ccec735a",
+  "main_baseline_commit": "5f8151ab46b84c5a53c00a3f5569297b8ec7e266",
+  "workflow": "Codex生成候选 → 产品方审核 → 修改确认 → Codex制作游戏资产 → 接入与验收",
+  "generator": {
+    "tool": "image_gen.imagegen",
+    "mode": "built-in",
+    "model_version": "not exposed by tool",
+    "transparent_background_requested": true,
+    "external_api_used": false,
+    "call_count": 12
+  },
+  "style": "A｜国漫仙侠·精致微缩风",
+  "current_review_version": "v4",
+  "product_approved_candidate": null,
+  "status": "awaiting_product_review",
+  "preview_method": "make_previews.py只等比缩放并合成深浅底；不重绘或改写原始PNG。完整非零alpha范围用于裁切，保留低alpha像素。",
+  "qa": {
+    "visually_reviewed": [
+      "raw/v4 full bodies",
+      "all 6 light/dark 220x240 v4 previews"
+    ],
+    "findings": [
+      "三张完整全身、空手、右向3/4，无文字/水印/边框/灵气，双手双脚可见。",
+      "发型、神情、服装剪影、配色在220×240下仍能区分，脸/领口/手脚可辨。",
+      "左上受光比v3更一致；A2整体暖度仍略高。"
+    ],
+    "limitations": [
+      "头身比为视觉估计约2.8—3，未进行骨骼精确测量；A1仍较大头。",
+      "alpha范围0..254，身体主体接近不透明；边缘有零星低alpha像素，原图不作阈值删改。",
+      "本轮是完整人物概念候选，没有制作分层PSD、12格图集、隐藏连接补绘或锚点。",
+      "未验证动态骨骼、镜像持握、真实运行窗口效果；不属于资产入库验收。"
+    ],
+    "game_integration_performed": false
+  },
+  "candidates": [
+    {
+      "id": "A1",
+      "title": "清简书生",
+      "review_image": "raw/A1-v4.png",
+      "preview": "previews/A1-220x240.png",
+      "versions": [
+        {
+          "version": "v1",
+          "operation": "generate",
+          "input": null,
+          "prompt": "prompts/A1-v1.txt",
+          "output": "raw/A1-v1.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-9a9dafc1-ddf9-4cd9-a34d-5536faf19ada.png",
+          "note": "初始三方向；人体接近真人比例，不作为本轮待审图。",
+          "sha256": "c61e430672c89221ad7e2bf76a9066bd8cddcde0999241b707d7a18b7dd2f2ff",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v2",
+          "operation": "edit",
+          "input": "raw/A1-v1.png",
+          "prompt": "prompts/A1-v2.txt",
+          "output": "raw/A1-v2.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-7d1949a6-7aac-4f13-8090-f8b9ff594cf6.png",
+          "note": "保留身份与服饰并压缩人体，比例仍偏长。",
+          "sha256": "aff9c6904d65fe5309dbb94be8504f4bc98449050597bfa073e3584a3fc48a68",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v3",
+          "operation": "edit",
+          "input": "raw/A1-v2.png",
+          "prompt": "prompts/A1-v3.txt",
+          "output": "raw/A1-v3.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-7b304faf-89c8-4494-83a5-cff88bd74c0f.png",
+          "note": "收敛到约三头身；A1幼态较强、A2/A3暖轮廓光较强。",
+          "sha256": "72724815ca7536bd9e9bf2ee28bcc2093e807036a38802da2ce2aa8ee3e2f016",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v4",
+          "operation": "edit",
+          "input": "raw/A1-v3.png",
+          "prompt": "prompts/A1-v4.txt",
+          "output": "raw/A1-v4.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-c4e5bb86-262d-425a-93f0-94063f47af81.png",
+          "note": "当前待审；统一左上柔光，A1略减幼态，产品尚未选定人物。",
+          "sha256": "446142d47cf670cb68d002b942be6e3eec80d5b4fe16307da989d0575aa58045",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        }
+      ]
+    },
+    {
+      "id": "A2",
+      "title": "山野行者",
+      "review_image": "raw/A2-v4.png",
+      "preview": "previews/A2-220x240.png",
+      "versions": [
+        {
+          "version": "v1",
+          "operation": "generate",
+          "input": null,
+          "prompt": "prompts/A2-v1.txt",
+          "output": "raw/A2-v1.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-70823582-7985-4497-b38a-9c7ce9bfa857.png",
+          "note": "初始三方向；人体接近真人比例，不作为本轮待审图。",
+          "sha256": "817e22340ea4d7764c0844ba44e3fb6a268cd9b2342133dfa6b9c8ff6e71f507",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v2",
+          "operation": "edit",
+          "input": "raw/A2-v1.png",
+          "prompt": "prompts/A2-v2.txt",
+          "output": "raw/A2-v2.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-bcb4d56e-5a15-4491-aeb6-bb19529d7b20.png",
+          "note": "保留身份与服饰并压缩人体，比例仍偏长。",
+          "sha256": "f9fc2b45d6e7bc48b5d7323c3e029d5488ca033214c52eac11e7c827c1ef490e",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v3",
+          "operation": "edit",
+          "input": "raw/A2-v2.png",
+          "prompt": "prompts/A2-v3.txt",
+          "output": "raw/A2-v3.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-7afe11df-d4e4-4f45-b960-1df6c2292d15.png",
+          "note": "收敛到约三头身；A1幼态较强、A2/A3暖轮廓光较强。",
+          "sha256": "9140d76b39d151ef0a3af4985204ff6a7473e6e85cb0329a74abbe00d3c087d2",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v4",
+          "operation": "edit",
+          "input": "raw/A2-v3.png",
+          "prompt": "prompts/A2-v4.txt",
+          "output": "raw/A2-v4.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-ef9cf022-0a7d-4ab5-a9a0-e337f39967c8.png",
+          "note": "当前待审；统一左上柔光，A1略减幼态，产品尚未选定人物。",
+          "sha256": "bf1bd2e4ab41f8375d911af7c1ded736d76b9c403d5478e4d534b1f63910f2c5",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        }
+      ]
+    },
+    {
+      "id": "A3",
+      "title": "利落少年",
+      "review_image": "raw/A3-v4.png",
+      "preview": "previews/A3-220x240.png",
+      "versions": [
+        {
+          "version": "v1",
+          "operation": "generate",
+          "input": null,
+          "prompt": "prompts/A3-v1.txt",
+          "output": "raw/A3-v1.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-bdd15976-0916-4207-8584-65eebc479021.png",
+          "note": "初始三方向；人体接近真人比例，不作为本轮待审图。",
+          "sha256": "66949a566ea9494242a56046f80ac847f939da47d5ae17b8d4019ec4627b20bf",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v2",
+          "operation": "edit",
+          "input": "raw/A3-v1.png",
+          "prompt": "prompts/A3-v2.txt",
+          "output": "raw/A3-v2.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-d11eb318-6382-49de-bf34-acc07fa11be6.png",
+          "note": "保留身份与服饰并压缩人体，比例仍偏长。",
+          "sha256": "671d62440b8ab7610bb6736bb57ae1af63c72ad9d8fb01b87c2ad8b78094c628",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v3",
+          "operation": "edit",
+          "input": "raw/A3-v2.png",
+          "prompt": "prompts/A3-v3.txt",
+          "output": "raw/A3-v3.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-a1998208-a399-439e-985d-d5af23f46cb5.png",
+          "note": "收敛到约三头身；A1幼态较强、A2/A3暖轮廓光较强。",
+          "sha256": "e2e0d56c0f0c6f52e70e817d5c7a3ae009bc37a18e3fec6c65588c044889e91d",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        },
+        {
+          "version": "v4",
+          "operation": "edit",
+          "input": "raw/A3-v3.png",
+          "prompt": "prompts/A3-v4.txt",
+          "output": "raw/A3-v4.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-8b9c1df2-9683-487c-80f2-722bbda3d414.png",
+          "note": "当前待审；统一左上柔光，A1略减幼态，产品尚未选定人物。",
+          "sha256": "bb24561948ea666e8e30c7b699a1fc01287399fb170e3e89b8160b37fcdf2527",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "original_copy_verified": true
+        }
+      ]
+    }
+  ],
+  "file_verification": {
+    "raw_count": 12,
+    "raw_copies_identical_to_generator_originals": true,
+    "prompt_count": 12,
+    "preview_count": 9,
+    "preview_dimensions": [
+      220,
+      240
+    ],
+    "readme_local_links_verified": 38
+  }
+}
