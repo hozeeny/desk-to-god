@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-18",
+  "branch": "feature/v6-art-foundation",
+  "delivery": "current playable demo; complete GUI acceptance deferred by user",
+  "package": "美术Demo\\桌面修仙-美术Demo.zip",
+  "package_bytes": 36105971,
+  "package_sha256": "e326ab00258695577173ca6e60242414059fd50312377f9cb8381dde4ea6971a",
+  "executable": "美术Demo\\runtime\\桌面修仙-美术Demo.exe",
+  "executable_sha256": "56f57d2abf6529fb718ecad11e8b2f023112dadaef8f1bcc50654cd5bd750b46",
+  "new_asset_png_count": 24,
+  "legacy_asset_file_count": 22,
+  "archive_file_count": 50,
+  "archive_crc": "passed",
+  "archive_contents_match_runtime": true,
+  "latest_binary_memory_smoke": "14 checks passed",
+  "legacy_regression": "selftest passed; adventure-smoke 116/20/22/81 passed",
+  "full_gui_acceptance": "deferred_by_user",
+  "desktop_capture": "qa/gui-accept-20261018-r4/01-mortal-playable.png",
+  "desktop_capture_note": "Real desktop capture before final minor text/layout cleanup; interrupted run was not a complete acceptance pass."
+}

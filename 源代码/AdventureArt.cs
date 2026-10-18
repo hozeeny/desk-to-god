@@ -12,6 +12,7 @@ namespace NetBunny
     internal sealed class AdventureRenderState
     {
         internal string Kind = "Hero", ThemeCode = "OTHER", Phase = "run", WeaponId = "spear", Label = "", MonsterKind = "skeleton";
+        internal string HeroStage = "mortal";
         internal double Time, PhaseTime, MoveSpeed = 100, HealthRatio = 1, GlowProgress = -1, AttackProgress, Opacity = 1, Cycle = Double.NaN, DeathProgress, HitFlash;
         internal bool FacingRight = true;
         internal int Level = 1, QueueNumber;
@@ -34,11 +35,16 @@ namespace NetBunny
         private readonly Font big = new Font("Microsoft YaHei UI", 17f, FontStyle.Bold, GraphicsUnit.Pixel);
         private Bitmap buildings;
         private readonly RasterActorRenderer raster;
+        private readonly ArtDemoPack artDemo;
         private readonly Rectangle[] buildingCells = new Rectangle[6];
         private readonly Bitmap[] buildingCache = new Bitmap[6];
         private bool disposed;
-        internal AdventureRenderer(string assetDirectory)
+        internal AdventureRenderer(string assetDirectory) : this(assetDirectory, Environment.GetEnvironmentVariable(ArtDemoPack.EnvironmentVariable)) { }
+        internal AdventureRenderer(string assetDirectory, string artDemoDirectory)
         {
+            try { artDemo = String.IsNullOrWhiteSpace(artDemoDirectory) ? null : new ArtDemoPack(artDemoDirectory); }
+            catch { tiny.Dispose(); caption.Dispose(); big.Dispose(); throw; }
+            if (artDemo != null) { raster = new RasterActorRenderer(""); return; }
             raster = new RasterActorRenderer(assetDirectory);
             if (!String.IsNullOrEmpty(assetDirectory))
             {
@@ -77,7 +83,15 @@ namespace NetBunny
                 string kind = (s.Kind ?? "Hero").ToLowerInvariant();
                 bool diskLandmark = (kind == "landmark" || kind == "castle") && !String.IsNullOrEmpty(s.DiskLabel);
                 bool growthLandmark = (kind == "landmark" || kind == "castle") && !String.IsNullOrEmpty(s.GrowthLabel);
-                g.ScaleTransform(size.Width / 220f, size.Height / (growthLandmark ? 280f : diskLandmark ? 250f : 220f));
+                float logicalHeight = growthLandmark ? 280f : diskLandmark ? 250f : 220f;
+                if (artDemo != null)
+                {
+                    // Keep the illustration and UI proportions at the real 220x240 window.
+                    // The old renderer intentionally retains its original mapping below.
+                    float scale = Math.Min(size.Width / 220f, size.Height / logicalHeight);
+                    g.TranslateTransform((size.Width - 220 * scale) / 2, (size.Height - logicalHeight * scale) / 2); g.ScaleTransform(scale, scale);
+                }
+                else g.ScaleTransform(size.Width / 220f, size.Height / logicalHeight);
                 if (kind == "landmark" || kind == "castle") DrawLandmark(g, s);
                 else if (kind == "evilboss") DrawEvilBoss(g, s);
                 else if (kind == "skeleton" || kind == "monster" || kind == "boss") DrawSkeleton(g, s, kind == "boss");
@@ -102,6 +116,7 @@ namespace NetBunny
         }
         private void DrawHero(Graphics g, AdventureRenderState s)
         {
+            if (artDemo != null) { artDemo.DrawHero(g, s); DrawHeroStatus(g, s); return; }
             string phase = (s.Phase ?? "run").ToLowerInvariant();
             double cycle = Double.IsNaN(s.Cycle) ? s.Time * (.65 + Math.Min(2.6, Math.Abs(s.MoveSpeed) / 90)) : s.Cycle;
             double a = cycle * Math.PI * 2, wave = Math.Sin(a), opposite = Math.Sin(a + Math.PI);
@@ -394,6 +409,13 @@ namespace NetBunny
         { Ellipse(g, x - 50, y - 11, 100, 15, Color.FromArgb(84, 65, 72), Ink, 2); for (int i = 0; i < 7; i++) Ellipse(g, x - 45 + i * 13, y - 6 - i % 2 * 3, 14, 8, i % 2 == 0 ? Color.FromArgb(138, 110, 103) : Color.FromArgb(106, 85, 90), Ink, 1); }
         private void DrawEvilBoss(Graphics g, AdventureRenderState s)
         {
+            if (artDemo != null)
+            {
+                artDemo.DrawMonster(g, s, true, true);
+                if (s.Phase != "shatter" && s.Phase != "defeated" && s.Phase != "dead" && s.Phase != "vanish")
+                { MonsterHealth(g, s, true, 26); DrawLabel(g, String.IsNullOrEmpty(s.Label) ? "蜃楼镜主" : s.Label, 110, 13, Color.FromArgb(224, 198, 243), caption); }
+                return;
+            }
             bool dying = s.Phase == "shatter" || s.Phase == "defeated";
             float alpha = (float)(dying ? 1-Clamp(s.DeathProgress) : 1);
             if (alpha <= 0) return;
@@ -429,6 +451,17 @@ namespace NetBunny
             bool shatter = phase == "defeated" || phase == "shatter" || phase == "dead" || phase == "vanish";
             double death = Clamp(s.DeathProgress);
             if (shatter && death >= 1) return;
+            if (artDemo != null)
+            {
+                artDemo.DrawMonster(g, s, boss, false);
+                if (!shatter)
+                {
+                    MonsterHealth(g, s, boss, 26);
+                    if (!String.IsNullOrEmpty(s.Label)) DrawLabel(g, s.Label, 110, 13, Color.FromArgb(255, 235, 186), caption);
+                    if (s.QueueNumber > 0) { Ellipse(g, 176, 43, 24, 24, Color.FromArgb(244, 219, 153), Ink, 1.5f); DrawTextCenter(g, s.QueueNumber.ToString(), new RectangleF(176, 43, 24, 24), Ink, caption); }
+                }
+                return;
+            }
             Shadow(g, 54, 181, 109, 14, (int)(44 * (shatter ? 1 - death : 1)));
             if (raster.DrawMonster(g, s, boss))
             {
@@ -503,6 +536,12 @@ namespace NetBunny
         }
         private void DrawLandmark(Graphics g, AdventureRenderState s)
         {
+            if (artDemo != null)
+            {
+                artDemo.DrawLandmark(g, s);
+                DrawLabel(g, "清虚洞天", 110, 208, Color.FromArgb(249, 230, 185), caption);
+                return;
+            }
             string theme = (s.ThemeCode ?? "OTHER").ToUpperInvariant(); int index = Array.IndexOf(new[] { "OTHER", "CN", "JP", "US", "TW", "HK" }, theme); if (index < 0) index = 0;
             Shadow(g, 24, 184, 170, 18, 58);
             if (buildings != null)
@@ -597,6 +636,7 @@ namespace NetBunny
         }
         private void DrawLoot(Graphics g, AdventureRenderState s)
         {
+            if (artDemo != null) { artDemo.DrawLoot(g, s); DrawLabel(g, String.IsNullOrEmpty(s.Label) ? "获得修行资粮" : s.Label, 110, 192, Gold, caption); return; }
             double t = s.Time;
             for (int i = 4; i > 0; i--) Ellipse(g, 110 - i * 17, 108 - i * 15, i * 34, i * 30, Color.FromArgb(15 + i * 3, 255, 207, 112), Color.Transparent, 0);
             using (Pen orbit = new Pen(Color.FromArgb(130, 255, 221, 141), 2)) g.DrawEllipse(orbit, 53, 156, 113, 14);
@@ -606,6 +646,7 @@ namespace NetBunny
         }
         private void DrawEffect(Graphics g, AdventureRenderState s)
         {
+            if (artDemo != null) { artDemo.DrawProjectile(g, s.WeaponId, new RectangleF(14, 14, 192, 192), s.Time, s.AttackProgress); return; }
             double p = Clamp(s.AttackProgress); if (p <= 0) p = .5;
             if (s.WeaponId == "blackhole")
             {
@@ -621,7 +662,7 @@ namespace NetBunny
             { for (int i = 0; i < 4; i++) using (Pen wave = new Pen(Color.FromArgb(220 - i * 43, i == 0 ? Color.White : Color.FromArgb(104, 230, 239)), 5 - i * .7f)) g.DrawArc(wave, 17 + i * 21, 25 + i * 12, 122, 161 - i * 20, -74, 148); }
         }
         internal Bitmap RenderWeaponIcon(string id, int size)
-        { Bitmap image = new Bitmap(size, size, PixelFormat.Format32bppPArgb); using (Graphics g = Graphics.FromImage(image)) { g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic; if (!raster.DrawWeaponIcon(g, id, new RectangleF(size * .08f, size * .08f, size * .84f, size * .84f))) { g.ScaleTransform(size / 110f, size / 110f); g.TranslateTransform(55, 59); g.ScaleTransform(.68f, .68f); DrawWeapon(g, id, 0, 0, 12, .4, 0); } } return image; }
+        { Bitmap image = new Bitmap(size, size, PixelFormat.Format32bppPArgb); using (Graphics g = Graphics.FromImage(image)) { g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic; if (artDemo != null) artDemo.DrawWeaponIcon(g, id, new RectangleF(size * .08f, size * .08f, size * .84f, size * .84f)); else if (!raster.DrawWeaponIcon(g, id, new RectangleF(size * .08f, size * .08f, size * .84f, size * .84f))) { g.ScaleTransform(size / 110f, size / 110f); g.TranslateTransform(55, 59); g.ScaleTransform(.68f, .68f); DrawWeapon(g, id, 0, 0, 12, .4, 0); } } return image; }
         private static void HealthBar(Graphics g, float x, float y, float w, float h, double health, Color fill)
         {
             using (GraphicsPath bg = KnightBrand.Rounded(x, y, w, h, h / 2)) using (SolidBrush b = new SolidBrush(Color.FromArgb(210, 32, 37, 54))) g.FillPath(b, bg);
@@ -669,7 +710,49 @@ namespace NetBunny
         private static Color Hue(double h)
         { h = (h % 1 + 1) % 1 * 6; int i = (int)h; double f = h - i; int down = (int)(255 * (1 - f)), up = (int)(255 * f); switch (i) { case 0: return Color.FromArgb(255, up, 95); case 1: return Color.FromArgb(down, 255, 95); case 2: return Color.FromArgb(95, 255, up); case 3: return Color.FromArgb(95, down, 255); case 4: return Color.FromArgb(up, 95, 255); default: return Color.FromArgb(255, 95, down); } }
         private static double Clamp(double value) { return Double.IsNaN(value) ? 0 : Math.Max(0, Math.Min(1, value)); }
-        public void Dispose() { if (disposed) return; disposed = true; if (buildings != null) buildings.Dispose(); foreach (Bitmap cell in buildingCache) if (cell != null) cell.Dispose(); raster.Dispose(); tiny.Dispose(); caption.Dispose(); big.Dispose(); }
+        public void Dispose() { if (disposed) return; disposed = true; if (buildings != null) buildings.Dispose(); foreach (Bitmap cell in buildingCache) if (cell != null) cell.Dispose(); if (artDemo != null) artDemo.Dispose(); raster.Dispose(); tiny.Dispose(); caption.Dispose(); big.Dispose(); }
+        internal static string ArtDemoSelfTest(string artDemoDirectory)
+        {
+            int checks = 0;
+            Action<bool, string> check = delegate(bool ok, string detail) { if (!ok) throw new InvalidOperationException("Art demo: " + detail); checks++; };
+            // Explicit constructor avoids mutating process-wide environment or reading old Assets.
+            using (AdventureRenderer renderer = new AdventureRenderer("", artDemoDirectory))
+            {
+                check(renderer.artDemo != null, "independent illustration pack selected"); renderer.artDemo.Validate(check);
+                HashSet<ulong> stages = new HashSet<ulong>();
+                foreach (string stage in new[] { "mortal", "qishi", "zhuji" })
+                {
+                    using (Bitmap frame = renderer.Render(new AdventureRenderState { HeroStage = stage, Size = new Size(220, 240), Phase = "idle", Time = .4 })) stages.Add(Hash(frame));
+                    foreach (Size size in new[] { new Size(176, 192), new Size(220, 240), new Size(264, 288) })
+                    foreach (bool facing in new[] { false, true })
+                    foreach (string phase in new[] { "idle", "run", "attack", "pant", "dying", "grave", "revive" })
+                    using (Bitmap frame = renderer.Render(new AdventureRenderState { HeroStage = stage, Size = size, Phase = phase, FacingRight = facing, Time = .3, Cycle = .21, AttackProgress = phase == "attack" ? .55 : 0, DeathProgress = .45 }))
+                    { check(EdgesEmpty(frame), stage + " " + phase + " " + size + " " + facing + " has clear outer border"); check(Hash(frame) != HashEmpty(frame.Width, frame.Height), stage + " " + phase + " visible"); }
+                    using (Bitmap first = renderer.Render(new AdventureRenderState { HeroStage = stage, Phase = "run", Time = 0, Cycle = 0 }))
+                    using (Bitmap next = renderer.Render(new AdventureRenderState { HeroStage = stage, Phase = "run", Time = .2, Cycle = .21 })) check(Hash(first) != Hash(next), stage + " full illustration bob/lean and independent weapon animate");
+                }
+                check(stages.Count == 3, "three different stage illustrations");
+                foreach (string id in new[] { "skeleton", "slime", "imp", "bat", "mushroom", "elite", "elite-mushroom", "mirror-shard", "mirror-wraith", "mirror-boss" })
+                {
+                    using (Bitmap alive = renderer.Render(new AdventureRenderState { Kind = "Skeleton", MonsterKind = id, Time = .4, HealthCurrent = 1, HealthMaximum = 900 })) check(Hash(alive) != HashEmpty(alive.Width, alive.Height), id + " visible with one HP");
+                    using (Bitmap gone = renderer.Render(new AdventureRenderState { Kind = "Skeleton", MonsterKind = id, Phase = "shatter", DeathProgress = 1, Label = "must disappear" })) check(Hash(gone) == HashEmpty(gone.Width, gone.Height), id + " completed shatter clears body and UI");
+                }
+                using (Bitmap first = renderer.Render(new AdventureRenderState { Kind = "Skeleton", MonsterKind = "mirror-wraith", Phase = "shatter", DeathProgress = 0, HitFlash = 0 }))
+                using (Bitmap hit = renderer.Render(new AdventureRenderState { Kind = "Skeleton", MonsterKind = "mirror-wraith", Phase = "shatter", DeathProgress = 0, HitFlash = 1 })) check(Hash(first) == Hash(hit), "shatter uses death progress independently of hit flash");
+                foreach (string weapon in RasterActorRenderer.WeaponIds)
+                {
+                    using (Bitmap icon = renderer.RenderWeaponIcon(weapon, 80)) check(Hash(icon) != HashEmpty(80, 80), weapon + " new weapon icon");
+                    using (Bitmap effect = renderer.Render(new AdventureRenderState { Kind = "Effect", WeaponId = weapon, Time = .2, AttackProgress = .5 })) check(Hash(effect) != HashEmpty(effect.Width, effect.Height), weapon + " new projectile");
+                }
+                using (Bitmap landmark = renderer.Render(new AdventureRenderState { Kind = "Landmark", Size = new Size(200, 280), Time = 1, Label = "可处理：等待扫描", GrowthLabel = "等待临时文件采样", GrowthRatio = .5, DiskLabel = "C盘剩余：等待采样", DiskFreeRatio = .7 }))
+                using (Bitmap otherLegacyState = renderer.Render(new AdventureRenderState { Kind = "Landmark", Size = new Size(200, 280), Time = 5, Label = "不得显示的旧标签", GrowthLabel = "不得显示的旧生长字段", GrowthRatio = .1, DiskLabel = "不得显示的旧磁盘字段", DiskFreeRatio = .1 })) check(Hash(landmark) != HashEmpty(200, 280) && Hash(landmark) == Hash(otherLegacyState), "new landmark keeps its fixed cultivation label and ignores legacy fields and star animation");
+                using (Bitmap faded = renderer.Render(new AdventureRenderState { Opacity = 0 })) check(Hash(faded) == HashEmpty(faded.Width, faded.Height), "zero opacity remains transparent");
+                int before = GetGuiResources(Process.GetCurrentProcess().Handle, 0);
+                for (int i = 0; i < 150; i++) using (Bitmap frame = renderer.Render(new AdventureRenderState { HeroStage = i % 2 == 0 ? "qishi" : "zhuji", Kind = i % 3 == 0 ? "Skeleton" : "Hero", Time = i / 30.0, Cycle = i / 60.0 })) { }
+                int after = GetGuiResources(Process.GetCurrentProcess().Handle, 0); check(after <= before + 3, "repeated illustration rendering releases native GDI handles");
+            }
+            return "Art demo: " + checks + " assertions passed. Full illustration prototype, 3 stages, 5 common monsters, 2 elites, mirrors, aspect-preserving 80/100/120% output, projectiles, transparent shatter and GDI ownership. " + ArtDemoPack.MappingDescription;
+        }
         internal static void ExportPreview(string assetDirectory, string path)
         {
             string[] themes = { "OTHER", "CN", "JP", "US", "TW", "HK" }, names = { "铠甲骑士", "剑修", "日本武士", "牛仔", "青蛙", "黑帮小弟" };

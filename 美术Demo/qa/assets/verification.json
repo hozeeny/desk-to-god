@@ -1,0 +1,153 @@
+{
+  "asset_count": 24,
+  "source_and_output_hashes_verified": true,
+  "all_pixels_match_declared_operations": true,
+  "visible_source_border_warnings": 0,
+  "scene_copies_byte_identical": true,
+  "assets": [
+    {
+      "id": "hero-mortal",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "hero-qishi",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "hero-zhuji",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "monster-guardian",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "monster-slime",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "monster-imp",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "monster-bat",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "monster-mushroom",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "elite-guardian",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "elite-mushroom",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "mirror-shard",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "mirror-wraith",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "mirror-boss",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "weapon-mortal",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "weapon-qishi",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "weapon-zhuji",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "item-spirit-stone",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "item-pill",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "item-material",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "item-scroll",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "item-marrow",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "landmark-dongtian",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "scene-battle",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    },
+    {
+      "id": "scene-dongtian",
+      "source_sha_verified": true,
+      "output_sha_verified": true,
+      "pixels_match_declared_mechanical_operations": true
+    }
+  ]
+}

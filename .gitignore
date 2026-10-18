@@ -17,6 +17,13 @@ Thumbs.db
 /界面验证/**/*.exe
 /内存验证/**/*.exe
 
+# Playable art Demo: local executable copies and verification output
+/美术Demo/runtime/
+/美术Demo/verification/
+/美术Demo/*.zip
+# Interrupted desktop captures remain local; selected evidence is added explicitly
+/美术Demo/qa/gui-accept-*/
+
 # Local credentials and environment configuration
 .env
 .env.*

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "defaults": { "max_size": [512, 512], "require_alpha": true, "require_transparency": true, "trim_transparent": false },
+  "assets": [
+    { "id": "hero-mortal", "kind": "hero", "source": "../美术候选/凡人主角/M2-正式基准/raw/mortal-M2-polish-v2.png", "max_size": [768, 1152], "note": "Approved mortal M2 polish v2; complete illustration, not skeletal parts." },
+    { "id": "hero-qishi", "kind": "hero", "source": "generated/hero-qishi-a.png", "max_size": [768, 1152], "note": "Production selection A; retain B unchanged as candidate." },
+    { "id": "hero-zhuji", "kind": "hero", "source": "generated/hero-zhuji-a.png", "max_size": [768, 1152], "note": "Production selection A; retain B unchanged as candidate." },
+    { "id": "monster-guardian", "kind": "monster", "source": "generated/monsters-common-sheet.png", "grid": { "columns": 3, "rows": 2, "index": 0 } },
+    { "id": "monster-slime", "kind": "monster", "source": "generated/monsters-common-sheet.png", "grid": { "columns": 3, "rows": 2, "index": 1 } },
+    { "id": "monster-imp", "kind": "monster", "source": "generated/monsters-common-sheet.png", "grid": { "columns": 3, "rows": 2, "index": 2 } },
+    { "id": "monster-bat", "kind": "monster", "source": "generated/monsters-common-sheet.png", "rect": [0, 512, 548, 512], "note": "Rect widened for full bat wing; next mushroom begins beyond x574 at alpha>24." },
+    { "id": "monster-mushroom", "kind": "monster", "source": "generated/monsters-common-sheet.png", "rect": [550, 512, 474, 512] },
+    { "id": "elite-guardian", "kind": "elite", "source": "generated/monsters-common-sheet.png", "grid": { "columns": 3, "rows": 2, "index": 5 } },
+    { "id": "elite-mushroom", "kind": "elite", "source": "generated/monsters-mirror-sheet.png", "rect": [0, 0, 735, 630] },
+    { "id": "mirror-shard", "kind": "mirror", "source": "generated/monsters-mirror-sheet.png", "rect": [735, 0, 519, 554], "note": "Cut ends before boss horn pixels at y554; complete shard main pixels end at y552." },
+    { "id": "mirror-wraith", "kind": "mirror", "source": "generated/monsters-mirror-sheet.png", "rect": [0, 630, 620, 624], "keep_rects": [[0, 630, 580, 430], [0, 1060, 598, 40], [0, 1100, 620, 154]], "note": "Authorized mechanical multi-rectangle isolation: lower-right neighbour is mirror-boss. Source RGBA copied exactly inside declared ROIs; no alpha cutoff, recolour or redraw." },
+    { "id": "mirror-boss", "kind": "mirror-boss", "source": "generated/monsters-mirror-sheet.png", "rect": [580, 540, 674, 714], "keep_rects": [[780, 540, 120, 20], [735, 560, 519, 70], [580, 630, 674, 430], [598, 1060, 656, 40], [620, 1100, 634, 154]], "note": "Authorized mechanical multi-rectangle isolation: top-left neighbour is elite-mushroom, upper-right is mirror-shard, lower-left is mirror-wraith. Separate top horn ROI excludes the shard tip. All RGBA inside declared ROIs retained without alpha cutoff; complete illustration, not skeletal parts." },
+    { "id": "weapon-mortal", "kind": "weapon", "source": "generated/gear-items-sheet.png", "rect": [0, 0, 384, 560] },
+    { "id": "weapon-qishi", "kind": "weapon", "source": "generated/gear-items-sheet.png", "rect": [384, 0, 384, 560] },
+    { "id": "weapon-zhuji", "kind": "weapon", "source": "generated/gear-items-sheet.png", "rect": [768, 0, 384, 560] },
+    { "id": "item-spirit-stone", "kind": "item", "source": "generated/gear-items-sheet.png", "rect": [1152, 0, 384, 560], "note": "Demo resource illustration only; does not add a currency inventory." },
+    { "id": "item-pill", "kind": "item", "source": "generated/gear-items-sheet.png", "rect": [0, 560, 360, 464], "note": "Ends before neighbouring herb pixels begin at x378." },
+    { "id": "item-material", "kind": "item", "source": "generated/gear-items-sheet.png", "rect": [360, 550, 408, 474], "note": "Widened left to retain herb leaf crossing original x384 grid boundary." },
+    { "id": "item-scroll", "kind": "item", "source": "generated/gear-items-sheet.png", "rect": [768, 560, 412, 464], "note": "Widened right to retain scroll edge reaching x1162." },
+    { "id": "item-marrow", "kind": "item", "source": "generated/gear-items-sheet.png", "rect": [1190, 560, 346, 464], "note": "Begins after scroll edge, preserving all marrow main pixels." },
+    { "id": "landmark-dongtian", "kind": "landmark", "source": "generated/landmark-dongtian.png", "max_size": [768, 768] },
+    { "id": "scene-battle", "kind": "scene", "source": "generated/scene-battle.png", "max_size": [1536, 1024], "allow_opaque": true, "copy_source": true, "note": "Opaque scene background; copy original PNG bytes without alpha edits or resize." },
+    { "id": "scene-dongtian", "kind": "scene", "source": "generated/scene-dongtian.png", "max_size": [1536, 1024], "allow_opaque": true, "copy_source": true, "note": "Opaque scene background; copy original PNG bytes without alpha edits or resize." }
+  ]
+}

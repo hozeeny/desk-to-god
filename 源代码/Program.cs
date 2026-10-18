@@ -22,6 +22,32 @@ namespace NetBunny
         [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
         [STAThread] static void Main(string[] args)
         {
+#if ART_DEMO_ONLY
+            // The separately named Demo executable is fail-closed even when it
+            // is double-clicked without arguments; it cannot open a live profile.
+            if (args.Length == 0) args = new[] { "--art-demo" };
+            if (args[0] != "--art-demo" && args[0] != "--art-demo-accept" && args[0] != "--art-demo-smoke")
+            {
+                Environment.ExitCode = 1;
+                return;
+            }
+#endif
+            if (args.Length > 0 && (args[0] == "--art-demo" || args[0] == "--art-demo-accept" || args[0] == "--art-demo-smoke"))
+            {
+                try
+                {
+                    SetProcessDPIAware(); Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
+                    Environment.ExitCode = ArtDemoSession.Run(args);
+                }
+                catch (Exception e)
+                {
+                    Environment.ExitCode = 1;
+                    string log = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "art-demo-error.log");
+                    try { File.WriteAllText(log, e.ToString()); } catch { }
+                    if (args[0] == "--art-demo") MessageBox.Show(e.Message, "美术 Demo 未能启动");
+                }
+                return;
+            }
             // This process only: legacy csc builds otherwise negotiate obsolete TLS.
             ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;
             if (args.Length > 0 && args[0] == "--growth-sim")

@@ -19,6 +19,7 @@ namespace NetBunny
             public void Dispose() { Window.Dispose(); }
         }
         readonly List<Shot> shots = new List<Shot>();
+        readonly ArtDemoPack artDemo = ArtDemoPack.LoadFromEnvironment();
         double repaint;
         bool disposed;
         internal int ActiveCount { get { return shots.Count; } }
@@ -49,10 +50,10 @@ namespace NetBunny
             }
             if (repaint >= .025) repaint = 0;
         }
-        static void Paint(Shot s)
+        void Paint(Shot s)
         {
             double progress = Math.Min(1, s.Age / s.Duration);
-            if (s.Weapon == "laser")
+            if (s.Weapon == "laser" && artDemo == null)
             {
                 // A beam spans its real source and target, with a narrow transparent HWND.
                 int pad = 24;
@@ -72,7 +73,7 @@ namespace NetBunny
             }
             PaintProjectile(s,progress);
         }
-        static void PaintProjectile(Shot s,double progress)
+        void PaintProjectile(Shot s,double progress)
         {
             double t=s.Weapon=="boomerang" ? Math.Sin(progress*Math.PI) : Math.Min(1,progress*1.5);
             if(s.Weapon=="blackhole")t=1;
@@ -80,6 +81,10 @@ namespace NetBunny
             int size=(int)(192*s.Scale);Bitmap frame=new Bitmap(size,size,PixelFormat.Format32bppPArgb);
             using(Graphics g=Graphics.FromImage(frame))
             {
+                if (artDemo != null) { g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic; g.PixelOffsetMode = PixelOffsetMode.HighQuality; }
+                if (artDemo != null) artDemo.DrawProjectile(g, s.Weapon, new RectangleF(0, 0, size, size), s.Age, progress);
+                else
+                {
                 g.SmoothingMode=SmoothingMode.AntiAlias;g.TranslateTransform(size/2f,size/2f);g.ScaleTransform(s.Scale,s.Scale);
                 float fade=(float)Math.Min(1,(1-progress)*4);
                 if(s.Weapon=="blackhole")
@@ -110,10 +115,11 @@ namespace NetBunny
                     float r=(float)(25+progress*38);using(Pen p=new Pen(Color.FromArgb((int)(230*fade),s.Weapon=="greatsword"?Color.Orchid:Color.LightGoldenrodYellow),s.Weapon=="greatsword"?9:4))g.DrawArc(p,-r,-r,r*2,r*2,(float)(-100+progress*170),130);
                     for(int i=0;i<5;i++){double a=i*1.256+progress;using(Pen p=new Pen(Color.FromArgb((int)(200*fade),Color.White),2))g.DrawLine(p,(float)Math.Cos(a)*r*.6f,(float)Math.Sin(a)*r*.6f,(float)Math.Cos(a)*r,(float)Math.Sin(a)*r);}
                 }
+                }
             }
             s.Window.Location=new Point((int)x-size/2,(int)y-size/2);s.Window.Present(frame);if(!s.Window.Visible)s.Window.Show();
         }
         internal void Clear() { foreach(Shot s in shots)s.Dispose();shots.Clear(); }
-        public void Dispose() { if(disposed)return;disposed=true;Clear(); }
+        public void Dispose() { if(disposed)return;disposed=true;Clear();if(artDemo!=null)artDemo.Dispose(); }
     }
 }

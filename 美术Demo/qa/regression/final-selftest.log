@@ -1,0 +1,27 @@
+NetworkEngine: 24 deterministic checks passed (driver not opened).
+Firewall helpers: PASS (6 checks; no firewall changes)
+Knight pet: 213 deterministic assertions passed; no network settings changed.
+TrafficLedger: 20 deterministic checks passed (no network traffic or system setting changes).
+SpeedTest: 14 assertions passed (pure logic; no external traffic)
+NetworkTools: 22 checks passed
+Cleanup self-test: 57 passed (isolated fixtures only; user Temp untouched).
+Region theme self-test: 30 passed (no external query).
+Disk space: 35 assertions passed (synthetic snapshots only; no disk read or write).
+Live Temp population: 10 checks passed (synthetic, no deletion).
+Enemy balance: 56 checks passed (120-second nominal normal-combat target).
+Memory reclaim feedback: 3 checks passed (no process was trimmed).
+Combat tactics: 114 assertions passed (pure movement, including 30000 simulated frames; no filesystem, network, cleanup, or progress writes).
+Enemy field budget: 36 assertions passed (synthetic data only; no filesystem, cleanup, network, or progress operations).
+Cultivation: 74 checks passed (mortal stage, awakening, twelve layers, bottleneck, isolated file fixture).
+Cultivation combat: 6 checks passed (pure functions).
+Cultivation encounter: 6 checks passed (pure logic; no spawn, no files).
+Cultivation pacing: 10 checks passed (analytic model; no timers, no files).
+Baiye: 38 checks passed (catalog, settlement, resonance, isolated archive fixture).
+Baiye tracker: 22 checks passed (synthetic foreground/idle sources; no system state read).
+Lingyu: 74 checks passed (realm gating, idempotent settlement, archive fixture, mirage full run, interrupted fights, jiyuan chains).
+Dongtian: 32 checks passed (fields, alchemy, forge, buffs, archive fixture, two-way transfer reconcile).
+Maintenance consent: 36 checks passed (isolated file fixture; fail-closed writes verified).
+Grounded hero rig: 2430 assertions passed; constant world-space stance feet, horizontal contact, forward knees, fixed bone lengths, continuous recovery and stationary support.
+Adventure model: 103 assertions passed (synthetic combat plus isolated save fixture; user Temp and real progress untouched).
+Adventure art: 73 assertions passed; 60 distinct smooth run poses, seamless cycle, 6 skins, 6 buildings, 7 weapons, no GDI handle growth.
+V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership.

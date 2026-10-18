@@ -12,7 +12,7 @@ using System.Windows.Forms;
 
 namespace NetBunny
 {
-    internal sealed class AdventureController : IDisposable
+    internal sealed partial class AdventureController : IDisposable
     {
         private readonly Form owner;
         private readonly AdventureRenderer renderer;
@@ -106,9 +106,11 @@ namespace NetBunny
         private bool lastInventoryComplete;
         private double lastInventoryObservation = -1;
         internal const double IdleInventoryIntervalSeconds = 2, ActiveInventoryIntervalSeconds = 2;
-        public AdventureController(Form owner, string assetDirectory, bool demonstrationOnly = false, Func<double> waveClock = null)
+        public AdventureController(Form owner, string assetDirectory, bool demonstrationOnly = false, Func<double> waveClock = null, bool artDemoRuntime = false)
         {
             if (owner == null) throw new ArgumentNullException("owner"); this.owner = owner; this.demonstrationOnly = demonstrationOnly;
+            if (artDemoRuntime && !demonstrationOnly) throw new ArgumentException("美术 Demo 必须使用隔离内存模式。");
+            this.artDemoRuntime = artDemoRuntime;
 
             renderer = new AdventureRenderer(assetDirectory);
             region = new RegionThemeService();
@@ -154,7 +156,7 @@ namespace NetBunny
             }
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
-            if (demonstrationOnly) { consent.CleanupEnabled = consent.MemoryEnabled = true; }
+            if (demonstrationOnly) { consent.CleanupEnabled = consent.MemoryEnabled = !artDemoRuntime; }
             else
             {
                 MaintenanceConsentStore persisted = MaintenanceConsentStore.Load(consentPath);
@@ -179,7 +181,7 @@ namespace NetBunny
             Point heroPressedAt = Point.Empty; bool heroDragged = false;
             heroWindow.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { heroPressedAt = Cursor.Position; heroDragged = false; } };
             heroWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !heroDragged && !IsDemo) { TryBlock(); RenderWorld(true); } };
-            heroWindow.DragChanged = delegate(bool active) { dragging = active; if (!active) { area = Screen.FromPoint(heroWindow.Location).WorkingArea; pauseMotionUntil = clock.Elapsed.TotalSeconds + 2; ClampHero(); PickTarget(); PositionLandmark(); } };
+            heroWindow.DragChanged = delegate(bool active) { dragging = active; if (!active) { if (!artDemoRuntime) area = Screen.FromPoint(heroWindow.Location).WorkingArea; pauseMotionUntil = clock.Elapsed.TotalSeconds + 2; ClampHero(); PickTarget(); PositionLandmark(); } };
             heroWindow.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(heroPressedAt.X, heroPressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) heroDragged = true; x = p.X; y = p.Y; heroWindow.Location = p; };
             landmarkWindow.ContextRequested = OpenEquipment;
             landmarkWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenEquipment(); };
@@ -634,9 +636,9 @@ namespace NetBunny
         // the render-frame dt clamp, the pet's visibility and the network state.
         private void AdvanceCultivation(double now)
         {
-            if (demonstrationOnly || cultivation == null) return;
+            if ((demonstrationOnly && !artDemoRuntime) || cultivation == null) return;
             if (lastCultivationAt < 0 || cultivationPaused || IsDemo) { lastCultivationAt = now; return; }
-            double elapsed = now - lastCultivationAt; lastCultivationAt = now;
+            double elapsed = (now - lastCultivationAt) * (artDemoRuntime ? artDemoSpeed : 1); lastCultivationAt = now;
             if (elapsed <= 0) return;
             if (cultivation.AdvanceActiveTime(elapsed, deviceGrade, DongtianQiFactor()) > 0) Save();
             if (encounters.Observe(elapsed)) encounterDue = true;
@@ -960,7 +962,7 @@ namespace NetBunny
         }
         public void PlayDemo()
         {
-            if (disposed) return;
+            if (disposed || artDemoRuntime) return;
             // The demo pauses auto battle; afterwards the persisted unattended
             // preference is restored (auto battle alone never deletes anything).
             resumeAutomaticAfterDemo = false; battle.SetAutomatic(false); RemoveCancelledAutomaticJobs();
@@ -976,6 +978,7 @@ namespace NetBunny
         public void OpenEquipment()
         {
             if (disposed) return;
+            if (artDemoRuntime) { owner.Activate(); return; }
             if (equipment == null || equipment.IsDisposed) equipment = new AdventureEquipmentForm(this);
             equipment.RefreshData(); equipment.Show(); equipment.BringToFront(); equipment.Activate();
         }
@@ -1142,7 +1145,7 @@ namespace NetBunny
             if (disposed) return;
             bool probe = PerfProbe.Enabled;
             if (probe) { PerfProbe.BeginTotal(); PerfProbe.Begin(); }
-            double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)); lastTick = now;
+            double now = clock.Elapsed.TotalSeconds, dt = Math.Max(0, Math.Min(.1, now - lastTick)) * (artDemoRuntime ? artDemoSpeed : 1); lastTick = now;
             // P1 自适应节拍：战斗动画/拖拽/演示/战利品期间保持 15ms；
             // 静态桌面降到 33ms（30fps 对桌宠足够流畅），整拍 CPU 近半。
             bool busyFrame = demoStarted >= 0 || demoPending || dragging || attackAnimation > 0 || actualMoveSpeed > 1 || lootViews.Count > 0 || now < blackholeUntil;
@@ -1319,7 +1322,7 @@ namespace NetBunny
         {
             attackAnimation = 1;
             if (battle.Weapon.Id == "blackhole") { blackholeUntil = now + 1.1; blackholeX = target.X; blackholeY = target.Y; }
-            effects.Fire(new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale), new PointF((float)target.X + EnemySize(target).Width / 2f, (float)target.Y + EnemySize(target).Height * .47f), battle.Weapon.Id, displayScale);
+            if (!artDemoRuntime || !artDemoHostHidden) effects.Fire(new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale), new PointF((float)target.X + EnemySize(target).Width / 2f, (float)target.Y + EnemySize(target).Height * .47f), battle.Weapon.Id, displayScale);
             int inventoryBefore = battle.Progress.Inventory.Count;
             List<AdventureEnemy> killed = battle.Strike(target);
             foreach (AdventureEnemy defeated in killed) BeginCleanup(defeated);
@@ -1505,7 +1508,7 @@ namespace NetBunny
             int incoming = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2 + enemy.SpawnLevel / 12 : enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage;
             if (clock.Elapsed.TotalSeconds < blockUntil) { incoming = Math.Max(1, incoming / 5); battle.LastReward = "格挡成功：来势被卸去大半（伤害 " + incoming + "）"; }
             battle.Damage(incoming);
-            if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
+            if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled && (!artDemoRuntime || !artDemoHostHidden)) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
         }
         private static void FaceEnemy(AdventureEnemy enemy, double dx)
         {
@@ -1529,7 +1532,7 @@ namespace NetBunny
         private void ClampHero() { PointF p = KnightPetController.BoundPosition(x, y, HeroSize, area); x = p.X; y = p.Y; heroWindow.Location = new Point((int)x, (int)y); }
         private void BoundEnemy(AdventureEnemy e) { PointF p = KnightPetController.BoundPosition(e.X, e.Y, EnemySize(e), area); e.X = p.X; e.Y = p.Y; }
         private Size EnemySize(AdventureEnemy e) { return e.IsBoss ? new Size((int)(190 * displayScale), (int)(220 * displayScale)) : new Size((int)(130 * displayScale), (int)(170 * displayScale)); }
-        private void PositionLandmark() { landmarkWindow.Location = new Point(area.Left + 16, area.Bottom - LandmarkSize.Height - 16); }
+        private void PositionLandmark() { landmarkWindow.Location = artDemoRuntime ? new Point(area.Left + 16, area.Top + 70) : new Point(area.Left + 16, area.Bottom - LandmarkSize.Height - 16); }
         private void PaintWindow(KnightLayeredWindow window, AdventureRenderState state)
         {
             PresentedFrames++;
@@ -1545,7 +1548,7 @@ namespace NetBunny
             double now = clock.Elapsed.TotalSeconds;
             int q = attackAnimation > 0 || now < blackholeUntil || s.MoveSpeed > 1 ? 24 : 12;
             double cycleFrac = s.Cycle - Math.Floor(s.Cycle);
-            return s.Phase + "|" + s.WeaponId + "|" + (demonstrationOnly ? demoTheme : region.CurrentCode) + "|" + s.Size.Width
+            return s.Phase + "|" + s.WeaponId + "|" + s.HeroStage + "|" + (demonstrationOnly ? demoTheme : region.CurrentCode) + "|" + s.Size.Width
                 + "|" + (int)(s.Time * q) + "|" + (int)(cycleFrac * (s.MoveSpeed > 1 ? 12 : 24)) + "|" + (int)(s.MoveSpeed / 25)
                 + "|" + (s.FacingRight ? 1 : 0) + "|" + s.Level + "|" + (int)(s.HealthRatio * 40)
                 + "|" + (int)(s.GlowProgress * 24) + "|" + (int)(s.AttackProgress * q) + "|" + (int)(s.PhaseTime * q) + "|" + s.Label;
@@ -1567,14 +1570,14 @@ namespace NetBunny
             else if (attackAnimation > 0) phase = "attack";
             else if (actualMoveSpeed > 1 && phase != "grave" && phase != "dying" && phase != "revive") phase = "run";
             else if (phase == "run") phase = "idle";
-            return new AdventureRenderState { Kind = "Hero", Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
+            return new AdventureRenderState { Kind = "Hero", HeroStage = ArtDemoHeroStage, Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : artDemoRuntime && cultivation.Mortal ? "凡人 · 红尘历练" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
         }
         private static readonly int SecRenderHero = PerfProbe.Register("render.hero");
         private static readonly int SecRenderEnemies = PerfProbe.Register("render.enemies");
         private static readonly int SecRenderWindows = PerfProbe.Register("render.windows");
         private void RenderWorld(bool enemies)
         {
-            if (disposed || !enabled) return;
+            if (disposed || !enabled || (artDemoRuntime && artDemoHostHidden)) return;
             bool probe = PerfProbe.Enabled;
             try
             {
@@ -1588,7 +1591,7 @@ namespace NetBunny
                 if (enemies || !landmarkWindow.Visible || paintNow - lastLandmarkPaint >= .25)
                 {
                     lastLandmarkPaint = paintNow;
-                    PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = renderTime, Label = CastleAmountText, GrowthLabel = GrowthStatusText, GrowthRatio = ResourceGrowthRatio, DiskLabel = diskSnapshot.Available ? "C盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) : "C盘剩余：等待采样", DiskFreeRatio = diskSnapshot.Available ? diskSnapshot.FreeRatio : -1, DiskCritical = diskSnapshot.Available && diskSnapshot.AvailableBytes < LowDiskBossPolicy.LowThresholdBytes, Opacity = 1 });
+                    PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", HeroStage = ArtDemoHeroStage, Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = renderTime, Label = CastleAmountText, GrowthLabel = GrowthStatusText, GrowthRatio = ResourceGrowthRatio, DiskLabel = diskSnapshot.Available ? "C盘剩余 " + AdventureBattle.FormatBytes(diskSnapshot.AvailableBytes) : "C盘剩余：等待采样", DiskFreeRatio = diskSnapshot.Available ? diskSnapshot.FreeRatio : -1, DiskCritical = diskSnapshot.Available && diskSnapshot.AvailableBytes < LowDiskBossPolicy.LowThresholdBytes, Opacity = 1 });
                 }
                 if (probe) { PerfProbe.End(SecRenderHero); PerfProbe.Begin(); }
                 HashSet<string> visible = new HashSet<string>();
@@ -1611,6 +1614,7 @@ namespace NetBunny
                     {
                         AdventureEnemy captured = enemy; window = NewWindow(enemy.IsDiskBoss ? "C 盘空间危机 Boss" : enemy.IsBoss ? "邪恶分身 Boss" : AdventureMonster.Find(enemy.MonsterKind).Name + " · 临时文件怪物"); enemyWindows.Add(enemy.Id, window);
                         Point pressedAt = Point.Empty; bool dragged = false;
+                        if (artDemoRuntime) window.Text = enemy.NoFieldClear ? "蜃楼镜妖 · 对练" : (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
                         window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
                         window.ContextRequested = OpenEquipment;
@@ -1620,6 +1624,7 @@ namespace NetBunny
                     window.Location = new Point((int)enemy.X, (int)enemy.Y);
                     if (!enemies && !newWindow && !enemy.VisualDirty && !enemy.VisualDefeated && (enemyIndex - paintStart + enemyCount) % enemyCount >= 4) continue;
                     string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "邪恶分身 · " + AdventureWeapon.Find(enemy.BossWeapon).Name : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name + (enemy.Batch != null && enemy.Batch.Candidates.Any(f=>!f.EligibleForCleanup) ? " · 近期文件" : "");
+                    if (artDemoRuntime) label = enemy.VisualDefeated ? "" : enemy.NoFieldClear ? "蜃楼镜妖 · 对练" : enemy.Elite ? "精英 · " + ArtDemoMonsterLabel(enemy.MonsterKind) : ArtDemoMonsterLabel(enemy.MonsterKind);
                     double deathProgress = enemy.VisualDefeated ? Math.Min(1, enemy.DeathElapsed / AdventureEnemy.ShatterSeconds) : 0;
                     // P0：完全静止且无特效的妖物整体跳绘（姿态冻结）；活动妖物按帧量化签名跳绘。
                     bool idleStatic = !enemy.VisualDefeated && enemy.AttackFlash <= .05 && enemy.HitFlash <= 0 && enemy.MoveSpeed <= 1;
@@ -1632,13 +1637,13 @@ namespace NetBunny
                     }
                     if (!idleStatic && enemySig == null) enemySig = EnemySignature(enemy, label, deathProgress);
                     enemy.PaintedSignature = enemySig;
-                    PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
+                    PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", HeroStage = ArtDemoHeroStage, WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = artDemoRuntime && enemy.NoFieldClear ? enemy.IsBoss ? "mirror-boss" : ArtDemoHeroStage == "mortal" ? "mirror-shard" : "mirror-wraith" : artDemoRuntime && enemy.Elite ? enemy.MonsterKind == "mushroom" ? "elite-mushroom" : "elite" : enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
                     enemy.VisualDirty = false;
                 }
                 enemyPaintCursor = enemyCount == 0 ? 0 : (paintStart + 4) % enemyCount;
                 if (probe) { PerfProbe.End(SecRenderEnemies); PerfProbe.Begin(); }
                 RemoveUnusedWindows(visible);
-                foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }
+                foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", HeroStage = ArtDemoHeroStage, Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }
                 if (probe) PerfProbe.End(SecRenderWindows);
             }
             catch (Exception e) { failure = e.Message; Enabled = false; }
@@ -1661,9 +1666,9 @@ namespace NetBunny
             double phaseTime = t < 14 ? t : t < 17.5 ? t - 14 : t < 19 ? t - 17.5 : t - 19;
             int px = area.Left + Math.Min(400, area.Width / 3) + (int)(Math.Sin(t * .6) * 110);
             heroWindow.Location = new Point(px, area.Bottom - HeroSize.Height - 45);
-            PaintWindow(heroWindow, new AdventureRenderState { Kind = "Hero", Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = t < 5 ? "spear" : t < 10 ? "laser" : "blackhole", Time = t, PhaseTime = phaseTime, MoveSpeed = 400, FacingRight = true, Level = 7, HealthRatio = phase == "grave" ? 0 : 1, Label = "纯演示 · 不清理文件", GlowProgress = t >= 10 && t < 14 ? (t - 10) / 4 : -1, AttackProgress = phase == "attack" ? (t * 2) % 1 : 0, Opacity = 1 });
+            PaintWindow(heroWindow, new AdventureRenderState { Kind = "Hero", HeroStage = ArtDemoHeroStage, Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = t < 5 ? "spear" : t < 10 ? "laser" : "blackhole", Time = t, PhaseTime = phaseTime, MoveSpeed = 400, FacingRight = true, Level = 7, HealthRatio = phase == "grave" ? 0 : 1, Label = "纯演示 · 不清理文件", GlowProgress = t >= 10 && t < 14 ? (t - 10) / 4 : -1, AttackProgress = phase == "attack" ? (t * 2) % 1 : 0, Opacity = 1 });
             if (!enemies) return; lastEnemyPaint = clock.Elapsed.TotalSeconds;
-            PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = t, Label = "演示城堡 · 虚拟敌人", Opacity = 1 });
+            PaintWindow(landmarkWindow, new AdventureRenderState { Kind = "Landmark", HeroStage = ArtDemoHeroStage, Size = LandmarkSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Time = t, Label = "演示城堡 · 虚拟敌人", Opacity = 1 });
             HashSet<string> keys = new HashSet<string>();
             RemoveUnusedWindows(new HashSet<string>(Enumerable.Range(0, AdventureMonster.All.Length).Select(i => "demo-enemy-" + i)));
             for (int i = 0; i < AdventureMonster.All.Length; i++)
@@ -1737,7 +1742,7 @@ namespace NetBunny
         internal void SetAutomatic(bool value) { SetAutoPlan(value); }
         public void SetAutoPlan(bool value)
         {
-            if (disposed || IsDemo || demonstrationOnly) return;
+            if (disposed || IsDemo || (demonstrationOnly && !artDemoRuntime)) return;
             // 凡人期禁止自动作战：十次主动历练、灵根觉醒后方可解锁。
             if (value && !cultivation.AutoBattleUnlocked)
             {

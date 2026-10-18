@@ -25,8 +25,10 @@
     "version": "polish-v2",
     "image": "raw/mortal-M2-polish-v2.png",
     "preview": "previews/mortal-M2-polish-v2-220x240-light.png",
-    "status": "awaiting_product_final_confirmation",
-    "product_approved": false,
+    "status": "product_confirmed_in_demo_execution_order",
+    "product_approved": true,
+    "approval_context": "产品已在本轮强推进执行令中确认当前polish-v2作为凡人Demo基准，并授权自动延展炼气/筑基及最小接入；不等同于Demo验收通过。",
+    "initial_delivery_status": "awaiting_product_final_confirmation",
     "delivered_current_character_count": 1,
     "delivered_current_preview_count": 1
   },
@@ -39,7 +41,8 @@
     "transparent_background_requested": true,
     "external_api_used": false
   },
-  "scope": "以已批准M2-v2为基准，仅小幅精修衣料和朴素感；未重新选人物，未拆件、替换素材或接入游戏。",
+  "scope": "当前polish-v2已获产品确认；沿用M2同人身份进入炼气/筑基延展，授权自动选图、配套资产机械准备及独立美术Demo最小接入。旧Assets、正式版和真实存档不在本轮修改范围；Demo验收正在进行。",
+  "initial_delivery_scope": "以已批准M2-v2为基准，仅小幅精修衣料和朴素感；未重新选人物，未拆件、替换素材或接入游戏。",
   "versions": [
     {
       "version": "polish-v1",
@@ -68,7 +71,8 @@
       "output": "raw/mortal-M2-polish-v2.png",
       "preview": "previews/mortal-M2-polish-v2-220x240-light.png",
       "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-377d0cbc-2636-4c3a-b71c-7d6736d84d22.png",
-      "note": "仅进一步处理衣料表面；当前单张交付，保留自然细纹，待产品最终确认。",
+      "note": "仅进一步处理衣料表面，保留自然细纹；已由产品在本轮强推进执行令中确认作为凡人Demo基准。",
+      "note_at_initial_delivery": "仅进一步处理衣料表面；当前单张交付，保留自然细纹，待产品最终确认。",
       "sha256": "d2cef978b7429604a2fcfb6fb6b0696661bed7f71c9ec743fefadd0b41d1aa30",
       "size": [
         1024,
@@ -84,6 +88,7 @@
   ],
   "preview_method": "完整非零alpha包围盒，关联alpha Lanczos等比缩小，放入220×240浅底#F2F0E8；仅制作预览，不改高清源图。参数见preview-report.json。",
   "qa": {
+    "record_scope": "保留初次交付时的静态原画检查及当时未接入状态；本轮Demo素材与运行状态另见current_demo_status。",
     "reviewed": [
       "M2-v2基准",
       "精修v1/v2高清图",
@@ -105,8 +110,22 @@
   "next_phase": {
     "phase": "炼气阶段主角设计",
     "identity_basis": "本M2人物身份，不重新选人",
-    "start_condition": "产品最终确认当前凡人精修正式版之后",
-    "started": false
+    "start_condition": "产品最终确认当前凡人精修正式版之后；本轮执行令已满足该条件",
+    "start_condition_met": true,
+    "started": true,
+    "status": "qishi_and_zhuji_candidates_generated_group_a_selected_for_demo"
+  },
+  "current_demo_status": {
+    "readme": "../../../美术Demo/README.md",
+    "selection_record": "../../../美术Demo/generation-sources.json",
+    "asset_qa": "../../../美术Demo/qa/assets/QA-summary.md",
+    "source_image_unchanged": true,
+    "selected_hero_group": "A",
+    "runtime_asset_count": 24,
+    "mechanical_asset_qa_completed": true,
+    "minimal_integration_started": true,
+    "game_acceptance_status": "in_progress",
+    "new_skeletal_parts_completed": false
   },
   "file_verification": {
     "approved_baseline_copy_identical": true,
@@ -118,6 +137,8 @@
     ],
     "current_preview_version": "polish-v2",
     "prior_round_six_pngs_unchanged": true,
-    "readme_links_verified": 19
+    "initial_delivery_readme_links_verified": 19,
+    "readme_links_verified": 22,
+    "readme_links_verification_scope": "当前README的所有本地Markdown链接已逐项检查，历史19条数量另保留"
   }
 }

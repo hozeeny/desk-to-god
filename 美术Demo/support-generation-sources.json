@@ -1,0 +1,42 @@
+{
+  "tool": "image_gen.imagegen",
+  "mode": "built-in",
+  "sources": [
+    {
+      "id": "monsters-common-sheet",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-19e31d62-52b0-4a88-9381-32dbed527e3f.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/monsters-common-sheet.png",
+      "opaque": false
+    },
+    {
+      "id": "monsters-mirror-sheet",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-102dee92-7afc-4083-a7cf-7bc744907d96.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/monsters-mirror-sheet.png",
+      "opaque": false
+    },
+    {
+      "id": "gear-items-sheet",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-3baa9cf7-e0ed-40a1-896f-964cef020cff.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/gear-items-sheet.png",
+      "opaque": false
+    },
+    {
+      "id": "landmark-dongtian",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-bc646372-8e21-41c2-b0cb-ae734e4be590.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/landmark-dongtian.png",
+      "opaque": false
+    },
+    {
+      "id": "scene-battle",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-c76bae96-7f62-4da9-a209-31b9b5a2026b.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/scene-battle.png",
+      "opaque": true
+    },
+    {
+      "id": "scene-dongtian",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-5e0fefbd-63a3-486c-ac53-c6a0669a75fe.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/scene-dongtian.png",
+      "opaque": true
+    }
+  ]
+}

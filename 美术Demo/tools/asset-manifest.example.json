@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "defaults": {
+    "max_size": [512, 512],
+    "require_alpha": true,
+    "require_transparency": true,
+    "trim_transparent": false
+  },
+  "assets": [
+    {
+      "id": "hero-mortal",
+      "kind": "hero",
+      "source": "../generated/hero-mortal-original.png",
+      "note": "Complete illustration; not a skeletal rig."
+    },
+    {
+      "id": "monster-slime",
+      "kind": "monster",
+      "source": "../generated/monsters-3x2-original.png",
+      "grid": { "columns": 3, "rows": 2, "index": 0 }
+    },
+    {
+      "id": "item-marrow",
+      "kind": "item",
+      "source": "../generated/items-original.png",
+      "rect": [0, 0, 256, 256],
+      "max_size": [256, 256]
+    }
+  ]
+}

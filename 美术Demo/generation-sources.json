@@ -1,0 +1,31 @@
+{
+  "tool": "image_gen.imagegen",
+  "mode": "built-in",
+  "hero_candidates": [
+    {
+      "id": "hero-qishi-a",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-ac5ba1f3-63af-40cf-b449-55f135de88f0.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/hero-qishi-a.png"
+    },
+    {
+      "id": "hero-qishi-b",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-1bcca135-2f54-45dc-9078-5c4b31512319.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/hero-qishi-b.png"
+    },
+    {
+      "id": "hero-zhuji-a",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-422d56a9-b671-4f81-861c-6c9a55a90255.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/hero-zhuji-a.png"
+    },
+    {
+      "id": "hero-zhuji-b",
+      "source": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-92f520f5-65f6-4be1-af42-027cef2608fb.png",
+      "output": "E:/03工作内容/coding/桌面修仙/desk-to-god-art/美术Demo/generated/hero-zhuji-b.png"
+    }
+  ],
+  "selected": {
+    "qishi": "hero-qishi-a",
+    "zhuji": "hero-zhuji-a"
+  },
+  "reason": "A组保留面容且炼气浅青短装、筑基墨青斜襟分层清楚；B组炼气偏暗、筑基护肩与灵气更繁，不选入最小Demo。"
+}
