@@ -1,0 +1,56 @@
+[
+  {
+    "run": "mortal-r8",
+    "passed": true,
+    "processId": 83936,
+    "seconds": 212.7819625,
+    "nativeClicks": 174,
+    "restart": false,
+    "realArchivesUnchanged": true
+  },
+  {
+    "run": "mortal-restart-r9",
+    "passed": true,
+    "processId": 18784,
+    "seconds": 9.6405278,
+    "nativeClicks": 0,
+    "restart": true,
+    "realArchivesUnchanged": true
+  },
+  {
+    "run": "qishi-full-r12",
+    "passed": true,
+    "processId": 53448,
+    "seconds": 12.1652644,
+    "nativeClicks": 4,
+    "restart": false,
+    "realArchivesUnchanged": true
+  },
+  {
+    "run": "qishi-restart-r12",
+    "passed": true,
+    "processId": 83264,
+    "seconds": 8.5480672,
+    "nativeClicks": 0,
+    "restart": true,
+    "realArchivesUnchanged": true
+  },
+  {
+    "run": "zhuji-r12",
+    "passed": true,
+    "processId": 74260,
+    "seconds": 9.7398189,
+    "nativeClicks": 3,
+    "restart": false,
+    "realArchivesUnchanged": true
+  },
+  {
+    "run": "zhuji-restart-r12",
+    "passed": true,
+    "processId": 43712,
+    "seconds": 8.5399259,
+    "nativeClicks": 0,
+    "restart": true,
+    "realArchivesUnchanged": true
+  }
+]

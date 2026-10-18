@@ -35,7 +35,7 @@ namespace NetBunny
             return CaptureRegion(window.Bounds);
         }
 
-        internal static Bitmap CaptureRegion(Rectangle bounds)
+        internal static Bitmap CaptureRegion(Rectangle bounds, bool requireVisibleDetail = true)
         {
             if (bounds.Width <= 0 || bounds.Height <= 0 || !SystemInformation.VirtualScreen.Contains(bounds))
                 throw new ArgumentOutOfRangeException("bounds", "截图区域必须完整位于可见桌面内。");
@@ -61,10 +61,19 @@ namespace NetBunny
                     }
                 }
                 finally { ReleaseDC(IntPtr.Zero, screen); }
-                if (!HasVisibleDetail(bitmap)) throw new InvalidOperationException("截图缺少可辨内容，可能为空白、锁屏或捕获失败。");
+                ValidateCapturedFrame(bitmap, requireVisibleDetail);
                 return bitmap;
             }
             catch { bitmap.Dispose(); throw; }
+        }
+
+        internal static void ValidateCapturedFrame(Bitmap bitmap, bool requireVisibleDetail)
+        {
+            // Only an explicit actors-hidden background sample may be uniform.
+            // Published frames still require detail, then the actor verifier
+            // independently proves that real hero/enemy pixels are present.
+            if (bitmap == null || bitmap.Width <= 0 || bitmap.Height <= 0 || (requireVisibleDetail && !HasVisibleDetail(bitmap)))
+                throw new InvalidOperationException("截图缺少可辨内容，可能为空白、锁屏或捕获失败。");
         }
 
         [DllImport("dwmapi.dll")] private static extern int DwmFlush();

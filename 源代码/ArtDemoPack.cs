@@ -9,8 +9,8 @@ using System.Runtime.InteropServices;
 
 namespace NetBunny
 {
-    // Opt-in illustration prototype. These are full illustrations, not a replacement
-    // for the existing articulated rigs. Source PNGs are never changed on disk.
+    // Opt-in xianxia asset pack. Heroes use independently articulated source-pixel
+    // rigs; old Assets and the original renderer stay untouched.
     internal sealed class ArtDemoPack : IDisposable
     {
         internal const string EnvironmentVariable = "DESK_TO_GOD_ART_DEMO_ASSETS";
@@ -22,6 +22,7 @@ namespace NetBunny
         };
         readonly Dictionary<string, Bitmap> images = new Dictionary<string, Bitmap>(StringComparer.OrdinalIgnoreCase);
         readonly List<string> itemKeys = new List<string>();
+        readonly Dictionary<string, ArtDemoHeroRig> heroRigs = new Dictionary<string, ArtDemoHeroRig>();
         bool disposed;
         internal readonly string DirectoryPath;
 
@@ -49,6 +50,7 @@ namespace NetBunny
                     string key = Path.GetFileNameWithoutExtension(path); if (!images.ContainsKey(key)) images.Add(key, LoadIllustration(path)); itemKeys.Add(key);
                 }
                 if (itemKeys.Count == 0) throw new InvalidDataException("美术 Demo 至少需要一张 item-*.png 道具图。");
+                foreach (string stage in new[] { "mortal", "qishi", "zhuji" }) heroRigs.Add(stage, new ArtDemoHeroRig(DirectoryPath, stage));
                 Trace.WriteLine("Art demo illustration mapping: " + MappingDescription);
             }
             catch { Dispose(); throw; }
@@ -171,33 +173,21 @@ namespace NetBunny
         }
         internal void DrawHero(Graphics g, AdventureRenderState s)
         {
-            string phase = (s.Phase ?? "idle").ToLowerInvariant(), stage = StageFromRealm(s.HeroStage);
-            bool run = phase == "run" || phase == "running", attack = phase == "attack" || s.AttackProgress > .03;
-            bool rest = phase == "grave" || phase == "dead" || phase == "tombstone", dying = phase == "dying" || phase == "death", revive = phase == "revive" || phase == "reviving";
-            double cycle = Double.IsNaN(s.Cycle) ? s.Time * (1 + Math.Min(2.2, Math.Abs(s.MoveSpeed) / 120)) : s.Cycle;
-            double wave = Math.Sin(cycle * Math.PI * 2), push = attack ? Math.Sin(Clamp(s.AttackProgress) * Math.PI) : 0;
-            float bob = (float)(run ? -Math.Abs(wave) * 4 : Math.Sin(s.Time * 2.7) * 1.3);
-            float opacity = dying ? (float)(1 - Clamp(s.DeathProgress > 0 ? s.DeathProgress : s.PhaseTime / 3.4) * .7) : rest ? .67f : 1;
-            Shadow(g, 91, opacity * 48);
-            if (stage != "mortal" || rest || revive || s.GlowProgress > 0) Ring(g, s.Time, stage == "zhuji" ? Color.FromArgb(183, 211, 255) : Color.FromArgb(126, 216, 196), opacity);
-            GraphicsState save = g.Save();
-            if (!s.FacingRight) { g.TranslateTransform(220, 0); g.ScaleTransform(-1, 1); }
-            if (s.HitFlash > 0) g.TranslateTransform((float)(-Math.Sin(s.Time * 51) * Math.Min(5, s.HitFlash * 5)), 0);
-            if (rest) { g.TranslateTransform(110, 185); g.ScaleTransform(.84f, .84f); g.TranslateTransform(-110, -185); }
-            if (revive) { float p = (float)Clamp(s.DeathProgress > 0 ? s.DeathProgress : s.PhaseTime / 2.4); opacity = .3f + .7f * p; g.TranslateTransform(0, (1 - p) * 17); }
-            g.TranslateTransform(108, 176 + bob); g.RotateTransform((float)(run ? 2 + wave * 1.7 : attack ? push * 8 : dying ? -13 : 0)); g.TranslateTransform(-108, -176);
-            if (!rest && !dying)
+            string phase=(s.Phase??"idle").ToLowerInvariant(),stage=StageFromRealm(s.HeroStage);
+            bool attack=phase=="attack"||s.AttackProgress>.03,rest=phase=="grave"||phase=="dead"||phase=="tombstone",revive=phase=="revive"||phase=="reviving";
+            Shadow(g,91,rest?30:48);
+            if(stage!="mortal"||rest||revive||s.GlowProgress>0) Ring(g,s.Time,stage=="zhuji"?Color.FromArgb(183,211,255):Color.FromArgb(126,216,196),rest?.55f:.75f);
+            heroRigs[stage].Draw(g,s,images["weapon-"+stage]);
+            if(attack)
             {
-                PointF hand = new PointF(143, 134); Bitmap weapon = images["weapon-" + stage];
-                GraphicsState held = g.Save();
-                g.TranslateTransform(hand.X, hand.Y); g.RotateTransform((float)(attack ? 12 + push * 30 : 12 + wave * (run ? 4 : 1))); g.TranslateTransform(-hand.X, -hand.Y);
-                DrawImage(g, weapon, HeldWeaponBounds(weapon.Size, hand), new RectangleF(0, 0, weapon.Width, weapon.Height), opacity, 0); g.Restore(held);
+                // The held weapon is already attached to the forearm. A melee
+                // swing adds only a small arc, never a second floating sword.
+                GraphicsState arc=g.Save();if(!s.FacingRight){g.TranslateTransform(220,0);g.ScaleTransform(-1,1);}
+                Color color=stage=="mortal"?Color.FromArgb(225,201,145):stage=="qishi"?Color.FromArgb(135,215,208):Color.FromArgb(184,204,239);
+                float strength=(float)Math.Sin(Clamp(s.AttackProgress)*Math.PI);
+                using(Pen pen=new Pen(Color.FromArgb((int)(145*strength),color),2.2f)) g.DrawArc(pen,120,69,84,100,(float)(-60+s.AttackProgress*95),64);
+                g.Restore(arc);
             }
-            // Foreground fingers and the sleeve cover the handle. The hero remains
-            // a complete illustration; no source pixels are cut out to fake a rig.
-            Draw(g, "hero-" + stage, new RectangleF(28, 16, 150, 172), opacity, dying || rest ? 0 : (float)Clamp(s.HitFlash) * .55f);
-            g.Restore(save);
-            if (attack) DrawProjectile(g, s.WeaponId, new RectangleF(104, 57, 106, 121), s.Time, s.AttackProgress);
         }
         internal void DrawMonster(Graphics g, AdventureRenderState s, bool boss, bool evil)
         {
@@ -270,6 +260,7 @@ namespace NetBunny
                 check(image.PixelFormat == PixelFormat.Format32bppPArgb, key + " has premultiplied alpha cache");
             }
             check(itemKeys.Count > 0, "new item illustrations available");
+            foreach (ArtDemoHeroRig rig in heroRigs.Values) rig.Validate(check);
             foreach (string id in RasterActorRenderer.MonsterKinds) check(images.ContainsKey(MonsterAsset(id, id == "boss")), "mapped gameplay monster " + id);
             HashSet<string> common = new HashSet<string>(); foreach (string id in new[] { "skeleton", "slime", "imp", "bat", "mushroom" }) common.Add(MonsterAsset(id, false));
             check(common.Count == 5, "five gameplay common IDs have five explicit new illustrations");
@@ -282,6 +273,6 @@ namespace NetBunny
             }
         }
         public void Dispose()
-        { if (disposed) return; disposed = true; foreach (Bitmap image in images.Values) image.Dispose(); images.Clear(); itemKeys.Clear(); }
+        { if (disposed) return; disposed = true; foreach (Bitmap image in images.Values) image.Dispose(); images.Clear(); itemKeys.Clear(); foreach (ArtDemoHeroRig rig in heroRigs.Values) rig.Dispose(); heroRigs.Clear(); }
     }
 }

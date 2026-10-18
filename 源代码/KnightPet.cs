@@ -316,7 +316,7 @@ namespace NetBunny
     internal sealed class KnightLayeredWindow : Form
     {
         private Bitmap current;
-        private bool dragging;
+        private bool pointerPressed, dragging, suppressLeftClick;
         private Point mouseStart, formStart;
         internal Action<Point> DragMoved;
         internal Action<bool> DragChanged;
@@ -337,7 +337,7 @@ namespace NetBunny
         {
             if (PassThrough && message.Msg == 0x0084) { message.Result = new IntPtr(-1); return; }
             if (message.Msg == 0x0021) { message.Result = new IntPtr(3); return; } // MA_NOACTIVATE
-            if (message.Msg == 0x0084 && current != null && !dragging)
+            if (message.Msg == 0x0084 && current != null && !pointerPressed)
             {
                 long value = message.LParam.ToInt64();
                 Point location = PointToClient(new Point(unchecked((short)(value & 0xffff)), unchecked((short)((value >> 16) & 0xffff))));
@@ -351,16 +351,27 @@ namespace NetBunny
         {
             if (e.Button == MouseButtons.Left)
             {
-                dragging = true; mouseStart = Cursor.Position; formStart = Location; Capture = true;
-                if (DragChanged != null) DragChanged(true);
+                // A press is still a click until it crosses Windows' drag box.
+                // This also prevents small hand tremors from moving the actor.
+                pointerPressed = true; dragging = false; suppressLeftClick = false;
+                mouseStart = Cursor.Position; formStart = Location; Capture = true;
             }
             base.OnMouseDown(e);
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            if (dragging)
+            if (pointerPressed)
             {
                 Point pointer = Cursor.Position;
+                Size threshold = SystemInformation.DragSize;
+                Rectangle clickBox = new Rectangle(mouseStart.X - threshold.Width / 2, mouseStart.Y - threshold.Height / 2,
+                    Math.Max(1, threshold.Width), Math.Max(1, threshold.Height));
+                if (!dragging && !clickBox.Contains(pointer))
+                {
+                    dragging = true; suppressLeftClick = true;
+                    if (DragChanged != null) DragChanged(true);
+                }
+                if (!dragging) { base.OnMouseMove(e); return; }
                 Point position = new Point(formStart.X + pointer.X - mouseStart.X, formStart.Y + pointer.Y - mouseStart.Y);
                 if (DragMoved != null) DragMoved(position);
             }
@@ -368,10 +379,28 @@ namespace NetBunny
         }
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && dragging)
-            { dragging = false; Capture = false; if (DragChanged != null) DragChanged(false); }
+            if (e.Button == MouseButtons.Left && pointerPressed)
+            {
+                bool wasDragging = dragging; pointerPressed = dragging = false; Capture = false;
+                if (wasDragging && DragChanged != null) DragChanged(false);
+            }
             if (e.Button == MouseButtons.Right && ContextRequested != null) ContextRequested();
             base.OnMouseUp(e);
+        }
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && suppressLeftClick) return;
+            base.OnMouseClick(e);
+        }
+        protected override void OnMouseCaptureChanged(EventArgs e)
+        {
+            if (!Capture && pointerPressed)
+            {
+                bool wasDragging = dragging; pointerPressed = dragging = false;
+                suppressLeftClick = true;
+                if (wasDragging && DragChanged != null) DragChanged(false);
+            }
+            base.OnMouseCaptureChanged(e);
         }
         internal void Present(Bitmap frame)
         {

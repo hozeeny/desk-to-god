@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -20,6 +21,7 @@ namespace NetBunny
         private readonly ToolTip hints = new ToolTip();
         private readonly System.Windows.Forms.Timer refresh = new System.Windows.Forms.Timer();
         private string actionSignature;
+        private Image desktopArtwork;
 
         private sealed class DongtianAction
         {
@@ -39,7 +41,18 @@ namespace NetBunny
             status.AutoSize = false; status.Width = 640; status.Height = 300; status.Margin = new Padding(0, 2, 0, 6);
             notice.AutoSize = false; notice.Width = 640; notice.Height = 34; notice.ForeColor = Color.FromArgb(130, 84, 32);
             actions = new FlowLayoutPanel { Width = 650, AutoSize = true, WrapContents = true };
-            content.Controls.Add(title); content.Controls.Add(status); content.Controls.Add(notice); content.Controls.Add(actions);
+            content.Controls.Add(title);
+            if (controller.IsolatedDesktop && !String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(ArtDemoPack.EnvironmentVariable)))
+            {
+                title.ForeColor = Color.FromArgb(40, 83, 71);
+                string art = Path.Combine(Environment.GetEnvironmentVariable(ArtDemoPack.EnvironmentVariable) ?? "", "landmark-dongtian.png");
+                using (Image source = Image.FromFile(art)) desktopArtwork = new Bitmap(source);
+                Panel illustration = new Panel { Width = 640, Height = 148, BackColor = Color.FromArgb(234, 239, 225), Margin = new Padding(0, 0, 0, 8) };
+                illustration.Controls.Add(new PictureBox { Image = desktopArtwork, SizeMode = PictureBoxSizeMode.Zoom, Bounds = new Rectangle(8, 0, 152, 148), AccessibleName = "清虚洞天内苑" });
+                illustration.Controls.Add(new Label { Text = "清虚洞天\n一机一洞天\n\n筑基之后经营内苑，播种、炼丹与养器。\n操作使用本隔离档的真实库存与计时。", AutoSize = false, Bounds = new Rectangle(180, 10, 445, 130), ForeColor = Color.FromArgb(40, 83, 71) });
+                content.Controls.Add(illustration);
+            }
+            content.Controls.Add(status); content.Controls.Add(notice); content.Controls.Add(actions);
             Controls.Add(content);
             refresh.Interval = 2000; refresh.Tick += delegate { if (Visible && !IsDisposed) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
@@ -179,7 +192,7 @@ namespace NetBunny
         protected override void OnFormClosing(FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } base.OnFormClosing(e); }
         protected override void Dispose(bool disposing)
         {
-            if (disposing) { refresh.Stop(); refresh.Dispose(); hints.Dispose(); }
+            if (disposing) { refresh.Stop(); refresh.Dispose(); hints.Dispose(); if (desktopArtwork != null) { desktopArtwork.Dispose(); desktopArtwork = null; } }
             base.Dispose(disposing);
         }
     }

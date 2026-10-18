@@ -22,9 +22,9 @@ P4 洞天经营（Draft PR #5）：筑基解锁洞天——灵田（时间制种
 
 ## 当前可玩美术 Demo（2026-10-18）
 
-产品已在本轮执行令中确认凡人 **`mortal-M2-polish-v2`**，并授权 Codex 自动生成、比较和选用同一人物的炼气、筑基方案，连续完成配套素材、最小渲染接入及独立可玩 Demo。当前已选炼气/筑基 A 组并装配 24 图新包，玩法与真实桌面验收正在进行，尚不宣称 Demo 验收通过。当前进度、操作和证据以 [可玩美术 Demo 说明](美术Demo/README.md)为准。
+凡人采用已确认的 **`mortal-M2-polish-v2`**，炼气/筑基选同人A组。正式 Demo 已纠偏为透明桌面模式：角色、妖物直接在 Windows 桌面活动，修行、破境、灵域和洞天面板按需打开。三阶段已增加11部件骨骼适配，复用原正式战斗与修仙状态。当前操作、交付与验收证据以 [透明桌面 Demo 说明](美术Demo/README.md)为准。
 
-在本工作区根目录运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\美术Demo\launch-demo.ps1`；首次构建后也可双击 `美术Demo/runtime/桌面修仙-美术Demo.exe`。Demo 使用独立输出和内存模型，退出重置；新包在 `源代码/ArtDemoAssets`，旧 `Assets`、正式版和真实存档保持原样。运行副本、临时验收输出与 Demo ZIP 留在本地；`美术Demo/generated` 原始 PNG 和 `美术Demo/qa` 素材证据保留版本记录。
+在本工作区根目录运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\美术Demo\launch-demo.ps1`；首次构建后可双击 `美术Demo/runtime-desktop/桌面修仙-透明桌面Demo.exe`。五份业务档只保存在其旁 `profiles/player`，正常退出保存；维护授权路径也隔离并始终拒绝开启。新包在 `源代码/ArtDemoAssets`，旧 `Assets`、正式版和真实存档不变。早期场景窗口仅通过 `launch-art-preview.ps1` 显式打开作预览；运行副本、原始桌面采集、测试档与ZIP留在本地，审核用截图另行裁除无关应用区域。
 
 ### 早期分批制作记录（历史）
 

@@ -1,0 +1,71 @@
+﻿2026-10-18 15:03:35.506 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY1","primary":false,"bounds":"{X=1920,Y=0,Width=1920,Height=1080}","workingArea":"{X=1920,Y=0,Width=1920,Height=1080}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-18 15:03:35.508 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY2","primary":true,"bounds":"{X=0,Y=0,Width=1920,Height=1080}","workingArea":"{X=0,Y=0,Width=1920,Height=1040}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-18 15:03:35.508 +08:00 DISPLAY heroWindowDpi=96; queryOnly=true; system settings unchanged
+2026-10-18 15:03:35.510 +08:00 PASS 业务控制器使用独立持久化存档
+2026-10-18 15:03:35.511 +08:00 PASS 清理、内存、无人值守维护授权及服务全部关闭
+2026-10-18 15:03:35.511 +08:00 PASS 正式入口不存在传统场景演示窗口
+2026-10-18 15:03:35.512 +08:00 ACCEL 验收快进 ×6：相同真实节拍，未修改伤害、冷却、十杀、HP或奖励；所有战斗操作使用本机鼠标输入。
+2026-10-18 15:03:36.929 +08:00 PASS 每个角色/妖物均为小尺寸独立透明窗，无整屏覆盖层
+2026-10-18 15:03:37.119 +08:00 CAPTURE verified real desktop hero+enemy 01-transparent-desktop-start
+2026-10-18 15:03:37.263 +08:00 INPUT probe setup visible=True; nativeVisible=True; style=0x8010088; underlay=18940590; underlayBounds={X=1660,Y=770,Width=220,Height=240}; underlayZ=40; hero=7933150; heroBounds={X=1660,Y=770,Width=220,Height=240}; heroZ=37; cursor={X=1352,Y=919}; capture=0
+2026-10-18 15:03:37.265 +08:00 INPUT probe sample local={X=5,Y=5}; alpha=0; screen={X=1665,Y=775}; root=18940590
+2026-10-18 15:03:37.266 +08:00 INPUT probe sample local={X=214,Y=5}; alpha=0; screen={X=1874,Y=775}; root=18940590
+2026-10-18 15:03:37.267 +08:00 INPUT probe sample local={X=5,Y=234}; alpha=0; screen={X=1665,Y=1004}; root=18940590
+2026-10-18 15:03:37.267 +08:00 INPUT probe sample local={X=214,Y=234}; alpha=0; screen={X=1874,Y=1004}; root=18940590
+2026-10-18 15:03:37.268 +08:00 INPUT probe sample local={X=110,Y=120}; alpha=252; screen={X=1770,Y=890}; root=7933150
+2026-10-18 15:03:37.269 +08:00 PASS 局部测试底窗置于角色下方，原生Z序及220×240边界一致
+2026-10-18 15:03:37.269 +08:00 PASS 透明角色与测试底窗显示时不抢占前台焦点
+2026-10-18 15:03:37.540 +08:00 PASS 零alpha透明区域的真实Windows命中穿透角色
+2026-10-18 15:03:37.543 +08:00 INPUT transparent-probe requested={X=1795,Y=871}; actual={X=1795,Y=871}; actualRoot=18940590; expectedRoot=18940590
+2026-10-18 15:03:37.652 +08:00 INPUT transparent-probe requested={X=1795,Y=871}; actual={X=1795,Y=871}; actualRoot=18940590; expectedUnderlay=18940590; underlayBounds={X=1660,Y=770,Width=220,Height=240}; heroBounds={X=1660,Y=770,Width=220,Height=240}; underlayClicks=0→1
+2026-10-18 15:03:37.652 +08:00 PASS 透明区域的真实鼠标点击到达下方窗口
+2026-10-18 15:03:37.688 +08:00 PASS 角色可见区域正确接受真实鼠标命中
+2026-10-18 15:03:37.952 +08:00 PASS 真实鼠标拖动角色可以改变桌面位置
+2026-10-18 15:03:37.952 +08:00 PASS 拖动结束不会误触格挡或点击动作
+2026-10-18 15:03:38.125 +08:00 PASS 可见角色真实点击触发格挡及冷却
+2026-10-18 15:03:38.125 +08:00 PASS 选择和拖动透明角色不抢占其他应用焦点
+2026-10-18 15:03:38.335 +08:00 PASS 透明坐标WM_NCHITTEST返回HTTRANSPARENT（含负屏幕坐标编码）
+2026-10-18 15:03:38.336 +08:00 PASS 角色WM_MOUSEACTIVATE明确返回MA_NOACTIVATE
+2026-10-18 15:03:38.452 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-18 15:03:38.718 +08:00 MULTISCREEN native drag from=\\.\DISPLAY2 {X=1692,Y=745,Width=220,Height=240}; target=\\.\DISPLAY1 {X=1920,Y=0,Width=1920,Height=1080}; actual={X=2770,Y=420,Width=220,Height=240}; windowDpi=96
+2026-10-18 15:03:38.718 +08:00 PASS 真实鼠标跨屏拖动后角色完整位于目标显示器工作区
+2026-10-18 15:03:38.719 +08:00 PASS 跨屏拖动不会触发格挡或点击动作
+2026-10-18 15:03:38.846 +08:00 CAPTURE verified real desktop hero 00-multi-monitor-secondary
+2026-10-18 15:03:38.924 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-18 15:03:39.191 +08:00 MULTISCREEN native drag back to=\\.\DISPLAY2; requested={X=1692,Y=745,Width=220,Height=240}; actual={X=1692,Y=745,Width=220,Height=240}; windowDpi=96
+2026-10-18 15:03:39.191 +08:00 PASS 真实鼠标可拖回原显示器且角色完整落在有效工作区
+2026-10-18 15:03:39.192 +08:00 PASS 跨屏往返不抢前台焦点、不误触格挡
+2026-10-18 15:03:39.195 +08:00 PASS 纯透明画面负例会被截图像素校验拒绝
+2026-10-18 15:03:39.199 +08:00 PASS 全新凡人 0 杀，自动战斗尚未解锁
+2026-10-18 15:03:40.568 +08:00 PASS 只点击一次后不会自行连续攻击；自动接近不等于自动战斗
+2026-10-18 15:03:44.139 +08:00 KILL 有效击杀=1; native mouse clicks=17
+2026-10-18 15:03:47.304 +08:00 CAPTURE verified real desktop hero+enemy 03-mortal-resting
+2026-10-18 15:03:57.272 +08:00 PASS 凡人自动调息恢复，死亡计时归零且仍需手动战斗
+2026-10-18 15:03:57.392 +08:00 CAPTURE verified real desktop hero+enemy 04-mortal-recovered
+2026-10-18 15:03:58.908 +08:00 KILL 有效击杀=2; native mouse clicks=38
+2026-10-18 15:04:02.623 +08:00 KILL 有效击杀=3; native mouse clicks=55
+2026-10-18 15:04:14.655 +08:00 PASS 凡人自动调息恢复，死亡计时归零且仍需手动战斗
+2026-10-18 15:04:14.758 +08:00 CAPTURE verified real desktop hero+enemy 04-mortal-recovered
+2026-10-18 15:04:16.735 +08:00 KILL 有效击杀=4; native mouse clicks=74
+2026-10-18 15:04:18.709 +08:00 KILL 有效击杀=5; native mouse clicks=83
+2026-10-18 15:04:21.983 +08:00 KILL 有效击杀=6; native mouse clicks=98
+2026-10-18 15:04:32.271 +08:00 PASS 凡人自动调息恢复，死亡计时归零且仍需手动战斗
+2026-10-18 15:04:32.356 +08:00 CAPTURE verified real desktop hero+enemy 04-mortal-recovered
+2026-10-18 15:04:36.972 +08:00 KILL 有效击杀=7; native mouse clicks=120
+2026-10-18 15:04:40.251 +08:00 KILL 有效击杀=8; native mouse clicks=135
+2026-10-18 15:04:52.614 +08:00 PASS 凡人自动调息恢复，死亡计时归零且仍需手动战斗
+2026-10-18 15:04:52.731 +08:00 CAPTURE verified real desktop hero+enemy 04-mortal-recovered
+2026-10-18 15:04:54.911 +08:00 KILL 有效击杀=9; native mouse clicks=156
+2026-10-18 15:04:58.623 +08:00 KILL 有效击杀=10; native mouse clicks=173
+2026-10-18 15:04:58.623 +08:00 PASS 十次真实有效击杀达成，仍由玩家主动觉醒
+2026-10-18 15:04:59.438 +08:00 CAPTURE verified real desktop hero+enemy 05-ten-kills-awaken-panel
+2026-10-18 15:04:59.939 +08:00 PASS 主动觉醒后同人外观切为炼气，自动战斗默认开启
+2026-10-18 15:05:00.098 +08:00 CAPTURE verified real desktop hero+enemy 06-qishi-desktop-automatic
+2026-10-18 15:05:08.030 +08:00 PASS 功能面板收起后零战斗点击仍自动击杀并持续修炼
+2026-10-18 15:05:08.031 +08:00 PASS 本轮真实桌面战斗经过力竭与调息恢复
+2026-10-18 15:05:08.031 +08:00 PERF 结束验收快进，切为正常 ×1；保持功能面板关闭、零输入观察 120 秒，记录常驻性能。
+2026-10-18 15:07:08.125 +08:00 PASS 正常×1速率持续120秒，面板关闭且没有额外鼠标输入
+2026-10-18 15:07:08.247 +08:00 CAPTURE verified real desktop hero+enemy 07-qishi-panels-closed-still-cultivating
+2026-10-18 15:07:08.259 +08:00 PASS 五份隔离业务存档安全落盘
+2026-10-18 15:07:08.263 +08:00 PASS 独立存档重新Load后身份、境界、灵域及洞天一致
+2026-10-18 15:07:08.265 +08:00 PASS 真实用户五档及维护授权文件哈希保持不变

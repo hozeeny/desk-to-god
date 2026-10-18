@@ -1,0 +1,45 @@
+﻿2026-10-18 15:26:39.777 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY1","primary":false,"bounds":"{X=1920,Y=0,Width=1920,Height=1080}","workingArea":"{X=1920,Y=0,Width=1920,Height=1080}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-18 15:26:39.779 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY2","primary":true,"bounds":"{X=0,Y=0,Width=1920,Height=1080}","workingArea":"{X=0,Y=0,Width=1920,Height=1040}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-18 15:26:39.780 +08:00 DISPLAY heroWindowDpi=96; queryOnly=true; system settings unchanged
+2026-10-18 15:26:39.781 +08:00 PASS 业务控制器使用独立持久化存档
+2026-10-18 15:26:39.782 +08:00 PASS 清理、内存、无人值守维护授权及服务全部关闭
+2026-10-18 15:26:39.783 +08:00 PASS 正式入口不存在传统场景演示窗口
+2026-10-18 15:26:39.783 +08:00 PASS 存档恢复由真正的新进程执行
+2026-10-18 15:26:39.785 +08:00 PASS 新进程恢复同一身份、境界、自动作战、历练及灵域进度
+2026-10-18 15:26:39.785 +08:00 ACCEL 验收快进 ×6：相同真实节拍，未修改伤害、冷却、十杀、HP或奖励；所有战斗操作使用本机鼠标输入。
+2026-10-18 15:26:40.115 +08:00 PASS 每个角色/妖物均为小尺寸独立透明窗，无整屏覆盖层
+2026-10-18 15:26:40.253 +08:00 CAPTURE verified real desktop hero+enemy 01-transparent-desktop-start
+2026-10-18 15:26:40.396 +08:00 INPUT probe setup visible=True; nativeVisible=True; style=0x8010088; underlay=33359990; underlayBounds={X=1575,Y=450,Width=220,Height=240}; underlayZ=40; hero=12719304; heroBounds={X=1575,Y=450,Width=220,Height=240}; heroZ=37; cursor={X=1319,Y=659}; capture=0
+2026-10-18 15:26:40.398 +08:00 INPUT probe sample local={X=5,Y=5}; alpha=0; screen={X=1580,Y=455}; root=33359990
+2026-10-18 15:26:40.398 +08:00 INPUT probe sample local={X=214,Y=5}; alpha=0; screen={X=1789,Y=455}; root=33359990
+2026-10-18 15:26:40.399 +08:00 INPUT probe sample local={X=5,Y=234}; alpha=0; screen={X=1580,Y=684}; root=33359990
+2026-10-18 15:26:40.399 +08:00 INPUT probe sample local={X=214,Y=234}; alpha=0; screen={X=1789,Y=684}; root=33359990
+2026-10-18 15:26:40.400 +08:00 INPUT probe sample local={X=110,Y=120}; alpha=252; screen={X=1685,Y=570}; root=12719304
+2026-10-18 15:26:40.400 +08:00 PASS 局部测试底窗置于角色下方，原生Z序及220×240边界一致
+2026-10-18 15:26:40.401 +08:00 PASS 透明角色与测试底窗显示时不抢占前台焦点
+2026-10-18 15:26:40.607 +08:00 PASS 零alpha透明区域的真实Windows命中穿透角色
+2026-10-18 15:26:40.610 +08:00 INPUT transparent-probe requested={X=1710,Y=585}; actual={X=1710,Y=585}; actualRoot=33359990; expectedRoot=33359990
+2026-10-18 15:26:40.726 +08:00 INPUT transparent-probe requested={X=1710,Y=585}; actual={X=1710,Y=585}; actualRoot=33359990; expectedUnderlay=33359990; underlayBounds={X=1575,Y=450,Width=220,Height=240}; heroBounds={X=1575,Y=450,Width=220,Height=240}; underlayClicks=0→1
+2026-10-18 15:26:40.726 +08:00 PASS 透明区域的真实鼠标点击到达下方窗口
+2026-10-18 15:26:40.759 +08:00 PASS 角色可见区域正确接受真实鼠标命中
+2026-10-18 15:26:41.021 +08:00 PASS 真实鼠标拖动角色可以改变桌面位置
+2026-10-18 15:26:41.021 +08:00 PASS 拖动结束不会误触格挡或点击动作
+2026-10-18 15:26:41.163 +08:00 PASS 可见角色真实点击触发格挡及冷却
+2026-10-18 15:26:41.163 +08:00 PASS 选择和拖动透明角色不抢占其他应用焦点
+2026-10-18 15:26:41.364 +08:00 PASS 透明坐标WM_NCHITTEST返回HTTRANSPARENT（含负屏幕坐标编码）
+2026-10-18 15:26:41.365 +08:00 PASS 角色WM_MOUSEACTIVATE明确返回MA_NOACTIVATE
+2026-10-18 15:26:41.463 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-18 15:26:41.716 +08:00 MULTISCREEN native drag from=\\.\DISPLAY2 {X=1607,Y=425,Width=220,Height=240}; target=\\.\DISPLAY1 {X=1920,Y=0,Width=1920,Height=1080}; actual={X=2770,Y=420,Width=220,Height=240}; windowDpi=96
+2026-10-18 15:26:41.716 +08:00 PASS 真实鼠标跨屏拖动后角色完整位于目标显示器工作区
+2026-10-18 15:26:41.716 +08:00 PASS 跨屏拖动不会触发格挡或点击动作
+2026-10-18 15:26:41.820 +08:00 CAPTURE verified real desktop hero 00-multi-monitor-secondary
+2026-10-18 15:26:41.907 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-18 15:26:42.174 +08:00 MULTISCREEN native drag back to=\\.\DISPLAY2; requested={X=1607,Y=425,Width=220,Height=240}; actual={X=1607,Y=425,Width=220,Height=240}; windowDpi=96
+2026-10-18 15:26:42.174 +08:00 PASS 真实鼠标可拖回原显示器且角色完整落在有效工作区
+2026-10-18 15:26:42.175 +08:00 PASS 跨屏往返不抢前台焦点、不误触格挡
+2026-10-18 15:26:42.177 +08:00 PASS 纯透明画面负例会被截图像素校验拒绝
+2026-10-18 15:26:48.201 +08:00 PASS 重启后维护授权仍关闭
+2026-10-18 15:26:48.286 +08:00 CAPTURE verified real desktop hero 80-restored-profile-on-real-desktop
+2026-10-18 15:26:48.297 +08:00 PASS 五份隔离业务存档安全落盘
+2026-10-18 15:26:48.302 +08:00 PASS 独立存档重新Load后身份、境界、灵域及洞天一致
+2026-10-18 15:26:48.305 +08:00 PASS 真实用户五档及维护授权文件哈希保持不变

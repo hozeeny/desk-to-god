@@ -715,6 +715,8 @@ namespace NetBunny
         {
             int checks = 0;
             Action<bool, string> check = delegate(bool ok, string detail) { if (!ok) throw new InvalidOperationException("Art demo: " + detail); checks++; };
+            foreach (string stage in new[] { "mortal", "qishi", "zhuji" })
+                check(File.Exists(Path.Combine(artDemoDirectory, "hero-rig-" + stage + ".anchors")), stage + " requires articulated source anchors, not a translated portrait");
             // Explicit constructor avoids mutating process-wide environment or reading old Assets.
             using (AdventureRenderer renderer = new AdventureRenderer("", artDemoDirectory))
             {
@@ -725,11 +727,11 @@ namespace NetBunny
                     using (Bitmap frame = renderer.Render(new AdventureRenderState { HeroStage = stage, Size = new Size(220, 240), Phase = "idle", Time = .4 })) stages.Add(Hash(frame));
                     foreach (Size size in new[] { new Size(176, 192), new Size(220, 240), new Size(264, 288) })
                     foreach (bool facing in new[] { false, true })
-                    foreach (string phase in new[] { "idle", "run", "attack", "pant", "dying", "grave", "revive" })
+                    foreach (string phase in new[] { "idle", "run", "attack", "guard", "pant", "dying", "grave", "revive" })
                     using (Bitmap frame = renderer.Render(new AdventureRenderState { HeroStage = stage, Size = size, Phase = phase, FacingRight = facing, Time = .3, Cycle = .21, AttackProgress = phase == "attack" ? .55 : 0, DeathProgress = .45 }))
                     { check(EdgesEmpty(frame), stage + " " + phase + " " + size + " " + facing + " has clear outer border"); check(Hash(frame) != HashEmpty(frame.Width, frame.Height), stage + " " + phase + " visible"); }
                     using (Bitmap first = renderer.Render(new AdventureRenderState { HeroStage = stage, Phase = "run", Time = 0, Cycle = 0 }))
-                    using (Bitmap next = renderer.Render(new AdventureRenderState { HeroStage = stage, Phase = "run", Time = .2, Cycle = .21 })) check(Hash(first) != Hash(next), stage + " full illustration bob/lean and independent weapon animate");
+                    using (Bitmap next = renderer.Render(new AdventureRenderState { HeroStage = stage, Phase = "run", Time = .2, Cycle = .21 })) check(Hash(first) != Hash(next), stage + " independent limbs follow the shared continuous gait solver");
                 }
                 check(stages.Count == 3, "three different stage illustrations");
                 foreach (string id in new[] { "skeleton", "slime", "imp", "bat", "mushroom", "elite", "elite-mushroom", "mirror-shard", "mirror-wraith", "mirror-boss" })
@@ -751,7 +753,7 @@ namespace NetBunny
                 for (int i = 0; i < 150; i++) using (Bitmap frame = renderer.Render(new AdventureRenderState { HeroStage = i % 2 == 0 ? "qishi" : "zhuji", Kind = i % 3 == 0 ? "Skeleton" : "Hero", Time = i / 30.0, Cycle = i / 60.0 })) { }
                 int after = GetGuiResources(Process.GetCurrentProcess().Handle, 0); check(after <= before + 3, "repeated illustration rendering releases native GDI handles");
             }
-            return "Art demo: " + checks + " assertions passed. Full illustration prototype, 3 stages, 5 common monsters, 2 elites, mirrors, aspect-preserving 80/100/120% output, projectiles, transparent shatter and GDI ownership. " + ArtDemoPack.MappingDescription;
+            return "Art demo: " + checks + " assertions passed. Articulated source-pixel heroes, 3 stages, 5 common monsters, 2 elites, mirrors, aspect-preserving 80/100/120% output, projectiles, transparent shatter and GDI ownership. " + ArtDemoPack.MappingDescription;
         }
         internal static void ExportPreview(string assetDirectory, string path)
         {

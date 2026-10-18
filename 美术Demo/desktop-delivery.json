@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-18",
+  "entry": "transparent desktop, no scene window",
+  "branch": "feature/v6-art-foundation",
+  "archive": "桌面修仙-透明桌面Demo.zip",
+  "archive_bytes": 38360835,
+  "archive_sha256": "74ad0179f054d8d254d3e305bb6dad15b0d10660ecff3eabd7d8a5b96ac75177",
+  "executable": "桌面修仙-透明桌面Demo.exe",
+  "executable_sha256": "be4b1171b96878b42a896fa03168250c50780b727fb7fb1b994ab07ff73397a6",
+  "new_png_count": 27,
+  "legacy_asset_files": 22,
+  "archive_files": 59,
+  "crc_and_byte_verification": "passed",
+  "profiles_included": false,
+  "raw_desktop_captures_included": false
+}

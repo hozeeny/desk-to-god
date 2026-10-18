@@ -529,7 +529,7 @@ namespace NetBunny
                     foreach (ArtDemoActorFrame actor in actors) actor.Window.Hide();
                     // The host is a static, paused scene during these two native
                     // captures; no DrawToBitmap or invented background is used.
-                    background = DesktopFrameCapture.CaptureWindow(this);
+                    background = DesktopFrameCapture.CaptureRegion(Bounds, false);
                 }
                 finally
                 {

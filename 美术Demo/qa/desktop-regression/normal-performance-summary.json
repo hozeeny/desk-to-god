@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "elapsedSeconds": 212.7819625,
+  "nativeMouseClicks": 174,
+  "normalSeconds": 120.23563359999999,
+  "normalSamples": 55,
+  "normalCpuMachineMean": 2.162298887990832,
+  "normalCpuOneCoreMean": 25.947586655889985,
+  "normalPrivateMiBMinMax": [
+    125.51953125,
+    127.19921875
+  ],
+  "normalGdiMinMax": [
+    58,
+    70
+  ],
+  "normalUserMinMax": [
+    69,
+    78
+  ],
+  "normalHandlesMinMax": [
+    344,
+    355
+  ],
+  "realArchivesUnchanged": true,
+  "displays": [
+    {
+      "device": "\\\\.\\DISPLAY1",
+      "primary": false,
+      "bounds": "{X=1920,Y=0,Width=1920,Height=1080}",
+      "workingArea": "{X=1920,Y=0,Width=1920,Height=1080}",
+      "effectiveDpiX": 96,
+      "effectiveDpiY": 96,
+      "scalePercent": 100
+    },
+    {
+      "device": "\\\\.\\DISPLAY2",
+      "primary": true,
+      "bounds": "{X=0,Y=0,Width=1920,Height=1080}",
+      "workingArea": "{X=0,Y=0,Width=1920,Height=1040}",
+      "effectiveDpiX": 96,
+      "effectiveDpiY": 96,
+      "scalePercent": 100
+    }
+  ]
+}

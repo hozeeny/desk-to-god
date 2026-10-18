@@ -1,0 +1,4 @@
+PASS Windows PowerShell 5.1.19041.6456 parser + UTF8 BOM: build-desktop-demo.ps1
+PASS Windows PowerShell 5.1.19041.6456 parser + UTF8 BOM: launch-demo.ps1
+PASS Windows PowerShell 5.1.19041.6456 parser + UTF8 BOM: launch-art-preview.ps1
+PASS Windows PowerShell 5.1.19041.6456 parser + UTF8 BOM: tools/sample-desktop-performance.ps1

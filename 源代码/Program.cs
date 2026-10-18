@@ -22,6 +22,11 @@ namespace NetBunny
         [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
         [STAThread] static void Main(string[] args)
         {
+#if DESKTOP_DEMO_ONLY
+            if (args.Length == 0) args = new[] { "--desktop-demo" };
+            if (args[0] != "--desktop-demo" && args[0] != "--desktop-demo-accept" && args[0] != "--desktop-demo-smoke")
+            { Environment.ExitCode = 1; return; }
+#endif
 #if ART_DEMO_ONLY
             // The separately named Demo executable is fail-closed even when it
             // is double-clicked without arguments; it cannot open a live profile.
@@ -32,6 +37,22 @@ namespace NetBunny
                 return;
             }
 #endif
+            if (args.Length > 0 && args[0].StartsWith("--desktop-demo", StringComparison.Ordinal))
+            {
+                try
+                {
+                    SetProcessDPIAware(); Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
+                    if (args[0] != "--desktop-demo" && args[0] != "--desktop-demo-accept" && args[0] != "--desktop-demo-smoke") throw new ArgumentException("未知的桌面入口。");
+                    Environment.ExitCode = DesktopDemoSession.Run(args);
+                }
+                catch (Exception e)
+                {
+                    Environment.ExitCode = 1;
+                    try { File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "desktop-demo-error.log"), e.ToString()); } catch { }
+                    if (args[0] == "--desktop-demo") MessageBox.Show(e.Message, "透明桌面 Demo 未能启动");
+                }
+                return;
+            }
             if (args.Length > 0 && (args[0] == "--art-demo" || args[0] == "--art-demo-accept" || args[0] == "--art-demo-smoke"))
             {
                 try

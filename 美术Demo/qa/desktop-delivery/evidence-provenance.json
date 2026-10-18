@@ -1,0 +1,182 @@
+{
+  "capture": "real Windows native pixels, no synthetic scene or actor overlay",
+  "movie": "10 chronological frames, following native crop; outside matte only; 360ms per frame",
+  "raw_policy": "raw screens retained locally, curated crops exclude unrelated private messages",
+  "records": [
+    {
+      "image": "01-mortal-desktop.png",
+      "source": "qa\\desktop-accept-mortal-r8\\00-multi-monitor-secondary.png",
+      "source_sha256": "177ce87fd20f34c3c17ce8d2e780a42ed2cd82b434a1066e9a5f7d629d4a1878",
+      "crop_box": [
+        0,
+        0,
+        276,
+        296
+      ],
+      "operation": "native pixels, crop only, no resizing or repaint",
+      "output_sha256": "40bbb12c1cf1784f8a7eea5ff8edaad68182cca6e0891107d0c042485cd47b60"
+    },
+    {
+      "image": "02-mortal-ten-kills.png",
+      "source": "qa\\desktop-accept-mortal-r8\\05-ten-kills-awaken-panel.png",
+      "source_sha256": "6f9a192e294909f5bf7a811a57d10cfd161da854a8630478511570ce3cd85e4d",
+      "crop_box": [
+        19,
+        12,
+        461,
+        430
+      ],
+      "operation": "native pixels, crop only, no resizing or repaint",
+      "output_sha256": "fed666d418181cc676ee1c67ef66cf474787a43bb36fd31727f516b43b3ffa68"
+    },
+    {
+      "image": "03-qishi-automatic.png",
+      "source": "qa\\desktop-accept-mortal-r8\\06-qishi-desktop-automatic.png",
+      "source_sha256": "08825714a192b649fd009a48117e6fc7a0a7be48b92fe372b2d76d7c1cdf1757",
+      "crop_box": [
+        16,
+        86,
+        302,
+        359
+      ],
+      "operation": "native pixels, crop only, no resizing or repaint",
+      "output_sha256": "dd771b7d4d261a7346a745ffb6b4a4b1dacdfa8196a15f243984d8140642ccdc"
+    },
+    {
+      "image": "04-dongtian-panel.png",
+      "source": "qa\\desktop-accept-qishi-full-r12\\30-dongtian-panel-on-real-desktop.png",
+      "source_sha256": "9fda4156bb29a2d6478932a601a1fb8f3842d912b1858fd35c76f4eb37eeaf4e",
+      "crop_box": [
+        19,
+        12,
+        725,
+        566
+      ],
+      "operation": "native pixels, crop only, no resizing or repaint",
+      "output_sha256": "0e1416cb8ce970dee7df73a4d4604a5f19968e7e81625d78a81ad50d5aaa3376"
+    },
+    {
+      "image": "05-zhuji-mirror-battle.png",
+      "source": "qa\\desktop-accept-qishi-full-r12\\41-lingyu-mirror-on-desktop.png",
+      "source_sha256": "f10c4b4eb8bd8c383741f512500d29fe336d53d1e0fe26f1f78564a66e24617c",
+      "crop_box": [
+        0,
+        0,
+        381,
+        374
+      ],
+      "operation": "native pixels, crop only, no resizing or repaint",
+      "output_sha256": "57b7db97e4586f15871f9bf2deec47ef41733339e8dcadf5bb896c6cecb5f523"
+    },
+    {
+      "animation_frame": 0,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-001.png",
+      "source_sha256": "7689b12de7918a0297096534f8f5c67fca4c90cb1e63dfdbf443d456e345b63a",
+      "offset": [
+        186,
+        52
+      ],
+      "capture_time_seconds": 3.6442888,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 1,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-002.png",
+      "source_sha256": "4d07c27d9249a2f44116953c11609b64162f2d5464f286824e7ec0550568463c",
+      "offset": [
+        0,
+        0
+      ],
+      "capture_time_seconds": 4.0805187,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 2,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-003.png",
+      "source_sha256": "68f25468651aee64d9619783e772184c22079f1b5b34005b8c438f9fb864b42d",
+      "offset": [
+        50,
+        13
+      ],
+      "capture_time_seconds": 4.413191299999999,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 3,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-004.png",
+      "source_sha256": "ab920df41df31df86eca1083900d801656b198b9a7ca9798d662bf8de973c379",
+      "offset": [
+        114,
+        28
+      ],
+      "capture_time_seconds": 4.8485458,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 4,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-005.png",
+      "source_sha256": "9e2913f3c58a6c61b9c7ebfd33a4889616451cce4427baa8ead8c912270f948c",
+      "offset": [
+        169,
+        42
+      ],
+      "capture_time_seconds": 5.2794707999999995,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 5,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-006.png",
+      "source_sha256": "e797e449f85c097fc01dac2cfe993d60296d1e1ea3cbe710281cf933f2e7c8e7",
+      "offset": [
+        154,
+        44
+      ],
+      "capture_time_seconds": 5.6241438,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 6,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-007.png",
+      "source_sha256": "e4f6a99c314c08234aaba865a0a6ce461f6ed2adf60fd7c9389914f8fbb8cd8b",
+      "offset": [
+        154,
+        52
+      ],
+      "capture_time_seconds": 6.0474784999999995,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 7,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-008.png",
+      "source_sha256": "13ec7f6771d9eff5752f809870c2c69652755ab42f95755ed2620d5d2f350d54",
+      "offset": [
+        174,
+        52
+      ],
+      "capture_time_seconds": 6.484886899999999,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 8,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-009.png",
+      "source_sha256": "61c7368eadc3e3734ffcad657bb61cd180ce4b1cd91df8bdf96ac71d3cf313c8",
+      "offset": [
+        160,
+        47
+      ],
+      "capture_time_seconds": 6.9247295,
+      "operation": "complete native crop, unchanged; external matte only"
+    },
+    {
+      "animation_frame": 9,
+      "source": "qa\\desktop-accept-mortal-restart-r9\\native-frames\\desktop-idle-walk-010.png",
+      "source_sha256": "7fc613ab3365e5ae56177f86b31e2ff8416c1a4a8d647837ec3e2e31d2c3a4f6",
+      "offset": [
+        83,
+        40
+      ],
+      "capture_time_seconds": 7.359757,
+      "operation": "complete native crop, unchanged; external matte only"
+    }
+  ]
+}

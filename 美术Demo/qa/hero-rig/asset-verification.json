@@ -1,0 +1,47 @@
+[
+  {
+    "stage": "mortal",
+    "sourceSha256": "fb8a887973ac118ec6100565c314e9f03cfc12520faf665fb03756918c324169",
+    "atlasSha256": "aff6b9ab9f13284604bc0ca5b39dfe8b1f52f02945c44f7b68a9c6b2179335b2",
+    "parts": 12,
+    "independentBodyParts": 11,
+    "cellSize": 256,
+    "grid": [
+      4,
+      3
+    ],
+    "outerCellSafetyPixels": 8,
+    "operation": "polygon masks + proportional resampling; no repaint, recolour or synthesis",
+    "warning": "Overlap pixels are source samples, not newly invented hidden surfaces. Extreme poses remain out of scope."
+  },
+  {
+    "stage": "qishi",
+    "sourceSha256": "822e6e35d44b8fc091307947336d440f37a09d597cc0a3ee4957bc1701c69868",
+    "atlasSha256": "f813c2d7ff7b9184e34241cab9c34b97a901329aa787039a9209cdcddfbd978d",
+    "parts": 12,
+    "independentBodyParts": 11,
+    "cellSize": 256,
+    "grid": [
+      4,
+      3
+    ],
+    "outerCellSafetyPixels": 8,
+    "operation": "polygon masks + proportional resampling; no repaint, recolour or synthesis",
+    "warning": "Overlap pixels are source samples, not newly invented hidden surfaces. Extreme poses remain out of scope."
+  },
+  {
+    "stage": "zhuji",
+    "sourceSha256": "e88d05f8066949902ab900da86e23efeba2d4b052b904fcc92ad0446a67af347",
+    "atlasSha256": "6618fc9495da63b5773fc99033f3321aad0f0d02a8774844b7dc81128f0aa36b",
+    "parts": 12,
+    "independentBodyParts": 11,
+    "cellSize": 256,
+    "grid": [
+      4,
+      3
+    ],
+    "outerCellSafetyPixels": 8,
+    "operation": "polygon masks + proportional resampling; no repaint, recolour or synthesis",
+    "warning": "Overlap pixels are source samples, not newly invented hidden surfaces. Extreme poses remain out of scope."
+  }
+]
