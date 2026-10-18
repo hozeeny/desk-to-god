@@ -1,0 +1,117 @@
+{
+  "source_version": "v2",
+  "method": "Proportional Lanczos resize, all nonzero alpha bounds, no drawing or source changes",
+  "candidates": [
+    {
+      "candidate": "M1",
+      "source": "raw/M1-v2.png",
+      "source_sha256": "ae7e8a8aaf40e4fa6726d46c66b4bdc14b7e8dd05a4d576a2a8b1d2fb2b167d3",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_zero_percent": 55.9212,
+      "all_nonzero_alpha_bounds": [
+        0,
+        29,
+        998,
+        1504
+      ],
+      "preview_size": [
+        220,
+        240
+      ],
+      "scale": 0.1369491525423729,
+      "resized_size": [
+        137,
+        202
+      ],
+      "position": [
+        36,
+        20
+      ],
+      "preview": "previews/M1-220x240.png",
+      "light_preview": "previews/M1-220x240-light.png",
+      "dark_preview": "previews/M1-220x240-dark.png"
+    },
+    {
+      "candidate": "M2",
+      "source": "raw/M2-v2.png",
+      "source_sha256": "ede6d550a0c3ac07ba78cd69e0af8ed2ee3d52efd5601ad23dc2c63042e91976",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_zero_percent": 56.8377,
+      "all_nonzero_alpha_bounds": [
+        0,
+        33,
+        996,
+        1512
+      ],
+      "preview_size": [
+        220,
+        240
+      ],
+      "scale": 0.13657876943881,
+      "resized_size": [
+        136,
+        202
+      ],
+      "position": [
+        36,
+        20
+      ],
+      "preview": "previews/M2-220x240.png",
+      "light_preview": "previews/M2-220x240-light.png",
+      "dark_preview": "previews/M2-220x240-dark.png"
+    },
+    {
+      "candidate": "M3",
+      "source": "raw/M3-v2.png",
+      "source_sha256": "29e89275d255ae1b1e29631de3be8fbeef4a538a5a544c15a9007bb670a14a3e",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_zero_percent": 54.5783,
+      "all_nonzero_alpha_bounds": [
+        0,
+        15,
+        1008,
+        1536
+      ],
+      "preview_size": [
+        220,
+        240
+      ],
+      "scale": 0.13280736357659434,
+      "resized_size": [
+        134,
+        202
+      ],
+      "position": [
+        37,
+        20
+      ],
+      "preview": "previews/M3-220x240.png",
+      "light_preview": "previews/M3-220x240-light.png",
+      "dark_preview": "previews/M3-220x240-dark.png"
+    }
+  ]
+}

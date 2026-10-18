@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "local_date": "2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "project": "桌面修仙传",
+  "branch": "feature/v6-art-foundation",
+  "art_start_commit": "b97a0d09c52218db73b44060df099dade967e406",
+  "main_baseline": "5f8151ab46b84c5a53c00a3f5569297b8ec7e266",
+  "workflow": "Codex生成候选 → 产品审核 → 修改确认 → Codex制作游戏资产 → 接入与验收",
+  "reference_resolution": {
+    "user_label": "图1",
+    "local_reference": "../round-01-v1/raw/A3-v4.png",
+    "basis": "用户明确列出的低马尾、侧分碎发、坚定冷静目光、赭红短交领衣对应本地A3-v4，而非高髻蓝衣的A1。",
+    "sha256": "bb24561948ea666e8e30c7b699a1fc01287399fb170e3e89b8160b37fcdf2527"
+  },
+  "status": "awaiting_product_review",
+  "reference_direction_selected": true,
+  "final_character_approved": false,
+  "approved_variant": null,
+  "current_review_version": "v2",
+  "generator": {
+    "tool": "image_gen.imagegen",
+    "mode": "built-in",
+    "model_version": "not exposed by tool",
+    "transparent_background_requested": true,
+    "external_api_used": false,
+    "call_count": 6
+  },
+  "scope": "三个同一人物的小变体；无新人物分支，无炼气/筑基，无图集拆分、渲染修改或游戏接入。",
+  "preview_method": "沿用首轮等比Lanczos及关联alpha缩图方法，完整非零alpha包围盒、220×240画布，不修改原始PNG。",
+  "qa": {
+    "reviewed": [
+      "三张v2完整原图",
+      "六张v2浅深底220×240预览",
+      "A3-v4身份参考"
+    ],
+    "findings": [
+      "低马尾、侧分碎发、脸型与眉眼延续同一人物。",
+      "约三头身为视觉估计；右向3/4、全身及手脚完整，小图脸、衣领、束腰与腿脚仍清楚。",
+      "M1无挂饰最克制；M2一枚小旧铜佩提供识别点；M3窄护腕、简化布靴与小布囊更日常。"
+    ],
+    "recommendation": "M3，仅为视觉建议，待产品确认。",
+    "limitations": [
+      "衣物、腰带与鞋面仍有细密几何织纹，不能称为完全素色平纹布。",
+      "严肃眉眼依照身份约束保留；侠客气质主要通过装束减弱，凡人气质仍须产品审核。",
+      "alpha0..254且有零星低alpha边缘像素，源图完整保留未做阈值清边。",
+      "完整原画不等于分层源文件；分件、隐藏连接、锚点、镜像及运行效果未验收。"
+    ],
+    "game_integration_performed": false
+  },
+  "candidates": [
+    {
+      "id": "M1",
+      "title": "素布微调",
+      "current_review_image": "raw/M1-v2.png",
+      "preview": "previews/M1-220x240.png",
+      "variants_are_same_person": true,
+      "versions": [
+        {
+          "version": "v1",
+          "operation": "edit",
+          "input": "../round-01-v1/raw/A3-v4.png",
+          "prompt": "prompts/M1-v1.txt",
+          "output": "raw/M1-v1.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-9c00ee09-43d0-438a-8b6d-37876128df86.png",
+          "note": "保留同人身份，降低红褐饱和度、增加生活化细节。",
+          "sha256": "786f666944fdbb504018f99de89e90ba76af6732ce5f9e2d15ce2f3d329b505e",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "alpha_extrema": [
+            0,
+            254
+          ],
+          "original_copy_verified": true
+        },
+        {
+          "version": "v2",
+          "operation": "edit",
+          "input": "raw/M1-v1.png",
+          "prompt": "prompts/M1-v2.txt",
+          "output": "raw/M1-v2.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-9d421598-92f0-494a-a2da-ffd6b6d2e633.png",
+          "note": "进一步请求简化衣料纹样与护腕；残余细纹据实保留待审，不称彻底去纹。",
+          "sha256": "ae7e8a8aaf40e4fa6726d46c66b4bdc14b7e8dd05a4d576a2a8b1d2fb2b167d3",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "alpha_extrema": [
+            0,
+            254
+          ],
+          "original_copy_verified": true
+        }
+      ]
+    },
+    {
+      "id": "M2",
+      "title": "旧铜小佩",
+      "current_review_image": "raw/M2-v2.png",
+      "preview": "previews/M2-220x240.png",
+      "variants_are_same_person": true,
+      "versions": [
+        {
+          "version": "v1",
+          "operation": "edit",
+          "input": "../round-01-v1/raw/A3-v4.png",
+          "prompt": "prompts/M2-v1.txt",
+          "output": "raw/M2-v1.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-eaa89d13-d83d-4f20-af2e-1ae90d157a83.png",
+          "note": "保留同人身份，降低红褐饱和度、增加生活化细节。",
+          "sha256": "6933edf08c5f140f9cb93995b73a609d97450ccd52622ffc62608d27f00da717",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "alpha_extrema": [
+            0,
+            254
+          ],
+          "original_copy_verified": true
+        },
+        {
+          "version": "v2",
+          "operation": "edit",
+          "input": "raw/M2-v1.png",
+          "prompt": "prompts/M2-v2.txt",
+          "output": "raw/M2-v2.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-66f0ef94-1b7b-4364-b569-947449aade61.png",
+          "note": "进一步请求简化衣料纹样与护腕；残余细纹据实保留待审，不称彻底去纹。",
+          "sha256": "ede6d550a0c3ac07ba78cd69e0af8ed2ee3d52efd5601ad23dc2c63042e91976",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "alpha_extrema": [
+            0,
+            254
+          ],
+          "original_copy_verified": true
+        }
+      ]
+    },
+    {
+      "id": "M3",
+      "title": "日常布囊",
+      "current_review_image": "raw/M3-v2.png",
+      "preview": "previews/M3-220x240.png",
+      "variants_are_same_person": true,
+      "versions": [
+        {
+          "version": "v1",
+          "operation": "edit",
+          "input": "../round-01-v1/raw/A3-v4.png",
+          "prompt": "prompts/M3-v1.txt",
+          "output": "raw/M3-v1.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-5925625c-fbd9-4947-bd34-52859b59da4b.png",
+          "note": "保留同人身份，降低红褐饱和度、增加生活化细节。",
+          "sha256": "0da58f97c71e89380d5b6777448bd34f6f3ab263ebfbffa519c2fe5afb10ce49",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "alpha_extrema": [
+            0,
+            254
+          ],
+          "original_copy_verified": true
+        },
+        {
+          "version": "v2",
+          "operation": "edit",
+          "input": "raw/M3-v1.png",
+          "prompt": "prompts/M3-v2.txt",
+          "output": "raw/M3-v2.png",
+          "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-082c9206-2a33-47bd-9a06-6867e757bdb4.png",
+          "note": "进一步请求简化衣料纹样与护腕；残余细纹据实保留待审，不称彻底去纹。",
+          "sha256": "29e89275d255ae1b1e29631de3be8fbeef4a538a5a544c15a9007bb670a14a3e",
+          "size": [
+            1024,
+            1536
+          ],
+          "mode": "RGBA",
+          "alpha_extrema": [
+            0,
+            254
+          ],
+          "original_copy_verified": true
+        }
+      ]
+    }
+  ],
+  "file_verification": {
+    "raw_count": 6,
+    "original_copies_identical": true,
+    "prompt_count": 6,
+    "preview_count": 9,
+    "preview_size": [
+      220,
+      240
+    ],
+    "readme_links_verified": 33,
+    "previous_round_12_raw_pngs_unchanged": true
+  }
+}
