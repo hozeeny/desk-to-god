@@ -1,0 +1,37 @@
+{
+  "source": "raw/mortal-M2-polish-v2.png",
+  "source_sha256": "d2cef978b7429604a2fcfb6fb6b0696661bed7f71c9ec743fefadd0b41d1aa30",
+  "source_size": [
+    1024,
+    1536
+  ],
+  "source_mode": "RGBA",
+  "alpha_extrema": [
+    0,
+    254
+  ],
+  "alpha_zero_percent": 55.1618,
+  "all_nonzero_alpha_bounds": [
+    41,
+    29,
+    994,
+    1507
+  ],
+  "method": "Proportional Lanczos, associated alpha, no source edits",
+  "scale": 0.13667117726657646,
+  "resized_size": [
+    130,
+    202
+  ],
+  "position": [
+    39,
+    20
+  ],
+  "preview": "previews/mortal-M2-polish-v2-220x240-light.png",
+  "preview_size": [
+    220,
+    240
+  ],
+  "preview_background": "#F2F0E8",
+  "preview_sha256": "6e3fdbabd63029dc2554628c52878681d63bdc15a32a2d231c35073b8364ab9f"
+}

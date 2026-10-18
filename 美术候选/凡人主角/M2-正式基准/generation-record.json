@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "local_date": "2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "project": "桌面修仙传",
+  "branch": "feature/v6-art-foundation",
+  "art_start_commit": "e0dcfe2b812afb00eb65bd9b78822527034c50cd",
+  "formal_baseline": {
+    "id": "M2-v2",
+    "approved_by": "产品方（本轮用户明确选择）",
+    "status": "approved_as_standard_mortal_baseline",
+    "original": "../round-02-directed/raw/M2-v2.png",
+    "preserved_copy": "baseline/M2-v2.png",
+    "sha256": "ede6d550a0c3ac07ba78cd69e0af8ed2ee3d52efd5601ad23dc2c63042e91976"
+  },
+  "confirmed_identity": [
+    "低马尾",
+    "侧分碎发",
+    "冷静坚定的眼神",
+    "红褐短交领上衣、灰裤、布靴",
+    "腰间一枚小旧铜佩",
+    "约2.8—3头身精致微缩比例"
+  ],
+  "current_delivery": {
+    "version": "polish-v2",
+    "image": "raw/mortal-M2-polish-v2.png",
+    "preview": "previews/mortal-M2-polish-v2-220x240-light.png",
+    "status": "awaiting_product_final_confirmation",
+    "product_approved": false,
+    "delivered_current_character_count": 1,
+    "delivered_current_preview_count": 1
+  },
+  "generator": {
+    "tool": "image_gen.imagegen",
+    "mode": "built-in",
+    "operation": "edit",
+    "model_version": "not exposed by tool",
+    "call_count": 2,
+    "transparent_background_requested": true,
+    "external_api_used": false
+  },
+  "scope": "以已批准M2-v2为基准，仅小幅精修衣料和朴素感；未重新选人物，未拆件、替换素材或接入游戏。",
+  "versions": [
+    {
+      "version": "polish-v1",
+      "input": "baseline/M2-v2.png",
+      "prompt": "prompts/mortal-M2-polish-v1.txt",
+      "output": "raw/mortal-M2-polish-v1.png",
+      "preview": "previews/mortal-M2-polish-v1-220x240-light.png",
+      "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-4631a102-ef28-49aa-acab-202ee4af37fe.png",
+      "note": "首次小幅精修；身份保持，密纹收敛不充分，作为过程稿保留。",
+      "sha256": "08b6901e807208c1c6f2e82bef941a350c089a2e278b75939ad533901bddd260",
+      "size": [
+        1024,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "generator_copy_verified": true
+    },
+    {
+      "version": "polish-v2",
+      "input": "raw/mortal-M2-polish-v1.png",
+      "prompt": "prompts/mortal-M2-polish-v2.txt",
+      "output": "raw/mortal-M2-polish-v2.png",
+      "preview": "previews/mortal-M2-polish-v2-220x240-light.png",
+      "generator_original": "C:\\Users\\Administrator\\.codex\\generated_images\\01a14b29-1523-75f2-9a84-ee041971e40d\\exec-377d0cbc-2636-4c3a-b71c-7d6736d84d22.png",
+      "note": "仅进一步处理衣料表面；当前单张交付，保留自然细纹，待产品最终确认。",
+      "sha256": "d2cef978b7429604a2fcfb6fb6b0696661bed7f71c9ec743fefadd0b41d1aa30",
+      "size": [
+        1024,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "generator_copy_verified": true
+    }
+  ],
+  "preview_method": "完整非零alpha包围盒，关联alpha Lanczos等比缩小，放入220×240浅底#F2F0E8；仅制作预览，不改高清源图。参数见preview-report.json。",
+  "qa": {
+    "reviewed": [
+      "M2-v2基准",
+      "精修v1/v2高清图",
+      "实际220×240浅底预览"
+    ],
+    "observations": [
+      "同一脸型、眉眼、低马尾及服装整体结构保持。",
+      "小旧铜佩保持原腰侧小体积，在220×240下仍可辨为挂饰；无布囊及新增饰品。",
+      "全身及手脚完整，交领、束腰和双脚在小图仍可辨。",
+      "220×240下细纹合并，小图未见明显纹理杂点；当前仅静态原画检查。"
+    ],
+    "limitations": [
+      "高清中仍保留细密织纹，精修属于轻微调整，不声称完全素布化或消除侠客气质。",
+      "头身比为目测，未做骨骼测量；原始alpha最高254且保留零星低alpha边缘像素。",
+      "完整原画PNG不是分层源文件，也不是已验收的分件、图集或运行资产。"
+    ],
+    "game_integration_performed": false
+  },
+  "next_phase": {
+    "phase": "炼气阶段主角设计",
+    "identity_basis": "本M2人物身份，不重新选人",
+    "start_condition": "产品最终确认当前凡人精修正式版之后",
+    "started": false
+  },
+  "file_verification": {
+    "approved_baseline_copy_identical": true,
+    "generated_pngs_identical_to_tool_originals": 2,
+    "prompt_count": 2,
+    "preview_dimensions": [
+      220,
+      240
+    ],
+    "current_preview_version": "polish-v2",
+    "prior_round_six_pngs_unchanged": true,
+    "readme_links_verified": 19
+  }
+}
