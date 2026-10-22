@@ -39,6 +39,7 @@ namespace NetBunny
         private string targetId, movieName, switchOtherId;
         private string equipmentTargetId;
         private double equipmentPreviewSince;
+        private double trainingPreviewSince = -1;
         private AdventureController Game { get { return session.Game; } }
         internal DesktopDemoAcceptance(DesktopDemoSession session, string output, bool normalSpeed = false)
         { this.session = session; this.output = output; this.normalSpeed = normalSpeed; }
@@ -129,7 +130,7 @@ namespace NetBunny
                         phase = 10; nextAction = now;
                     }
                     else if (normalSpeed && (Game.Cultivation.RealmIndex >= 1 || Game.Cultivation.RealmComplete))
-                    { session.OpenPanel("training"); phase = 90; nextAction = now + .5; }
+                    { session.OpenPanel("training"); phase = 90; nextAction = wall.Elapsed.TotalSeconds + .5; }
                     else if (Game.Cultivation.RealmIndex == 0 && Game.Cultivation.RealmComplete)
                     { session.OpenPanel("breakthrough"); phase = 20; nextAction = now + .7; }
                     else if (Game.Cultivation.RealmIndex >= 1)
@@ -267,6 +268,13 @@ namespace NetBunny
                     session.OpenPanel("lingyu"); phase = 40; nextAction = now + .6;
                 }
                 else if (phase == 40) Explore(now);
+                else if (phase == 44)
+                {
+                    // Capture on a later message-loop turn, after the hidden
+                    // feature panel has actually left the desktop compositor.
+                    Capture("41-lingyu-mirror-on-desktop", true, false, true); BeginMovie("lingyu-mirror-automatic", 8);
+                    scoreBeforeAuto = Game.Battle.Progress.Score; autoStarted = now; phase = 41;
+                }
                 else if (phase == 41)
                 {
                     if (Game.Lingyu.CombatPending)
@@ -286,6 +294,15 @@ namespace NetBunny
                 {
                     DesktopPracticePanel handbook = VisiblePanel<DesktopPracticePanel>();
                     Assert(handbook != null, "修行手札可打开功法与成长目标页");
+                    if (trainingPreviewSince < 0) trainingPreviewSince = now;
+                    Label heading = (Label)typeof(DesktopPracticePanel).GetField("objective", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handbook);
+                    Label details = (Label)typeof(DesktopPracticePanel).GetField("cultivation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handbook);
+                    if (!NativePreviewContentMatches(heading, true) || !NativePreviewContentMatches(details, true))
+                    {
+                        if (now - trainingPreviewSince > 10) throw new TimeoutException("手札正文未在真实桌面清晰呈现，拒绝淡入或遮挡截图。");
+                        nextAction = now + .1; return;
+                    }
+                    Assert(true, "手札目标与修行正文已由真实桌面字形像素核实");
                     CapturePanel(handbook, "10-training-handbook");
                     Button baiye = FindButton("百业道碑");
                     if (baiye == null) throw new InvalidOperationException("修行页缺少百业入口。");
@@ -394,8 +411,7 @@ namespace NetBunny
             if (Game.Lingyu.CombatPending)
             {
                 Assert(Game.DesktopAcceptanceMirrorPresent, "灵域探索真实生成桌面独立可交互镜妖");
-                session.ClosePanels(); Capture("41-lingyu-mirror-on-desktop", true, false, true); BeginMovie("lingyu-mirror-automatic", 8);
-                scoreBeforeAuto = Game.Battle.Progress.Score; autoStarted = now; phase = 41; return;
+                session.ClosePanels(); phase = 44; nextAction = now + .15; return;
             }
             if (!Game.Lingyu.ExpeditionActive)
             {
@@ -672,7 +688,7 @@ namespace NetBunny
                 }
             }
             bool presented = samples >= 60 && matches >= samples * .8;
-            if (presented) Log("PRESENTED equipment " + (textOnly ? "description glyphs" : "illustration") + " " + matches + "/" + samples);
+            if (presented) Log("PRESENTED native control " + (textOnly ? "text glyphs" : "illustration") + " " + matches + "/" + samples);
             return presented;
         }
         private Rectangle CaptureBounds(IList<ArtDemoActorFrame> actors, bool includePanels)

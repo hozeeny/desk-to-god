@@ -131,6 +131,8 @@ namespace NetBunny
         // 进行中战斗的结算语义（持久化）：重启后重访，战斗胜利能正确结算或补发，
         // 不会因进程中断丢失主镜通关/机缘战斗的奖励语义。
         internal string CombatOutcome = "";
+        // 尚待玩家抉择的机缘；暂离与重启恢复同一 offer，不重掷随机机缘。
+        internal string PendingJiyuanId = "";
         internal readonly HashSet<string> ExpeditionFlags = new HashSet<string>(StringComparer.Ordinal);
         internal readonly List<string> ExpeditionLog = new List<string>();
         // 收藏体系：基础材料、功法残卷、传承记录。
@@ -177,6 +179,7 @@ namespace NetBunny
                     else if (key == "depth" && Int32.TryParse(value, out n) && n >= 0 && n < 1000) next.ExpeditionDepth = n;
                     else if (key == "combatpending") next.CombatPending = value == "1";
                     else if (key == "outcome" && ValidToken(value, 48)) next.CombatOutcome = value;
+                    else if (key == "pendingjiyuan" && ValidToken(value, 40)) next.PendingJiyuanId = value;
                     else if (key == "counter" && Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out l) && l >= 0) next.EventCounter = l;
                     else if (key.StartsWith("visit.", StringComparison.Ordinal) && Int32.TryParse(value, out n) && n >= 0)
                     { string id = key.Substring(6); if (LingyuCatalog.FindRealm(id) != null) next.RealmVisits[id] = n; }
@@ -196,9 +199,9 @@ namespace NetBunny
                     { string id = key.Substring(10); if (ValidToken(id, 48)) next.PendingQi[id] = l; }
                 }
                 if (version != FormatVersion) return false;
-                // 暂离（expedition=0）只解除战斗挂起，节点与深度保留——重访时从暂离处继续。
-                if (!next.ExpeditionActive) { next.CombatPending = false; next.CombatOutcome = ""; }
+                // 暂离只停止探索；未决战斗的结算语义保留，重访后再补发镜妖。
                 if (!next.CombatPending) next.CombatOutcome = "";
+                if (JiyuanEngine.FindPendingOffer(next) == null) next.PendingJiyuanId = "";
                 while (next.ExpeditionLog.Count > 12) next.ExpeditionLog.RemoveAt(0);
                 progress = next; return true;
             }
@@ -220,6 +223,7 @@ namespace NetBunny
             data.Append("depth=").Append(ExpeditionDepth).Append('\n');
             data.Append("combatpending=").Append(CombatPending ? "1" : "0").Append('\n');
             data.Append("outcome=").Append(CombatOutcome).Append('\n');
+            if (PendingJiyuanId.Length > 0) data.Append("pendingjiyuan=").Append(PendingJiyuanId).Append('\n');
             data.Append("counter=").Append(EventCounter.ToString(CultureInfo.InvariantCulture)).Append('\n');
             foreach (KeyValuePair<string, int> pair in RealmVisits) data.Append("visit.").Append(pair.Key).Append('=').Append(pair.Value).Append('\n');
             foreach (string realm in RealmEntered) data.Append("entered=").Append(realm).Append('\n');
@@ -360,6 +364,18 @@ namespace NetBunny
             for (int i = 0; i < All.Length; i++) if (All[i].Id == id) return All[i];
             return null;
         }
+        // 已呈现的机缘只校验持久化关联，不重新评估门槛或消耗随机数。
+        // 旧档没有此可选字段时仍按原路径评估；损坏字段不影响其他探索进度。
+        internal static JiyuanDef FindPendingOffer(LingyuProgress progress)
+        {
+            if (progress == null || String.IsNullOrEmpty(progress.PendingJiyuanId) || progress.CombatPending
+                || !progress.RealmEntered.Contains("qianmian") || progress.JiyuanChoices.ContainsKey(progress.PendingJiyuanId)
+                || progress.Grants.ContainsKey("jiyuan-" + progress.PendingJiyuanId)) return null;
+            string node = progress.ExpeditionNode;
+            if (node != "ferry" && node != "corridor" && node != "mist" && node != "echo" && node != "atrium") return null;
+            JiyuanDef def = Find(progress.PendingJiyuanId);
+            return def != null && (def.NodeId == "*" || def.NodeId == node) ? def : null;
+        }
         // 评估某个节点（或 "*" 任意节点）当前可触发的机缘；已记录的一次性机缘不重触发。
         internal static JiyuanDef Evaluate(string nodeId, JiyuanContext ctx, Random random)
         {
@@ -405,6 +421,7 @@ namespace NetBunny
         {
             if (progress == null) throw new ArgumentNullException("progress");
             this.progress = progress; this.random = random ?? new Random();
+            RestorePendingJiyuan();
         }
 
         internal bool Active { get { return progress.ExpeditionActive; } }
@@ -469,12 +486,13 @@ namespace NetBunny
             // 重访时若战斗未决，重新生成镜妖（探索不因重启卡死）；
             // 结算语义读自持久化的 CombatOutcome，主镜战重启后仍是主镜战。
             if (progress.CombatPending) RequestCombat(progress.CombatOutcome == "final");
-            else RollJiyuan(ctx);
+            else if (!RestorePendingJiyuan()) RollJiyuan(ctx);
         }
         internal void Suspend()
         {
-            progress.LogLine("暂离蜃楼，进度已存");
+            if (!progress.ExpeditionActive) return;
             progress.ExpeditionActive = false;
+            progress.LogLine("已暂离蜃楼，重访后继续");
         }
         // 重启/异常恢复专用入口：战斗未决时仅补发一次镜妖生成请求，
         // 不写进入日志、不重掷机缘、不改节点。结算语义读自持久化的
@@ -488,7 +506,7 @@ namespace NetBunny
         }
         internal void Choose(int index, JiyuanContext ctx)
         {
-            if (progress.CombatPending) return;
+            if (!progress.ExpeditionActive || progress.CombatPending) return;
             if (pendingJiyuan != null) { ResolveJiyuan(index, ctx); return; }
             string node = progress.ExpeditionNode;
             if (node == "ferry")
@@ -570,18 +588,26 @@ namespace NetBunny
             else if (node == "echo") { /* 机缘在上面的 RollJiyuan 处理 */ }
             else if (node == "atrium") { /* 机缘与主镜由选择驱动 */ }
         }
+        private bool RestorePendingJiyuan()
+        {
+            pendingJiyuan = JiyuanEngine.FindPendingOffer(progress);
+            if (pendingJiyuan == null) progress.PendingJiyuanId = "";
+            return pendingJiyuan != null;
+        }
         private bool RollJiyuan(JiyuanContext ctx)
         {
             JiyuanDef found = JiyuanEngine.Evaluate(progress.ExpeditionNode, ctx, random);
             if (found == null && progress.ExpeditionNode != "ferry") found = JiyuanEngine.Evaluate("*", ctx, random);
             pendingJiyuan = found;
+            progress.PendingJiyuanId = found == null ? "" : found.Id;
             if (found != null) progress.LogLine("机缘 · " + found.Name);
             return found != null;
         }
         private void ResolveJiyuan(int index, JiyuanContext ctx)
         {
-            JiyuanDef def = pendingJiyuan; pendingJiyuan = null;
+            JiyuanDef def = pendingJiyuan;
             if (def == null || index < 0 || index >= def.Choices.Length) return;
+            pendingJiyuan = null; progress.PendingJiyuanId = "";
             progress.JiyuanChoices[def.Id] = index;
             JiyuanChoice choice = def.Choices[index];
             LingyuReward reward = choice.Reward;
@@ -620,7 +646,7 @@ namespace NetBunny
         // 胜利依旧走到这里正确结算；台账 id 幂等，重复回调不会重复发奖。
         internal void OnCombatWon(JiyuanContext ctx)
         {
-            if (!progress.CombatPending) return;
+            if (!progress.ExpeditionActive || !progress.CombatPending) return;
             progress.CombatPending = false;
             string outcome = progress.CombatOutcome; progress.CombatOutcome = "";
             if (outcome == "corridor-cleared" || outcome == "mist-cleared")
@@ -664,7 +690,7 @@ namespace NetBunny
         // 机缘战斗失败则该机缘按已选结果落空（选择已记录，奖励台账未发放）。
         internal void OnCombatFailed(JiyuanContext ctx)
         {
-            if (!progress.CombatPending) return;
+            if (!progress.ExpeditionActive || !progress.CombatPending) return;
             progress.CombatPending = false;
             string outcome = progress.CombatOutcome; progress.CombatOutcome = "";
             if (outcome == "final") progress.LogLine("蜃楼主镜光收敛，蜃楼暂退——养精蓄锐后可再挑战");

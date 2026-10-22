@@ -1,0 +1,69 @@
+{
+  "scope": "Lingyu pause/resume and recovery usability; continued Demo development, not complete product acceptance.",
+  "executable_sha256": "6ee9e849bd2947637d489935536b1b2d437339f473ed6af614ebd17d2d32112b",
+  "archive_sha256": "444615799e7169911c66e87547072837864fa58893784cd2e66c3d9187888795",
+  "source_files": 58,
+  "all_baseline": {
+    "results": 36,
+    "nonpassing": 0,
+    "note": "Product changes plus first capture timing correction; the later training-capture-only correction was rebuilt and tested through the exact final EXE native flow."
+  },
+  "suspend_core": {
+    "checks": 63,
+    "failures": 0,
+    "existing_lingyu": 74,
+    "scope": "Pure logic/private archive and pending-event deterministic restoration."
+  },
+  "controller_form": {
+    "checks": 31,
+    "failures": 0,
+    "scope": "Hidden/private fixtures: dead/recovery gates, exact queue withdrawal, other task/auth preservation, failed save notice and retry, resumed reward once."
+  },
+  "feature_panels": {
+    "checks": 61,
+    "failures": 0,
+    "scope": "Hidden/offscreen layouts; evidence green-20261023-014259-897."
+  },
+  "art_and_handbook_layout": {
+    "art_assertions": 2754,
+    "layout_checks": 28,
+    "note": "Final product-source build before acceptance-driver-only timing/glyph changes; resources and layout are unchanged."
+  },
+  "native_continuity": {
+    "prepare_seconds": 4.4898127,
+    "restore_seconds": 6.5361423,
+    "genuinely_new_process": true,
+    "native_clicks": 7,
+    "screenshots_reviewed": 7
+  },
+  "final_exe_native": {
+    "passed": true,
+    "seconds": 21.605684399999998,
+    "native_clicks": 5,
+    "assertions": 34,
+    "captures": 10,
+    "screenshots_reviewed": 10,
+    "real_archives_unchanged": true
+  },
+  "isolation": {
+    "runtime_profile_files": 240,
+    "all_profile_hashes_unchanged": true,
+    "legacy_assets": 22,
+    "legacy_assets_identical_to_stable_main": true,
+    "main_unchanged": true,
+    "maintenance_off": true
+  },
+  "preserved_rejections": [
+    "Native fixture checked queued mouse input too early; split into later ticks.",
+    "Bordered-label comparison used client-origin instead of whole-control origin; diagnostics proved 1-pixel offset, corrected without lowering thresholds.",
+    "First exact EXE 10-training-handbook capture showed fade/actor overlap; retained locally and rejected as clean panel evidence. Final r2 uses actual post-open wall time and native glyph checks."
+  ],
+  "limitations": [
+    "No long soak resumed; no natural first harvest claim.",
+    "New-process pause restore is a dedicated production-source runner. Final shipped EXE feature report proves same-process Load, not that specific pause new-process flow.",
+    "Deferred high-damage seed edge: a mirror may die before the delayed capture; current low-weapon qishi-full fixture passed. Not a gameplay fault.",
+    "Actors may overlap while fighting; this patch proves one specified mirror was natively selectable, not universal collision-free presentation.",
+    "Mixed DPI and lock-screen restoration remain unverified.",
+    "Raw desktop screenshots contain other applications and remain local. Public images are reviewed own-panel pixel-preserving crops."
+  ]
+}

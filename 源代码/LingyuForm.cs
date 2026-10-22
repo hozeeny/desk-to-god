@@ -19,6 +19,7 @@ namespace NetBunny
         private readonly Button[] choices = new Button[3];
         private readonly ListBox log = new ListBox(), collection = new ListBox();
         private readonly Button closePanel = new Button();
+        private readonly Button continueExpedition = new Button(), suspendExpedition = new Button();
         private readonly System.Windows.Forms.Timer refresh = new System.Windows.Forms.Timer();
         private bool updating;
 
@@ -34,9 +35,8 @@ namespace NetBunny
             FlowLayoutPanel content = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(22), BackColor = BackColor };
             Controls.Add(content);
             Label title = Line("灵域历练 · 软件灵域与机缘", 42); title.Font = new Font(Font.FontFamily, 18, FontStyle.Bold); title.ForeColor = Color.FromArgb(73, 49, 132); content.Controls.Add(title);
-            content.Controls.Add(Line("日常使用的软件会化作可探索的灵域。满足道途或境界条件即可进入；秘境探索只生成虚拟妖物，绝不触碰真实文件、进程与内存。探索不设时限，可随时暂离，进度即时保存。", 58));
-
-            content.Controls.Add(Line("四座灵域", 24));
+            FlowLayoutPanel directory = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Width = 650, Margin = Padding.Empty };
+            directory.Controls.Add(Line("四座灵域", 24));
             for (int i = 0; i < LingyuCatalog.Realms.Length; i++)
             {
                 LingyuRealmDef realm = LingyuCatalog.Realms[i];
@@ -48,8 +48,8 @@ namespace NetBunny
                 Configure(enter, "进入", 96, delegate { controller.LingyuEnter(LingyuCatalog.Realms[captured].Id); RefreshData(); });
                 row.Controls.Add(name); row.Controls.Add(state); row.Controls.Add(enter);
                 realmNames[i] = name; realmStates[i] = state; realmEnters[i] = enter;
-                content.Controls.Add(row);
-                Label desc = Line(realm.Description, 20); desc.ForeColor = Color.FromArgb(150, 146, 168); content.Controls.Add(desc);
+                directory.Controls.Add(row);
+                Label desc = Line(realm.Description, 20); desc.ForeColor = Color.FromArgb(150, 146, 168); directory.Controls.Add(desc);
             }
 
             content.Controls.Add(Line("蜃楼探索", 24));
@@ -63,14 +63,20 @@ namespace NetBunny
                 choices[i] = choice; choiceRow.Controls.Add(choice);
             }
             content.Controls.Add(choiceRow);
-            expeditionHint.Width = 640; expeditionHint.Height = 26; expeditionHint.ForeColor = Color.FromArgb(173, 113, 37); content.Controls.Add(expeditionHint);
+            expeditionHint.Width = 640; expeditionHint.AutoSize = true; expeditionHint.MinimumSize = new Size(0, 26); expeditionHint.MaximumSize = new Size(640, 0); expeditionHint.ForeColor = Color.FromArgb(173, 113, 37); content.Controls.Add(expeditionHint);
             log.Width = 640; log.Height = 118; log.IntegralHeight = false; log.Font = Font; log.BackColor = Color.FromArgb(250, 249, 253); log.AccessibleName = "蜃楼探索记录"; content.Controls.Add(log);
 
             content.Controls.Add(Line("收藏 · 材料 / 功法残卷 / 传承", 24));
             collection.Width = 640; collection.Height = 128; collection.IntegralHeight = false; collection.Font = Font; collection.BackColor = Color.FromArgb(250, 249, 253); collection.AccessibleName = "灵域收藏"; content.Controls.Add(collection);
-            FlowLayoutPanel tail = Row();
+            content.Controls.Add(Line("满足道途或境界条件即可进入；秘境只生成虚拟妖物，不处理真实文件、进程或内存。收起窗口会继续战斗；要中止本次探索，请用「暂离蜃楼」，重访后继续。", 58));
+            content.Controls.Add(directory);
+            FlowLayoutPanel tail = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, WrapContents = true, Padding = new Padding(12, 6, 12, 6) };
+            Configure(continueExpedition, "进入千面蜃楼", 180, delegate { controller.LingyuEnter("qianmian"); RefreshData(); });
+            continueExpedition.Name = "continue-lingyu";
+            Configure(suspendExpedition, "暂离蜃楼 · 保留进度", 180, delegate { controller.LingyuSuspend(); RefreshData(); });
+            suspendExpedition.Name = "suspend-lingyu";
             Configure(closePanel, "收起灵域", 140, delegate { Hide(); });
-            tail.Controls.Add(closePanel); content.Controls.Add(tail);
+            tail.Controls.Add(continueExpedition); tail.Controls.Add(suspendExpedition); tail.Controls.Add(closePanel); Controls.Add(tail);
 
             refresh.Interval = 500; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
@@ -89,6 +95,12 @@ namespace NetBunny
             {
                 LingyuProgress progress = controller.Lingyu;
                 MirageEngine mirage = controller.Mirage;
+                bool canExplore = controller.LingyuCanExplore;
+                continueExpedition.Visible = !progress.ExpeditionActive;
+                continueExpedition.Enabled = canExplore && controller.LingyuCanEnter(LingyuCatalog.FindRealm("qianmian"));
+                continueExpedition.Text = progress.ExpeditionNode.Length > 0 ? "继续蜃楼之行" : "进入千面蜃楼";
+                suspendExpedition.Visible = progress.ExpeditionActive;
+                suspendExpedition.Enabled = controller.LingyuCanSuspend;
                 for (int i = 0; i < LingyuCatalog.Realms.Length; i++)
                 {
                     LingyuRealmDef realm = LingyuCatalog.Realms[i];
@@ -108,7 +120,7 @@ namespace NetBunny
                     {
                         bool journey = realm.Id == "qianmian" && (progress.ExpeditionActive || progress.ExpeditionNode.Length > 0);
                         realmStates[i].Text = visits > 0 ? "已通关 " + visits + " 次 · 可再探" : (entered ? "已发现 · 可进入" : "可进入");
-                        realmEnters[i].Enabled = !progress.ExpeditionActive; realmEnters[i].Text = journey ? "继续探索" : "进入蜃楼";
+                        realmEnters[i].Enabled = canExplore && !progress.ExpeditionActive; realmEnters[i].Text = journey ? "继续探索" : "进入蜃楼";
                     }
                 }
 
@@ -116,14 +128,15 @@ namespace NetBunny
                 if (!mirageKnown)
                 {
                     nodeTitle.Text = "尚未踏入任何灵域";
-                    nodeText.Text = "满足上方条件后进入千面蜃楼：浏览器游历化出的幻术灵域，镜像妖物与机缘藏于其中。";
+                    nodeText.Text = LingyuCatalog.FindRealm("qianmian").EntryHint + "\n满足条件后，点击下方「进入千面蜃楼」。镜像妖物与机缘藏于其中。";
                     expeditionHint.Text = "";
                     for (int i = 0; i < choices.Length; i++) choices[i].Visible = false;
                 }
                 else if (!progress.ExpeditionActive)
                 {
                     nodeTitle.Text = "蜃楼之行暂存 · " + MirageEngine.NodeTitle(progress.ExpeditionNode);
-                    nodeText.Text = "进度已保存。点击上方「继续探索」从暂离处重访蜃楼。";
+                    nodeText.Text = progress.CombatPending ? "镜妖之战待续。点击下方「继续蜃楼之行」重新迎战；探索节点和机缘选择保留。"
+                        : "点击下方「继续蜃楼之行」重访当前节点；尚待抉择的机缘会继续保留。";
                     expeditionHint.Text = "";
                     for (int i = 0; i < choices.Length; i++) choices[i].Visible = false;
                 }
@@ -141,8 +154,12 @@ namespace NetBunny
                         bool show = i < options.Length;
                         choices[i].Visible = show;
                         if (show) choices[i].Text = options[i];
+                        choices[i].Enabled = canExplore;
                     }
                 }
+                if (controller.LingyuPersistencePending) expeditionHint.Text = "档案暂未保存，请保持程序运行等待重试；尚不能把这次进度视为已落盘。";
+                else if (!canExplore && controller.LingyuRestSeconds > 0) expeditionHint.Text = "修士正在调息，约" + controller.LingyuRestSeconds + "秒后恢复。可继续阅读或暂离，恢复后再作探索抉择。";
+                else if (progress.ExpeditionActive && !controller.LingyuCanSuspend) expeditionHint.Text = "当前战斗正在结算，结算后可暂离。";
 
                 log.Items.Clear();
                 for (int i = progress.ExpeditionLog.Count - 1; i >= 0; i--) log.Items.Add(progress.ExpeditionLog[i]);

@@ -1,0 +1,41 @@
+{
+  "scope": "Two-process production-source runner, initial qishi-full feature seed, x1; not the shipped EXE and not natural growth.",
+  "phases": [
+    {
+      "phase": "prepare",
+      "process_id": 22272,
+      "elapsed_seconds": 4.4898127,
+      "native_clicks": 4,
+      "checks": [
+        "native handbook action disables automatic combat without granting maintenance",
+        "suspend is available in the current pending battle",
+        "native suspend removes only the mirror and retains its unresolved outcome",
+        "all five private archives save the paused expedition",
+        "leaving the expedition keeps desktop cultivation active",
+        "maintenance authorization remained off"
+      ],
+      "captures": 4,
+      "source_report_sha256": "66153e149155eb0b731164782c67d30defcf9f8972e2f9a7e58b8f73e36eafee"
+    },
+    {
+      "phase": "restore",
+      "process_id": 17600,
+      "elapsed_seconds": 6.5361423,
+      "native_clicks": 3,
+      "checks": [
+        "a genuinely new process restores the paused profile",
+        "paused identity, node and unresolved outcome restore without rewards or automatic re-entry",
+        "paused startup never spawns its mirror",
+        "native continue restores exactly one mirror for the original pending battle",
+        "actual native click selects the specified mirror rather than an overlapping ordinary creature",
+        "native handbook action restores the player's automatic combat choice",
+        "restored mirror wins through actual combat and settles its formal reward",
+        "restored exploration saves all five private archives",
+        "production Load retains the one settled result",
+        "maintenance authorization remained off"
+      ],
+      "captures": 3,
+      "source_report_sha256": "63d240d519f0e18758e9e5e3deea1374f4d2d4a8b58c2cd008c1cd5331d4f3a1"
+    }
+  ]
+}

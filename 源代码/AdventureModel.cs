@@ -283,6 +283,17 @@ namespace NetBunny
             queue.Clear(); Automatic = false;
             if (retired) LastReward = "待办清理已取消；已击败的怪物继续消散，未执行文件清理，剩余文件待重新扫描";
         }
+        // Temporarily leaving an expedition retires only its still-living
+        // virtual opponent. Never cancel other orders or discard a fallen foe.
+        internal bool WithdrawExpeditionEnemy(AdventureEnemy enemy)
+        {
+            if (enemy == null || !enemy.IsVirtual || !enemy.NoFieldClear || enemy.ProcessTarget != null
+                || !Enemies.Contains(enemy) || enemy.CleanupStarted || enemy.Cleaning || enemy.Defeated
+                || enemy.VisualDefeated || enemy.FellInCombat || enemy.Failed) return false;
+            queue.Remove(enemy);
+            enemy.CancelBeforeCleanup("暂离蜃楼");
+            Enemies.Remove(enemy); Renumber(); return true;
+        }
         // Desktop selection changes combat focus, not the ownership of already
         // started or queued maintenance. It also preserves automatic preference.
         internal bool SelectDesktopTarget(AdventureEnemy target)

@@ -49,7 +49,7 @@ namespace NetBunny
             heroWindow.Text = "桌面修仙传 · 修士";
             // Two ordinary opponents are enough to start immediately without
             // covering the desktop in a staged battle composition.
-            if (!DesktopObservesSystem && !lingyu.CombatPending && !battle.Enemies.Any(e => !e.Defeated))
+            if (!DesktopObservesSystem && !(lingyu.ExpeditionActive && lingyu.CombatPending) && !battle.Enemies.Any(e => !e.Defeated))
             { SpawnVirtualFiend(); SpawnVirtualFiend(); }
             desktopLastRefill = clock.Elapsed.TotalSeconds;
             Enabled = true;
@@ -59,7 +59,7 @@ namespace NetBunny
 
         private void MaintainDesktopField()
         {
-            if (!IsolatedDesktop || !enabled || IsDemo || lingyu.CombatPending) return;
+            if (!IsolatedDesktop || !enabled || IsDemo || (lingyu.ExpeditionActive && lingyu.CombatPending)) return;
             if (battle.Enemies.Count(e => !e.Defeated && !e.VisualDefeated) >= 2 || clock.Elapsed.TotalSeconds - desktopLastRefill < 2) return;
             desktopLastRefill = clock.Elapsed.TotalSeconds;
             if (EnemyFieldBudget.CanAddOrdinary(battle.Enemies)) SpawnVirtualFiend();

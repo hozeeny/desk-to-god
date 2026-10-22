@@ -819,7 +819,7 @@ namespace NetBunny
         }
         internal bool LingyuEnter(string realmId)
         {
-            if (disposed || lingyu == null || IsDemo) return false;
+            if (!LingyuCanExplore || lingyu == null || lingyu.ExpeditionActive) return false;
             LingyuRealmDef realm = LingyuCatalog.FindRealm(realmId);
             if (realm == null || !realm.Playable || !LingyuCanEnter(realm)) return false;
             mirage.Enter(BuildJiyuanContext());
@@ -829,16 +829,37 @@ namespace NetBunny
         }
         internal void LingyuChoose(int index)
         {
-            if (disposed || lingyu == null || IsDemo || !lingyu.ExpeditionActive) return;
+            if (!LingyuCanExplore || lingyu == null || !lingyu.ExpeditionActive) return;
             mirage.Choose(index, BuildJiyuanContext());
             SettleLingyuRewards();
             Save();
         }
         internal void LingyuSuspend()
         {
-            if (disposed || lingyu == null || IsDemo) return;
+            if (!LingyuCanSuspend) return;
+            AdventureEnemy pending = PendingLingyuEnemy;
+            if (pending != null && !battle.WithdrawExpeditionEnemy(pending)) return;
+            pendingLingyuEnemyId = null;
             mirage.Suspend();
             Save();
+            if (IsolatedDesktop) RecordDesktopEvent(desktopLastSaveSucceeded ? "已暂离蜃楼 · 进度已保存，桌面修行继续" : "已暂离蜃楼 · 档案暂未保存，请保持程序运行等待重试");
+            RenderWorld(true);
+        }
+        private AdventureEnemy PendingLingyuEnemy
+        { get { return pendingLingyuEnemyId == null ? null : battle.Enemies.FirstOrDefault(e => e.Id == pendingLingyuEnemyId); } }
+        internal bool LingyuCanExplore { get { return !disposed && !IsDemo && !battle.Progress.Dead; } }
+        internal bool LingyuPersistencePending { get { return !desktopLastSaveSucceeded; } }
+        internal int LingyuRestSeconds
+        { get { return !battle.Progress.Dead ? 0 : Math.Max(0, (int)Math.Ceiling(CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation) * DongtianReviveFactor() - battle.DeathTime)); } }
+        internal bool LingyuCanSuspend
+        {
+            get
+            {
+                if (disposed || IsDemo || lingyu == null || !lingyu.ExpeditionActive) return false;
+                AdventureEnemy pending = PendingLingyuEnemy;
+                return pending == null || (!battle.Progress.Dead && pending.IsVirtual && pending.NoFieldClear && pending.ProcessTarget == null
+                    && !pending.CleanupStarted && !pending.Cleaning && !pending.Defeated && !pending.VisualDefeated && !pending.FellInCombat && !pending.Failed);
+            }
         }
         // 蜃楼战斗请求：生成一只带秘境标记的虚拟妖物（主镜战更耐打）。
         // 镜妖免疫一键清场——秘境战斗必须真实分出胜负，不走清场捷径。

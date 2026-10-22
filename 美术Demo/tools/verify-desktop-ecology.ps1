@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'All')]
+    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'All')]
     [string]$Suite = 'Policy',
     [switch]$Baseline
 )
@@ -150,7 +150,7 @@ Write-Host ('Ecology verification artifacts: ' + $runRoot)
 try {
     # Always prove the unmodified production source set still builds independently.
     $baselineExecutable = Build-Runner 'Baseline' 'NetBunny.Program' $null
-    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance') } else { @($Suite) })
+    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow') } else { @($Suite) })
     $suiteFiles = @{
         Policy = 'DesktopEnvironmentTests'
         Sources = 'DesktopSourceTests'
@@ -163,6 +163,8 @@ try {
         Realm = 'LingyuRealmGateTests'
         AutoBattle = 'DesktopAutoBattleConsentTests'
         Guidance = 'BreakthroughGuidanceTests'
+        SuspendCore = 'LingyuSuspendCoreTests'
+        LingyuFlow = 'LingyuDesktopFlowTests'
     }
     foreach ($suiteName in $suiteNames) {
         $className = $suiteFiles[$suiteName]
@@ -180,7 +182,8 @@ try {
             if ($suiteName -eq 'Maintenance') {
                 $ownedProcessFixture = Build-ProcessFixture
                 if ($ownedProcessFixture) { Run-Runner $suiteName $executable @($firstArgument, $evidence, $ownedProcessFixture) }
-            } elseif ($suiteName -eq 'Equipment') { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
+            } elseif ($suiteName -eq 'SuspendCore') { Run-Runner $suiteName $executable @($evidence) }
+            elseif ($suiteName -in @('Equipment', 'LingyuFlow')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
             elseif ($firstArgument) { Run-Runner $suiteName $executable @($firstArgument, $evidence) }
         }
     }

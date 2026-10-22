@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-22T17:57:01.102495+00:00",
+  "source_paths_relative_to": "repository root",
+  "crop_box_convention": "[left, top, right, bottom], right and bottom exclusive, source image pixels",
+  "method": "Pillow Image.crop; PNG output pixels verified equal to the corresponding original pixels.",
+  "scope": "Native game-panel state evidence only: active expedition, paused expedition, and paused state restored in a new process. Actor presence/absence, actual settlement and archive integrity require the separate native reports and actor captures; no natural-growth or long-soak claim.",
+  "original_screenshots_copied": false,
+  "images": [
+    {
+      "file": "02-active.png",
+      "source_relative_path": "美术Demo/qa/desktop-accept-lingyu-suspend-prepare-20261023-015406-106/02-active-expedition-panel.png",
+      "source_sha256": "f1cb7711e70726f67464b6aead7950c41ff71d6e76d1c6d492cf3860e46fb891",
+      "source_size": [
+        720,
+        880
+      ],
+      "crop_box": [
+        7,
+        0,
+        713,
+        873
+      ],
+      "result_size": [
+        706,
+        873
+      ],
+      "result_sha256": "c6979394eb1862641f4cfc0500e8d49b1bf09fabafb7ef11267c889af35be8f2",
+      "pixel_exact_source_crop": true,
+      "description": "Lossless crop of a native Windows desktop screenshot, limited to the game window including its blue border; no redraw, resize, compositing, masking or recoloring.",
+      "visual_review": {
+        "reviewed": true,
+        "tool": "view_image",
+        "result": "Panel text and fixed bottom actions remain legible and intact; no other application pixels remain inside the crop."
+      }
+    },
+    {
+      "file": "03-paused.png",
+      "source_relative_path": "美术Demo/qa/desktop-accept-lingyu-suspend-prepare-20261023-015406-106/03-paused-expedition-panel.png",
+      "source_sha256": "02e1461148f9f40a0b847d4df77fc459a2c4367837e499428b0f28b42925c4a7",
+      "source_size": [
+        720,
+        880
+      ],
+      "crop_box": [
+        7,
+        0,
+        713,
+        873
+      ],
+      "result_size": [
+        706,
+        873
+      ],
+      "result_sha256": "94ed806369d6c77e957f3530e5e715f35d8f7af656cb373cd2cf04bf2270d410",
+      "pixel_exact_source_crop": true,
+      "description": "Lossless crop of a native Windows desktop screenshot, limited to the game window including its blue border; no redraw, resize, compositing, masking or recoloring.",
+      "visual_review": {
+        "reviewed": true,
+        "tool": "view_image",
+        "result": "Panel text and fixed bottom actions remain legible and intact; no other application pixels remain inside the crop."
+      }
+    },
+    {
+      "file": "05-new-process-restored.png",
+      "source_relative_path": "美术Demo/qa/desktop-accept-lingyu-suspend-restore-20261023-015406-106/05-restored-paused-panel.png",
+      "source_sha256": "3dd32c862205ec0de131d5ae6198a59c4300d309de231db522e59c2c44866718",
+      "source_size": [
+        720,
+        880
+      ],
+      "crop_box": [
+        7,
+        0,
+        713,
+        873
+      ],
+      "result_size": [
+        706,
+        873
+      ],
+      "result_sha256": "09ea1620c27debfac8003e0eb9689b073e2e98d8c95425012129223c50205f7c",
+      "pixel_exact_source_crop": true,
+      "description": "Lossless crop of a native Windows desktop screenshot, limited to the game window including its blue border; no redraw, resize, compositing, masking or recoloring.",
+      "visual_review": {
+        "reviewed": true,
+        "tool": "view_image",
+        "result": "Panel text and fixed bottom actions remain legible and intact; no other application pixels remain inside the crop."
+      }
+    }
+  ],
+  "visually_reviewed_utc": "2026-10-22T17:57:29.349982+00:00"
+}

@@ -37,3 +37,13 @@ JSON 示例见 `asset-manifest.example.json`。`source` 相对输入 manifest �
 - `weapon-mortal.png`、`weapon-qishi.png`、`weapon-zhuji.png`
 - `item-spirit-stone.png`、`item-pill.png`、`item-material.png`、`item-scroll.png`、`item-marrow.png`
 - `landmark-dongtian.png`
+
+灵域连续性回归：`verify-desktop-ecology.ps1 -Suite All -Baseline` 现包含
+`SuspendCore`（纯逻辑及私有档）和 `LingyuFlow`（隐藏真实控制器及窗口夹具）。
+两者不代表自然成长或原生鼠标验证。
+
+`verify-lingyu-native-flow.ps1` 默认仅编译；显式 `-RunNative` 才串行启动两次
+可见的私有测试进程，使用初始 `qishi-full` 功能档、正常×1速度和真实鼠标按钮，
+验证暂离、真正新进程恢复、点选指定镜妖、正式战斗及奖励保存。
+运行器内含生产源码，但不是交付EXE本身。输出新目录，失败证据原样保留；
+真实存档哈希前后比较、维护全关。含其他应用的原始截图只保留本地，不加入发布包。
