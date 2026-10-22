@@ -137,6 +137,10 @@ namespace NetBunny
                     string temp = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
                     Check(target.Batch.Candidates.All(c => File.Exists(c.Path) && Path.GetFullPath(c.Path).StartsWith(temp, StringComparison.OrdinalIgnoreCase)), "指定Batch中的来源文件确实存在于本机Temp");
                     Check(view.Enemies.Any(v => v.Id == targetId && v.Source.IndexOf("临时文件", StringComparison.Ordinal) >= 0), "指定真实文件目标已进入玩家view");
+                    Check(Game.DesktopChooseEnemy(targetId, false), "正式选敌接口可选择指定真实文件目标，未发起攻击或授权");
+                    DesktopPlayerView selected = Game.ReadDesktopPlayerView();
+                    Check(selected.TargetSourceDetail.Contains(target.Batch.Label) && selected.TargetSourceDetail.Contains(target.Batch.Candidates[0].Path), "当前目标来源详情展示绑定批次及实际文件路径");
+                    Check(selected.TargetAction.Contains("未授权"), "选中真实文件目标后仍明确未授权维护");
                     report["realSource"] = new { enemyId = targetId, batchId = target.Batch.Id, files = target.Batch.FilesCount, bytes = target.Batch.Bytes,
                         tempRoot = temp, memoryPercent = ReadField("memoryPercent"), ecologyStatus = view.EcologyStatus,
                         candidates = target.Batch.Candidates.Select(c => new { path = c.Path, bytes = c.Length, eligibleForCleanup = c.EligibleForCleanup }).ToArray() };
@@ -157,6 +161,9 @@ namespace NetBunny
                 {
                     DesktopEcologyPanel panel = Application.OpenForms.OfType<DesktopEcologyPanel>().SingleOrDefault(f => f.Visible);
                     Check(panel != null && !panel.IsDisposed && panel.WindowState != FormWindowState.Minimized, "本进程生态面板已实际显示");
+                    TextBox sourceBox = (TextBox)typeof(DesktopEcologyPanel).GetField("targetSource", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(panel);
+                    Check(sourceBox.Text.Replace("\r\n", "\n").Contains(Game.ReadDesktopPlayerView().TargetSourceDetail.Replace("\r\n", "\n")) && sourceBox.Text.Contains("未授权"), "实际显示的生态来源区与正式选中快照一致");
+                    Check(sourceBox.GetLineFromCharIndex(sourceBox.TextLength) >= 8, "原生来源文本框以独立行显示绑定文件及动作说明");
                     List<object> probes = new List<object>();
                     foreach (int x in new[] { 8, panel.ClientSize.Width / 2, panel.ClientSize.Width - 8 })
                         foreach (int y in new[] { 8, panel.ClientSize.Height / 2, panel.ClientSize.Height - 8 })

@@ -1,0 +1,95 @@
+{
+  "scope": "Bounded usability update, not full product acceptance",
+  "executable_sha256": "197b4bd074e6df9a24f7225f7988e05cdfce854e67a46f6f762d29382f7a33aa",
+  "package_sha256": "8c4e00662a4ff2f06b3fd393e7bd0c26ed27ce1e0cc833377af9b8067e4f598c",
+  "all_baseline": {
+    "results": 22,
+    "nonpassing": 0,
+    "evidence": "all-baseline.log"
+  },
+  "journey": {
+    "checks": 32,
+    "failures": 0,
+    "red_evidence_local": "verification/journey-20261022/source-reading-red.log"
+  },
+  "feature_panels": {
+    "checks": 61,
+    "failures": 0,
+    "red_checks": 53,
+    "red_failures": 22
+  },
+  "handbook_layout": {
+    "checks": 28,
+    "failures": 0
+  },
+  "art": {
+    "checks": 2754,
+    "failures": 0
+  },
+  "native_observe": {
+    "passed": true,
+    "elapsedSeconds": 5.4694158,
+    "assertions": 29,
+    "actor_pixel_matches": [
+      1,
+      1,
+      1
+    ],
+    "formal_archives_unchanged": true,
+    "scope": "Observe entry: real local Temp inventory and memory sampling; real-file actor pixels; ecology panel visibility; private save and exit",
+    "source_report_sha256": "03a722c15a897e0f0ebc61985d9331f445c2d01a3154ea897105c4d734046210",
+    "actual_desktop_images_visually_inspected": true,
+    "raw_images_and_file_paths": "local only",
+    "final_source_run": "r3"
+  },
+  "seeded_native_attempt": {
+    "passed": false,
+    "elapsedSeconds": 0.5283732999999999,
+    "reason": "System.InvalidOperationException: 真实桌面角色像素缺失、遮挡、透明或坐标不符：hero samples=2194 opaque=2399 colors=237 match=0.004",
+    "source_report_sha256": "67dc9eefdea9008dafc3432de8e0d7f3177cc06d9684f871a336d355d76cec79",
+    "meaning": "Failed actual-pixel evidence, retained; never substituted with offscreen previews or an exit code",
+    "scope": "earlier d589 EXE x6 accelerated attempt, not normal gameplay",
+    "additional_failed_normal_launcher_r3": true,
+    "delay_experiment_failed": true
+  },
+  "long_test": {
+    "status": "deferred_by_user",
+    "automation": "PAUSED",
+    "natural_zhuji_retained": true,
+    "first_natural_harvest_verified": false,
+    "eight_hours_passed": false
+  },
+  "delivery": {
+    "private_profiles_preserved": 240,
+    "package_files": 63,
+    "png_files": 31,
+    "raw_captures_in_package": false
+  },
+  "remaining": [
+    "Mixed DPI, lock/resume and complete performance coverage remain unvalidated",
+    "Earlier x6 acceptance start-frame actor pixels failed; preserved independently of the final normal x1 pass, root cause not established",
+    "Eight-hour stability and first natural harvest deferred by user",
+    "Moving large actors can still partly overlap feature panels; no full layer management rewrite"
+  ],
+  "manual_cultivator_click": {
+    "checks_in_player_regression": 32,
+    "red_failures": 1,
+    "green_failures": 0,
+    "behavior": "after awakening, manual actor clicks call the same formal strike with range/cooldown/dead/auto gates"
+  },
+  "normal_x1_seeded_native": {
+    "passed": true,
+    "elapsedSeconds": 24.4423542,
+    "assertions": 32,
+    "nativeMouseClicks": 5,
+    "captures": 9,
+    "source_report_sha256": "b1832f70dd10c97e40fc7e0504b4f9d7869be2630aefde14829086b47fc4f3e7",
+    "scope": "exact final EXE, x1 qishi-full private fixture, native input and real pixel checks: formal breakthrough/stage switch, cave planting, close panels and continue, mirror combat, save and same-process Load; not natural growth or true new-process restoration",
+    "images_visually_inspected": [
+      "10-training-handbook.png",
+      "21-zhuji-after-real-breakthrough.png",
+      "30-dongtian-panel-on-real-desktop.png",
+      "41-lingyu-mirror-on-desktop.png"
+    ]
+  }
+}

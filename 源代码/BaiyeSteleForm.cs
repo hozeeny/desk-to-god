@@ -27,7 +27,7 @@ namespace NetBunny
             this.controller = controller; Text = "桌面修仙传 · 百业道碑";
             Rectangle workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
             Width = Math.Min(720, workArea.Width - 24); Height = Math.Min(880, workArea.Height - 40);
-            MinimumSize = new Size(Math.Min(620, workArea.Width - 24), Math.Min(520, workArea.Height - 40));
+            MinimumSize = new Size(Math.Min(380, workArea.Width - 24), Math.Min(420, workArea.Height - 40));
             StartPosition = FormStartPosition.CenterScreen; BackColor = Color.FromArgb(245, 244, 251);
             Font = new Font("Microsoft YaHei UI", 10);
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
@@ -84,6 +84,7 @@ namespace NetBunny
             refresh.Interval = 500; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
             if (controller.IsolatedDesktop) DesktopFeatureStyle.Apply(this);
+            DesktopFeatureStyle.BindResponsiveColumn(content);
         }
 
         private Label Line(string text, int height) { return new Label { Text = text, Width = 640, Height = height, AutoSize = true, MaximumSize = new Size(640, 0), MinimumSize = new Size(0, height), Margin = new Padding(0, 4, 0, 4) }; }
@@ -180,10 +181,18 @@ namespace NetBunny
         {
             progress = value; activePathId = active; Invalidate();
         }
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            int columns = Width < 520 ? 1 : 2;
+            int rows = (BaiyeCatalog.Paths.Length + columns - 1) / columns;
+            int height = rows * 88 + 8;
+            if (Height != height) Height = height;
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e); Graphics g = e.Graphics; g.Clear(DesktopFeatureStyle.Tone(this, Color.FromArgb(245, 244, 251))); g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            int columns = 2, rows = 4;
+            int columns = Width < 520 ? 1 : 2, rows = (BaiyeCatalog.Paths.Length + columns - 1) / columns;
             int cellWidth = (Width - 8 * (columns + 1)) / columns, cellHeight = (Height - 8 * (rows + 1)) / rows;
             for (int i = 0; i < BaiyeCatalog.Paths.Length; i++)
             {

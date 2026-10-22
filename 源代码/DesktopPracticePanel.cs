@@ -15,6 +15,8 @@ namespace NetBunny
         readonly Label objective = new Label(), stats = new Label(), hint = new Label(), notice = new Label();
         readonly Label attackState = new Label(), blockState = new Label(), cultivation = new Label(), weaponInfo = new Label(), techniqueInfo = new Label();
         readonly Button strike = new Button(), block = new Button(), awaken = new Button(), automatic = new Button(), practice = new Button();
+        readonly Button nextAction = new Button();
+        readonly FlowLayoutPanel combatActions = new FlowLayoutPanel();
         readonly ComboBox weapons = new ComboBox(), techniques = new ComboBox();
         readonly FlowLayoutPanel targets = new FlowLayoutPanel(), materials = new FlowLayoutPanel();
         readonly TextBox activity = new TextBox();
@@ -46,20 +48,29 @@ namespace NetBunny
             StyleLabel(stats); stats.Margin = new Padding(0, 5, 0, 8);
             meter.Height = 5; meter.Width = 420; meter.Margin = new Padding(0, 0, 0, 5);
             StyleLabel(notice); notice.ForeColor = Gold; notice.AccessibleName = "战斗结果";
-            summary.Controls.Add(objective); summary.Controls.Add(stats); summary.Controls.Add(notice); summary.Controls.Add(meter); shell.Controls.Add(summary, 0, 0);
+            Configure(nextAction, "下一步", delegate
+            {
+                string id = session.Game.ReadDesktopPlayerView().NextActionId;
+                if (id == "awaken") session.Game.AwakenSpiritRoot();
+                else if (id == "training" || id == "lingyu" || id == "dongtian" || id == "breakthrough") session.OpenPanel(id);
+            });
+            nextAction.AccessibleName = "当前成长行动";
+            nextAction.Width = 420;
+            summary.Controls.Add(objective); summary.Controls.Add(stats); summary.Controls.Add(notice); summary.Controls.Add(meter); summary.Controls.Add(nextAction); shell.Controls.Add(summary, 0, 0);
             tabs.Dock = DockStyle.Fill; tabs.SizeMode = TabSizeMode.Fixed; tabs.ItemSize = new Size(108, 30); tabs.Margin = Padding.Empty;
             shell.Controls.Add(tabs, 0, 1);
 
             FlowLayoutPanel battle = Column("桌面历练");
             StyleLabel(hint); hint.AccessibleName = "下一步操作"; battle.Controls.Add(hint);
             Add(battle, "电脑生态 · 查看来源与维护结果", delegate { session.OpenPanel("ecology"); });
-            Section(battle, "桌面妖物 · 点击切换目标");
-            targets.AutoSize = true; targets.FlowDirection = FlowDirection.TopDown; targets.WrapContents = false; battle.Controls.Add(targets);
             StyleLabel(attackState); StyleLabel(blockState); battle.Controls.Add(attackState); battle.Controls.Add(blockState);
-            Configure(strike, "对选中妖物出招", delegate { session.Game.DesktopStrikeSelected(); }); battle.Controls.Add(strike);
-            Configure(block, "格挡 · 点击修士也可施展", delegate { session.Game.TryBlock(); }); battle.Controls.Add(block);
+            combatActions.AutoSize = true; combatActions.AutoSizeMode = AutoSizeMode.GrowAndShrink; combatActions.WrapContents = true; combatActions.Margin = Padding.Empty;
+            Configure(strike, "对选中妖物出招", delegate { session.Game.DesktopStrikeSelected(); }); combatActions.Controls.Add(strike);
+            Configure(block, "格挡 · 点击修士", delegate { session.Game.TryBlock(); }); combatActions.Controls.Add(block); battle.Controls.Add(combatActions);
             Configure(awaken, "灵根觉醒 · 十次有效击杀后", delegate { session.Game.AwakenSpiritRoot(); }); battle.Controls.Add(awaken);
             Configure(automatic, "自动作战", delegate { session.Game.SetAutoPlan(!session.Game.AutoPlanning); }); battle.Controls.Add(automatic);
+            Section(battle, "桌面妖物 · 选中后查看来源");
+            targets.AutoSize = false; targets.Height = 170; targets.AutoScroll = true; targets.FlowDirection = FlowDirection.TopDown; targets.WrapContents = false; battle.Controls.Add(targets);
             Section(battle, "历练记事");
             activity.ReadOnly = true; activity.Multiline = true; activity.Height = 104; activity.BorderStyle = BorderStyle.None;
             activity.BackColor = Color.FromArgb(237, 235, 221); activity.ForeColor = Ink; activity.ScrollBars = ScrollBars.Vertical; activity.TabStop = false;
@@ -101,7 +112,7 @@ namespace NetBunny
             Resize += delegate
             {
                 int width = Math.Max(280, shell.ClientSize.Width - shell.Padding.Horizontal - 4);
-                objective.MaximumSize = stats.MaximumSize = new Size(width, 0); meter.Width = width;
+                objective.MaximumSize = stats.MaximumSize = new Size(width, 0); meter.Width = nextAction.Width = width;
                 hide.Width = Math.Max(160, (width - 12) * 3 / 5); exit.Width = Math.Max(100, width - hide.Width - 12);
                 ResizeColumns();
             };
@@ -123,12 +134,15 @@ namespace NetBunny
             objective.Text = view.Objective;
             stats.Text = "气血 " + p.Health + "/" + p.MaxHealth + (c.Mortal ? "　历练积累 " + c.DeferredQi : "　" + c.RootName + (c.RealmComplete ? " · 圆满" : ""));
             meter.Value = c.Mortal ? c.MortalKills / 10.0 : c.RealmComplete ? 1 : c.Qi / (double)Math.Max(1, c.NextLayerCost);
-            hint.Text = view.Hint;
+            hint.Text = view.NextStep; hint.AccessibleDescription = view.Hint;
+            nextAction.Text = view.NextActionText; nextAction.Visible = !String.IsNullOrEmpty(view.NextActionId);
             attackState.Text = "目标：" + view.TargetName + "\n" + view.AttackText;
             blockState.Text = view.BlockText;
             strike.Enabled = view.StrikeReady; block.Enabled = view.BlockReady;
             awaken.Enabled = c.CanAwaken; awaken.Text = c.CanAwaken ? "灵根觉醒 · 十战已满，引气入体" : c.Mortal ? "灵根觉醒 · 历练 " + c.MortalKills + "/10" : "灵根已觉醒 · " + c.RootName;
+            awaken.Visible = c.CanAwaken;
             automatic.Enabled = c.AutoBattleUnlocked && !p.Dead;
+            automatic.Visible = c.AutoBattleUnlocked;
             automatic.Text = c.AutoBattleUnlocked ? "自动作战：" + (game.AutoPlanning ? "开启 · 自主索敌" : "关闭 · 手动历练") : "自动作战 · 灵根觉醒后开启";
             notice.Text = view.Notice;
             string events = String.Join(Environment.NewLine, view.RecentEvents ?? new string[0]); if (activity.Text != events) activity.Text = events;
@@ -165,10 +179,12 @@ namespace NetBunny
                     button.Click += delegate { session.Game.DesktopChooseEnemy(id, false); UpdateState(); };
                     targetButtons.Add(id, button); targets.Controls.Add(button);
                 }
-                button.Text = (enemy.Selected ? "当前目标 · " : "选中 · ") + enemy.Name + "　" + enemy.Health + "/" + enemy.MaxHealth + "\n" + enemy.Source + "\n" + enemy.Action;
+                button.Text = (!enemy.CanSelect ? "提示 · " : enemy.Selected ? "当前目标 · " : "选中 · ") + enemy.Name + (enemy.CanSelect ? "　" + enemy.Health + "/" + enemy.MaxHealth : "") + "\n" + enemy.Source + "\n" + enemy.Action;
                 button.BackColor = enemy.Selected ? Color.FromArgb(221, 232, 214) : Color.FromArgb(251, 248, 239);
-                button.Enabled = !session.Game.Battle.Progress.Dead;
+                button.Enabled = enemy.CanSelect;
+                button.Width = Math.Max(220, targets.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 4);
             }
+            targets.Height = Math.Max(32, Math.Min(170, enemies.Length * 83));
         }
         void UpdateWeaponDescription()
         {
@@ -217,6 +233,9 @@ namespace NetBunny
                 foreach (Control control in column.Controls) { control.Width = width; if (control is Label) control.MaximumSize = new Size(width, 0); }
                 foreach (Control control in targets.Controls) control.Width = width;
                 foreach (Control control in materials.Controls) { control.Width = width; if (control is Label) control.MaximumSize = new Size(width, 0); }
+                strike.Width = Math.Max(115, (width - 8) / 2); block.Width = strike.Width;
+                strike.Margin = new Padding(0, 0, 6, 6);
+                foreach (Control control in targets.Controls) control.Width = Math.Max(220, width - SystemInformation.VerticalScrollBarWidth - 4);
             }
         }
         static void StyleLabel(Label label) { label.AutoSize = true; label.Margin = new Padding(0, 0, 0, 8); label.MaximumSize = new Size(400, 0); }

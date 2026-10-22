@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace NetBunny
 {
-    // Isolated desktop windows share the first-steps journal palette. No sizing,
-    // text, interaction, consent, or persistence is owned by this helper.
+    // Shared paper/jade palette and client-width layout. Business decisions,
+    // recognition consent and persistence remain with the existing controllers.
     internal static class DesktopFeatureStyle
     {
         internal static readonly Color Paper = Color.FromArgb(244, 237, 218);
@@ -17,6 +18,83 @@ namespace NetBunny
         internal static void Apply(Form form)
         {
             Style(form);
+        }
+
+        // The scrolling column owns its width; nested action rows wrap. Keep
+        // intended widths so narrowing and widening never reconstruct controls.
+        internal static void BindResponsiveColumn(FlowLayoutPanel column)
+        {
+            bool fitting = false;
+            Dictionary<Control, int> widths = new Dictionary<Control, int>();
+            Action fit = delegate
+            {
+                if (fitting || column.IsDisposed || column.ClientSize.Width <= 0) return;
+                fitting = true;
+                column.SuspendLayout();
+                try
+                {
+                    // Reserve a scrollbar before it appears, preventing wrapped
+                    // text from oscillating between two widths near a line break.
+                    int width = Math.Max(1, column.ClientSize.Width - column.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 2);
+                    foreach (Control child in column.Controls) FitControl(child, width - child.Margin.Horizontal, true, widths);
+                }
+                finally { column.ResumeLayout(true); fitting = false; }
+            };
+            column.ClientSizeChanged += delegate { fit(); };
+            column.Layout += delegate { fit(); };
+            column.Disposed += delegate { widths.Clear(); };
+            fit();
+        }
+
+        private static void FitControl(Control control, int available, bool fill, Dictionary<Control, int> widths)
+        {
+            available = Math.Max(1, available);
+            int natural;
+            if (!widths.TryGetValue(control, out natural))
+            {
+                natural = control.Width; widths.Add(control, natural);
+                control.Disposed += delegate { widths.Remove(control); };
+            }
+            int width = fill ? available : Math.Min(natural, available);
+            FlowLayoutPanel flow = control as FlowLayoutPanel;
+            if (flow != null)
+            {
+                flow.SuspendLayout();
+                try
+                {
+                    flow.AutoSize = true; flow.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                    flow.MaximumSize = new Size(width, 0);
+                    flow.MinimumSize = new Size(width, flow.MinimumSize.Height);
+                    flow.Width = width;
+                    bool vertical = flow.FlowDirection == FlowDirection.TopDown;
+                    foreach (Control child in flow.Controls)
+                        FitControl(child, width - flow.Padding.Horizontal - child.Margin.Horizontal, vertical, widths);
+                }
+                finally { flow.ResumeLayout(true); }
+                return;
+            }
+            control.Width = width;
+            Label label = control as Label;
+            if (label != null)
+            {
+                // Let FlowLayout measure labels itself. Turning AutoSize off
+                // after an initial auto layout can retain zero specified bounds
+                // in WinForms and make subsequent labels overlap.
+                label.AutoSize = true; label.AutoEllipsis = false;
+                label.MaximumSize = new Size(width, 0);
+                label.MinimumSize = new Size(width, label.MinimumSize.Height);
+                label.Width = width;
+            }
+            else if (control is CheckBox || control is RadioButton)
+            {
+                Size text = TextRenderer.MeasureText(control.Text, control.Font, new Size(Math.Max(1, width - 24), 0), TextFormatFlags.WordBreak);
+                control.Height = Math.Max(28, text.Height + 6);
+            }
+            else if (control is Button)
+            {
+                Size text = TextRenderer.MeasureText(control.Text, control.Font, new Size(Math.Max(1, width - 16), 0), TextFormatFlags.WordBreak);
+                control.Height = Math.Max(34, text.Height + 12);
+            }
         }
 
         private static void Style(Control control)

@@ -33,7 +33,7 @@ namespace NetBunny
             this.controller = controller; Text = "桌面修仙传 · 破境仪式";
             Rectangle workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
             Width = Math.Min(700, workArea.Width - 24); Height = Math.Min(860, workArea.Height - 40);
-            MinimumSize = new Size(Math.Min(600, workArea.Width - 24), Math.Min(520, workArea.Height - 40));
+            MinimumSize = new Size(Math.Min(380, workArea.Width - 24), Math.Min(420, workArea.Height - 40));
             StartPosition = FormStartPosition.CenterScreen; BackColor = Color.FromArgb(245, 244, 251);
             Font = new Font("Microsoft YaHei UI", 10);
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
@@ -72,6 +72,7 @@ namespace NetBunny
             refresh.Interval = 500; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
             if (controller.IsolatedDesktop) DesktopFeatureStyle.Apply(this);
+            DesktopFeatureStyle.BindResponsiveColumn(content);
         }
 
         private void Attempt()

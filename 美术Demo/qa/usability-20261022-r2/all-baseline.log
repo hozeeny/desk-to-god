@@ -1,0 +1,24 @@
+Ecology verification artifacts: E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\eco-tests\20261022-234048-623-b26633
+PASS BaselineBuild: Compiled all 55 production files with the production Program Main.
+PASS DesktopEnvironmentTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS Policy: Desktop environment regression: 112 checks, 0 failures.
+PASS DesktopSourceTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS Sources: Desktop sources: 12 checks passed; synthetic census only, no system worker started.
+PASS DesktopMaintenanceTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS ProcessFixtureBuild: Built the dedicated close/save-prompt fixture; no user application is a test target.
+PASS Maintenance: Desktop maintenance: 28 checks passed; owned file/process fixtures and injected memory, no user targets.
+PASS DesktopProcessTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS ProcessFixtureBuild: Built the dedicated close/save-prompt fixture; no user application is a test target.
+PASS Processes: Process backend: 25 checks, 0 failures. Only dedicated fixtures received normal-close requests.
+PASS DongtianExpansionTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS Cave: Dongtian expansion: 30 checks, 0 failures.
+PASS DesktopJourneyTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS Journey: Desktop journey: 32 checks, 0 failures.
+PASS DesktopDemoStateTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS DesktopDemoStateTests: Evidence profiles: E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\eco-tests\20261022-234048-623-b26633\bin\evidence-DesktopDemoStateTests\state-smoke-20261022-154151-ea4c27
+PASS DesktopPlayerViewTestsBuild: Compiled all 55 production files with the dedicated test Main.
+PASS DesktopPlayerViewTests: Desktop player regression: 32 checks, 0 failures.
+PASS SelfTest: V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership.
+PASS AdventureSmoke: Growth integration: 81 checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).
+PASS FormalArchiveIsolation: 4 archive/authorization SHA256 hashes unchanged.
+Ecology verification: 22 results, 0 non-passing; logs: E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\eco-tests\20261022-234048-623-b26633\logs

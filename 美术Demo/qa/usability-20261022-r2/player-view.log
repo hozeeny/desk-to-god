@@ -1,0 +1,33 @@
+PASS unselected mortal opponent cannot damage a player who has not begun combat
+PASS unselected ordinary mortal opponent follows its patrol destination instead of chasing the hero
+PASS selected mortal opponent retains its original damage and attack cooldown
+PASS desktop selection API exists for both actor clicks and the accessible enemy list
+PASS desktop player view exposes current objectives, action readiness and event history
+PASS clicking B immediately replaces manual target A without retaining a hidden attack queue
+PASS one enemy click makes at most one unmodified mortal strike
+PASS a repeated click during weapon cooldown never adds damage
+PASS invalid enemy ID cannot clear the current selection
+PASS view explains mortal progress, selected enemy and attack cooldown
+PASS view explains approach range instead of claiming an available strike
+PASS mortal recovery view derives its real remaining time and suppresses legacy tombstone instructions
+PASS recovery countdown continues decreasing with actual battle death time
+PASS clicking a resting hero opens the desktop practice panel instead of silently ignoring the player
+PASS legacy equipment requests remain redirected to the isolated desktop practice panel
+PASS ten-kill awakening objective survives unrelated enemy spawn messages
+PASS view integration leaves original ten-kill awakening callable
+PASS awakening identity is visible with the next real cultivation target
+PASS after awakening manual target B immediately replaces A while manual mode stays off
+PASS after awakening and disabling auto battle one actor click performs one real manual strike
+PASS cultivator manual actor clicks retain the formal weapon cooldown
+PASS after awakening explicit target B takes priority even when automatic mode retains a manually selected A
+PASS selecting a different automatic-combat target preserves both runtime automation and the saved preference
+PASS guard readiness changes immediately after a real guard action without exposing a false ready button
+PASS foundation recovery uses its actual thirty-second duration rather than a fixed mortal timer
+PASS recent events remain bounded while target selections change repeatedly
+PASS returned event snapshots cannot mutate the controller's history
+PASS isolated target selection refuses real or in-flight file work without cancelling it
+PASS post-awakening target changes refuse an in-flight file-backed queue without cancelling its accounting
+PASS desktop interaction never grants real maintenance permission
+PASS qi-refining unselected enemies retain their original aggression
+PASS the original non-isolated controller retains unselected-enemy combat behavior
+Desktop player regression: 32 checks, 0 failures.

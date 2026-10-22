@@ -12,6 +12,7 @@ namespace NetBunny
         readonly Button files=new Button(),memory=new Button(),automatic=new Button(),scanPrograms=new Button();
         readonly ComboBox programs=new ComboBox();
         readonly TextBox results=new TextBox();
+        readonly TextBox targetSource=new TextBox();
         readonly Timer refresh=new Timer();
         readonly FlowLayoutPanel content=new FlowLayoutPanel();
         internal DesktopEcologyPanel(AdventureController game)
@@ -22,6 +23,9 @@ namespace NetBunny
             content.Dock=DockStyle.Fill;content.AutoScroll=true;content.FlowDirection=FlowDirection.TopDown;content.WrapContents=false;content.Padding=new Padding(16);Controls.Add(content);
             Label heading=Line("电脑负担化为妖物，处理结果如实记录");heading.Font=new Font(Font,FontStyle.Bold);
             status.AutoSize=true;content.Controls.Add(status);
+            Line("当前目标 · 来源与拟执行动作",true);
+            targetSource.Multiline=true;targetSource.ReadOnly=true;targetSource.Height=154;targetSource.ScrollBars=ScrollBars.Both;
+            targetSource.WordWrap=false;targetSource.TabStop=false;targetSource.HideSelection=true;targetSource.BackColor=Color.FromArgb(251,248,239);targetSource.AccessibleName="当前妖物来源详情";content.Controls.Add(targetSource);
             Add("重新观察临时文件",()=>game.DesktopRefreshSources());
             Line("文件怪绑定本用户临时文件；内存 Boss 对应内存压力。未授权时，击败目标只获得修行奖励。",true);
             Configure(files,()=>Toggle("files"));Configure(memory,()=>Toggle("memory"));Configure(automatic,()=>Toggle("automatic"));
@@ -72,6 +76,12 @@ namespace NetBunny
         internal void UpdateState()
         {
             var view=game.ReadDesktopPlayerView();status.Text=view.EcologyStatus+(game.DesktopProcessBusy?"\n正在等待程序正常退出":"");
+            DesktopEnemyChoice selected=view.Enemies.FirstOrDefault(e=>e.Selected);
+            string detail=(selected==null?"未选择目标":selected.Name)+"\n"+view.TargetSourceDetail+"\n\n拟执行："+view.TargetAction;
+            // Native multiline EDIT requires CRLF. Keep volatile combat HP out
+            // of this reader so damage ticks never reset its scroll/selection.
+            detail=detail.Replace("\r\n","\n").Replace("\n",Environment.NewLine);
+            if(targetSource.Text!=detail){targetSource.Text=detail;targetSource.Select(0,0);}
             bool enabled=game.DesktopObservesSystem;files.Enabled=memory.Enabled=automatic.Enabled=enabled;
             if(!enabled)scanPrograms.Enabled=false;
             files.Text="文件清理授权："+(game.MaintenanceConsentCleanup?"已开启 · 点击关闭":"未开启 · 点击了解范围");

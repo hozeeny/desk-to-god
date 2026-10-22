@@ -14,14 +14,16 @@ namespace NetBunny
         internal int RestSeconds;
         internal string[] RecentEvents;
         internal string EcologyStatus;
+        internal string NextStep, NextActionId, NextActionText;
+        internal string TargetSourceDetail, TargetAction;
         internal DesktopMaintenanceEntry[] MaintenanceResults;
         internal DesktopEnemyChoice[] Enemies;
     }
     internal sealed class DesktopEnemyChoice
     {
-        internal string Id, Name, Source, Action;
+        internal string Id, Name, Source, SourceDetail, Action;
         internal int Health, MaxHealth;
-        internal bool Selected;
+        internal bool Selected, CanSelect;
     }
 
     internal sealed partial class AdventureController
@@ -78,7 +80,7 @@ namespace NetBunny
             if (!IsolatedDesktop || disposed || IsDemo || battle.Progress.Dead) return false;
             AdventureEnemy target = battle.Enemies.FirstOrDefault(e => e.Id == id
                 && !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.CleanupStarted && !e.Failed && !e.IsDiskWarning);
-            if (target == null) return false;
+            if (target == null) { RecordDesktopEvent("目标已变化或正在处理，请重新选择可交互的妖物"); return false; }
             bool changed = battle.Target != target;
             if (changed && DesktopObservesSystem)
             {
@@ -96,7 +98,9 @@ namespace NetBunny
             }
             else battle.Authorize(target);
             if (changed) RecordDesktopEvent("选中" + DesktopEnemyName(target) + " · 优先接近此目标");
-            if (strike && cultivation.Mortal) TryMortalStrike(target);
+            // The shared strike method already enforces manual mode, range,
+            // cooldown and recovery. Cultivators can choose manual combat too.
+            if (strike) TryMortalStrike(target);
             RenderWorld(true);
             return true;
         }
@@ -143,6 +147,11 @@ namespace NetBunny
             // encounter spawns or a combat event updates the short notice.
             if (!dead && !cultivation.Mortal && notice.IndexOf(cultivation.RootName, StringComparison.Ordinal) < 0)
                 notice = cultivation.DaoTitle + " · " + cultivation.RootName + "\n" + notice;
+            DesktopEnemyChoice[] enemies = battle.Enemies.Where(e => !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.Failed)
+                .Select(DescribeDesktopEnemy).ToArray();
+            DesktopEnemyChoice selected = enemies.FirstOrDefault(e => e.Selected);
+            string nextStep, actionId, actionText;
+            DesktopNextStep(dead, rest, out nextStep, out actionId, out actionText);
             return new DesktopPlayerView
             {
                 Objective = objective,
@@ -153,11 +162,86 @@ namespace NetBunny
                 AttackText = attack, BlockText = block, Notice = notice, StrikeReady = ready, BlockReady = blockReady,
                 RestSeconds = rest, RecentEvents = desktopRecentEvents.Reverse().ToArray(),
                 EcologyStatus = DesktopEcologyStatus, MaintenanceResults = desktopMaintenance.Reverse().ToArray(),
-                Enemies = battle.Enemies.Where(e => !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.Failed)
-                    .Select(e => new DesktopEnemyChoice { Id = e.Id, Name = DesktopEnemyName(e), Health = e.Health, MaxHealth = e.MaxHealth, Selected = e == target,
-                        Source = e.ProcessTarget != null ? "所选程序 · PID " + e.ProcessTarget.Id : e.IsVirtual ? "历练妖物 · 虚拟遭遇" : e.IsDiskBoss ? "磁盘空间预警" : e.IsBoss ? "电脑内存压力" : "临时文件 · " + (e.Batch == null ? "来源待复核" : e.Batch.FilesCount + "个 / " + AdventureBattle.FormatBytes(e.Bytes)),
-                        Action = e.ProcessTarget != null ? "击败后单独确认正常退出" : e.IsVirtual ? "仅结算修行奖励" : (e.IsBoss && !e.IsDiskBoss ? consent.MemoryEnabled : consent.CleanupEnabled) ? "已授权对应维护范围" : "未授权 · 本次战斗仅结算修行奖励" }).ToArray()
+                Enemies = enemies, NextStep = nextStep, NextActionId = actionId, NextActionText = actionText,
+                TargetSourceDetail = selected == null ? "尚未选中妖物。先从桌面或手札选敌，再查看该目标的来源。" : selected.SourceDetail,
+                TargetAction = selected == null ? "选择目标不会授予任何电脑维护权限。" : selected.Action
             };
+        }
+
+        private DesktopEnemyChoice DescribeDesktopEnemy(AdventureEnemy enemy)
+        {
+            string source, detail;
+            if (enemy.ProcessTarget != null)
+            {
+                ProcessIdentity p = enemy.ProcessTarget;
+                source = "所选程序 · PID " + p.Id;
+                detail = "程序：" + p.Name + " · PID " + p.Id + "\n路径：" + p.ExecutablePath
+                    + "\n启动标识：" + p.StartedUtcTicks + "\n执行前会重新核对身份，并单独询问本次正常退出。";
+            }
+            else if (enemy.NoFieldClear)
+            { source = "千面蜃楼 · 秘境遭遇"; detail = "来自正在进行的灵域历练，与电脑文件或进程无关；按正式战斗结算秘境进度。"; }
+            else if (enemy.IsVirtual)
+            { source = "历练妖物 · 虚拟遭遇"; detail = "桌面修行生成的历练妖物，没有绑定文件或程序。电脑干净时也能继续修行。"; }
+            else if (enemy.IsDiskWarning)
+            { source = "磁盘空间预警"; detail = "当前空间不足，但未找到可安全处理的临时文件。此项只是预警，请自行管理磁盘空间。"; }
+            else if (enemy.IsBoss && !enemy.IsDiskBoss)
+            { source = "电脑内存压力"; detail = "来源：系统可用内存采样。维护仅整理工作集，不结束程序，实际结果单独记录。"; }
+            else
+            {
+                source = "临时文件 · " + (enemy.Batch == null ? "来源待复核" : enemy.Batch.FilesCount + "个 / " + AdventureBattle.FormatBytes(enemy.Bytes));
+                detail = enemy.Batch == null ? "尚无可核实的文件批次；不会据此执行清理。"
+                    : enemy.Batch.Label + " · " + enemy.Batch.FilesCount + "个 / " + AdventureBattle.FormatBytes(enemy.Batch.Bytes)
+                        + "\n绑定文件（最多显示5项）：\n" + String.Join("\n", enemy.Batch.Candidates.Take(5).Select(f => f.Path).ToArray())
+                        + (enemy.Batch.FilesCount > 5 ? "\n另有 " + (enemy.Batch.FilesCount - 5) + " 项" : "")
+                        + "\n仅依据本批次快照；实际处理前复核位置、文件身份、时龄与占用。";
+            }
+            string action;
+            if (enemy.IsDiskWarning) action = "仅为空间预警 · 无可安全清理文件，请自行管理空间";
+            else if (!DesktopObservesSystem) action = "虚拟历练 · 系统维护关闭";
+            else if (enemy.ProcessTarget != null) action = "击败后单独确认本次正常退出 · 不会自动关闭";
+            else if (enemy.IsVirtual || enemy.NoFieldClear) action = "仅结算修行奖励";
+            else
+            {
+                bool memory = enemy.IsBoss && !enemy.IsDiskBoss;
+                bool granted = memory ? consent.MemoryEnabled : consent.CleanupEnabled;
+                bool automatic = enemy.Authorization == AdventureAuthorization.Automatic || (enemy.Authorization == AdventureAuthorization.None && battle.Automatic);
+                if (!granted) action = "未授权 · 本次战斗仅结算修行奖励";
+                else if (automatic && !consent.AutoMaintenanceEnabled) action = "自动维护未授权 · 自动战斗仅结算修行奖励";
+                else action = (memory ? "击败后尝试整理工作集" : "击败后尝试清理绑定文件") + " · 实际结果另行核实";
+            }
+            return new DesktopEnemyChoice { Id = enemy.Id, Name = DesktopEnemyName(enemy), Source = source, SourceDetail = detail, Action = action,
+                Health = enemy.Health, MaxHealth = enemy.MaxHealth, Selected = enemy == battle.Target,
+                CanSelect = !battle.Progress.Dead && !enemy.IsDiskWarning && !enemy.CleanupStarted };
+        }
+
+        private void DesktopNextStep(bool dead, int rest, out string step, out string actionId, out string actionText)
+        {
+            actionId = actionText = "";
+            if (dead) { step = "先调息恢复，约" + rest + "秒。进度保留，无需重新开局。"; return; }
+            if (cultivation.Mortal)
+            {
+                if (cultivation.CanAwaken) { step = "十次有效击杀已满，主动觉醒后解锁自动战斗与吐纳。"; actionId = "awaken"; actionText = "引气入体 · 觉醒"; }
+                else step = "选中妖物后，接近并逐招攻击；来袭时点修士格挡。十次有效击杀后觉醒。";
+                return;
+            }
+            if (cultivation.CanAttemptBreakthrough || cultivation.RealmComplete && !cultivation.IsFinalRealm)
+            { step = cultivation.CanAttemptBreakthrough ? "本境契机已就绪。查看正式概率与可选材料，由你发起破境。" : "本境已圆满。寻找蜃楼、百业或苦修契机；继续修炼可积累感悟。"; actionId = "breakthrough"; actionText = "查看破境与契机"; return; }
+            if (lingyu.ExpeditionActive)
+            { step = "灵域历练正在进行。查看当前事件、战斗或待领取结果。"; actionId = "lingyu"; actionText = "继续灵域历练"; return; }
+            if (DongtianUnlocked)
+            {
+                DateTime utc = DateTime.UtcNow;
+                bool ready = Enumerable.Range(0, dongtian.UnlockedFields).Any(i => dongtian.FieldReady(i, utc)) || dongtian.FurnaceReady(utc) || dongtian.ForgeReady(utc);
+                bool empty = Enumerable.Range(0, dongtian.UnlockedFields).Any(i => String.IsNullOrEmpty(dongtian.Fields[i]));
+                step = ready ? "洞天已有成熟作物或炼制成果，收取后可用于丹药、器具与扩建。"
+                    : empty ? (dongtian.Fields.Take(dongtian.UnlockedFields).Any(f => !String.IsNullOrEmpty(f)) ? "已有作物在自然生长，成熟后可收获；空田可继续播种，积攒炼丹与扩建材料。" : "洞天已有空田。先种灵谷积攒材料，再炼丹、铸器或扩建。")
+                    : "灵田正在自然生长，成熟后再收获。现在可以收起面板，继续桌面修行。";
+                actionId = "dongtian"; actionText = ready ? "前往洞天收获" : empty ? "前往洞天播种" : "查看洞天进度"; return;
+            }
+            if (cultivation.RealmIndex == 0 && cultivation.Layer >= CultivationBalance.LingsuiMinLayer)
+            { step = "已可进入千面蜃楼。探索机缘、争取水月灵髓，为筑基与洞天积攒家底。"; actionId = "lingyu"; actionText = "前往千面蜃楼"; return; }
+            step = "吐纳与战斗持续积累修为。炼气十层可入千面蜃楼；日常工作可自选开启百业。";
+            actionId = "training"; actionText = "查看修行与功法";
         }
     }
 }

@@ -27,7 +27,7 @@ namespace NetBunny
             this.controller = controller; Text = "桌面修仙传 · 灵域历练";
             Rectangle workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
             Width = Math.Min(720, workArea.Width - 24); Height = Math.Min(880, workArea.Height - 40);
-            MinimumSize = new Size(Math.Min(620, workArea.Width - 24), Math.Min(520, workArea.Height - 40));
+            MinimumSize = new Size(Math.Min(380, workArea.Width - 24), Math.Min(420, workArea.Height - 40));
             StartPosition = FormStartPosition.CenterScreen; BackColor = Color.FromArgb(245, 244, 251);
             Font = new Font("Microsoft YaHei UI", 10);
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
@@ -41,6 +41,7 @@ namespace NetBunny
             {
                 LingyuRealmDef realm = LingyuCatalog.Realms[i];
                 FlowLayoutPanel row = Row();
+                row.FlowDirection = FlowDirection.TopDown; row.WrapContents = false;
                 Label name = new Label { Text = realm.Name, Width = 118, Height = 34, TextAlign = ContentAlignment.MiddleLeft, Font = new Font(Font.FontFamily, 10.5f, FontStyle.Bold), ForeColor = Color.FromArgb(73, 49, 132), Margin = new Padding(0, 3, 0, 0) };
                 Label state = new Label { Text = "", Width = 390, Height = 34, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(91, 87, 107), Margin = new Padding(0, 3, 0, 0) };
                 Button enter = new Button(); int captured = i;
@@ -74,6 +75,7 @@ namespace NetBunny
             refresh.Interval = 500; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
             if (controller.IsolatedDesktop) DesktopFeatureStyle.Apply(this);
+            DesktopFeatureStyle.BindResponsiveColumn(content);
         }
 
         private Label Line(string text, int height) { return new Label { Text = text, Width = 640, Height = height, AutoSize = true, MaximumSize = new Size(640, 0), MinimumSize = new Size(0, height), Margin = new Padding(0, 4, 0, 4) }; }
@@ -114,14 +116,14 @@ namespace NetBunny
                 if (!mirageKnown)
                 {
                     nodeTitle.Text = "尚未踏入任何灵域";
-                    nodeText.Text = "满足左侧条件后进入千面蜃楼：浏览器游历化出的幻术灵域，镜像妖物与机缘藏于其中。";
+                    nodeText.Text = "满足上方条件后进入千面蜃楼：浏览器游历化出的幻术灵域，镜像妖物与机缘藏于其中。";
                     expeditionHint.Text = "";
                     for (int i = 0; i < choices.Length; i++) choices[i].Visible = false;
                 }
                 else if (!progress.ExpeditionActive)
                 {
                     nodeTitle.Text = "蜃楼之行暂存 · " + MirageEngine.NodeTitle(progress.ExpeditionNode);
-                    nodeText.Text = "进度已保存。点击左侧「继续探索」从暂离处重访蜃楼。";
+                    nodeText.Text = "进度已保存。点击上方「继续探索」从暂离处重访蜃楼。";
                     expeditionHint.Text = "";
                     for (int i = 0; i < choices.Length; i++) choices[i].Visible = false;
                 }

@@ -59,6 +59,9 @@ internal static class VerifyDesktopPanelLayout
                     object battle = controllerType.GetProperty("Battle", Instance).GetValue(controller, null);
                     object progress = Field(battle, "Progress");
                     Check(weapons.Items.Count == ((ICollection)Field(progress, "Inventory")).Count, "weapon options match the real owned inventory");
+                    object cultivation = controllerType.GetProperty("Cultivation", Instance).GetValue(controller, null);
+                    Set(cultivation, "MortalKills", 10); Call(panel, "UpdateState");
+                    Check(((Button)Field(panel, "nextAction")).Text.Contains("觉醒"), "summary offers the actual earned awakening action");
                     TabControl tabs = (TabControl)Field(panel, "tabs");
                     Size[] sizes = { new Size(470, 700), new Size(390, 490) };
                     foreach (Size size in sizes)
@@ -92,7 +95,6 @@ internal static class VerifyDesktopPanelLayout
                             }
                         }
                     }
-                    object cultivation = controllerType.GetProperty("Cultivation", Instance).GetValue(controller, null);
                     Set(cultivation, "MortalKills", 10); Call(panel, "UpdateState");
                     Check(awaken.Enabled, "real ten-kill condition enables the awakening control");
                     Check((bool)Call(controller, "AwakenSpiritRoot"), "explicit UI fixture uses the real awakening transition in its private archive");

@@ -1,0 +1,39 @@
+[
+  {
+    "image": "01-native-mortal-desktop.png",
+    "source": "qa/desktop-accept-eco-observe-usability-20261022-r2/01-observe-real-file-actors.png",
+    "source_sha256": "05bd4addaecae7ccbe38ed180d662a42d9d149d845340d1fa71cbc51ba174ae1",
+    "crop_box": [
+      64,
+      520,
+      284,
+      760
+    ],
+    "operation": "native pixels unchanged; exact owned hero bounds; no compositing"
+  },
+  {
+    "image": "02-dongtian-layout-offscreen.png",
+    "scope": "OFFSCREEN private fixture layout; not native desktop or natural harvest evidence"
+  },
+  {
+    "image": "03-dongtian-narrow-offscreen.png",
+    "scope": "OFFSCREEN private fixture layout; not native desktop or natural harvest evidence"
+  },
+  {
+    "image": "04-handbook-layout-offscreen.png",
+    "scope": "OFFSCREEN earned-action layout fixture, not natural ten kills"
+  },
+  {
+    "image": "05-dongtian-real-desktop-native.png",
+    "source": "qa/desktop-accept-usability-qishi-x1-20261022-r1/30-dongtian-panel-on-real-desktop.png",
+    "source_sha256": "e9583931fe8233fc053a49f0beb5580a7bd9a582e1b2484186aedef1df86f47a",
+    "crop_box": [
+      40,
+      60,
+      690,
+      540
+    ],
+    "operation": "native Windows pixels unchanged; crop strictly within owned opaque cave panel; other apps excluded",
+    "scope": "x1 private seeded functional verification, not natural harvest"
+  }
+]

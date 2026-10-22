@@ -88,6 +88,12 @@ namespace NetBunny
                         c.Battle.CancelQueue(); c.Battle.SetAutomatic(false); c.Battle.Authorize(a);
                         Check((bool)choose.Invoke(c, new object[] { "b", false }) && c.Battle.Target == b && !a.Authorized && !c.AutoPlanning,
                             "after awakening manual target B immediately replaces A while manual mode stays off");
+                        b.X = a.X; c.Battle.Cooldown = 0; int cultivatorEnemyHealth = b.Health;
+                        choose.Invoke(c, new object[] { "b", true });
+                        Check(b.Health < cultivatorEnemyHealth && c.Battle.Cooldown > 0,
+                            "after awakening and disabling auto battle one actor click performs one real manual strike");
+                        int struckHealth = b.Health; choose.Invoke(c, new object[] { "b", true });
+                        Check(b.Health == struckHealth, "cultivator manual actor clicks retain the formal weapon cooldown");
                         c.Battle.CancelQueue(); c.Battle.SetAutomatic(true); c.Battle.Authorize(a);
                         bool autoPreference = c.Cultivation.AutoBattle;
                         Check((bool)choose.Invoke(c, new object[] { "b", false }) && c.Battle.Target == b && !a.Authorized,

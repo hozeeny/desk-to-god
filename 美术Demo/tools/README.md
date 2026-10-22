@@ -1,5 +1,7 @@
 # Demo 素材机械准备
 
+桌面短回归另见 `verify-desktop-ecology.ps1 -Suite Journey`（成长引导、目标来源、预警与阅读稳定性）及 `verify-feature-panel-usability.ps1`（四功能面板窄屏布局、洞天配方、库存与控件复用）。`-Suite All -Baseline` 包含 Journey；这些工具使用私有夹具，不启动八小时长测。
+
 仅处理独立美术 Demo。原图不会被改写；工具不会重绘、抠背景、替色或把完整人物裁块称为骨骼。输入必须已具备真实 alpha；无透明背景的输入会报错。
 
 使用 bundled Python（已含 Pillow）：

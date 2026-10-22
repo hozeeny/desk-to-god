@@ -1,5 +1,5 @@
 {
-  "running": true,
+  "running": false,
   "attempt": "r2",
   "started_utc": "2026-10-22T13:27:49.455500+00:00",
   "expected_earliest_end_utc": "2026-10-22T21:27:49.455500+00:00",
@@ -9,7 +9,7 @@
   "profile": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\eco-build\\profiles\\accept-eco-x1-20261022-r1",
   "output": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\qa\\desktop-accept-natural-soak-20261022-r2",
   "automation_id": "automation-3",
-  "automation_status": "ACTIVE",
+  "automation_status": "PAUSED",
   "previous_attempt": "r1 failed after 2428.45 recorded seconds; never combined into r2",
   "command": [
     "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\eco-build-r2\\桌面修仙-透明桌面Demo.exe",
@@ -20,7 +20,7 @@
     "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\qa\\desktop-accept-natural-soak-20261022-r2",
     "8"
   ],
-  "acceptance": "Pending. Natural first zhuji and planting verified; eight effective hours, first real harvest, five archives final Save/Load and true new-process natural-profile restore remain required.",
+  "acceptance": "Deferred by product request; recorded natural first foundation and planting retained. Eight-hour acceptance, first harvest and natural-profile new-process restoration are not verified.",
   "pid": 27112,
   "supervisor_pid": 34568,
   "process_witness": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\natural-soak-monitor\\r2-process-witness.json",
@@ -111,5 +111,8 @@
   "visual_review": {
     "02-natural-zhuji.png": "Inspected actual native pixels: same hero in foundation-stage clothing and real desktop monsters; raw remains private due to other apps",
     "03-natural-plant.png": "Inspected actual native pixels: first linggu growing, 2.0 hours remaining; public crop contains only owned cave window"
-  }
+  },
+  "status": "cancelled_by_user",
+  "passed": false,
+  "cancelled_utc": "2026-10-22T15:08:12.5584789Z"
 }
