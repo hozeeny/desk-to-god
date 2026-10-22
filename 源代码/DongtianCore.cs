@@ -33,8 +33,9 @@ namespace NetBunny
             new DongtianPillDef { Id = "juqi", Name = "聚气散", EffectText = "吐纳修为 +25% · 12 小时", BrewSeconds = 1800, Materials = new[] { "linggu", "linggu" }, BuffId = "buff-juqi", BuffHours = 12 },
             new DongtianPillDef { Id = "gushen", Name = "固神丹", EffectText = "力竭调息时长减半 · 24 小时", BrewSeconds = 1800, Materials = new[] { "ningshen", "ningshen" }, BuffId = "buff-gushen", BuffHours = 24 },
             new DongtianPillDef { Id = "wuzhen", Name = "悟真丹", EffectText = "吐纳修为 +15% · 24 小时（圆满后收益同增，感悟自然提速）", BrewSeconds = 1800, Materials = new[] { "ningshen", "linggu" }, BuffId = "buff-wuzhen", BuffHours = 24 },
-            // 蜃楼「水月灵髓」的常驻用途：直接入丹，无需灵田材料。
+            // 稀有灵髓保留原方；反复探索获得的镜花水月也可炼成同一药力。
             new DongtianPillDef { Id = "ninglu", Name = "凝露丹", EffectText = "战斗伤害 +8% · 12 小时", BrewSeconds = 1800, Materials = new[] { "shuiyue-lingsui" }, BuffId = "buff-ninglu", BuffHours = 12 },
+            new DongtianPillDef { Id = "ninglu-jinghua", Name = "镜花凝露丹", EffectText = "战斗伤害 +8% · 12 小时（与凝露丹共用药力，不叠加）", BrewSeconds = 1800, Materials = new[] { "jinghua-shuiyue", "jinghua-shuiyue" }, BuffId = "buff-ninglu", BuffHours = 12 },
         };
         internal static readonly DongtianGearDef[] Gears =
         {
@@ -56,6 +57,7 @@ namespace NetBunny
         {
             DongtianSeedDef s = Seed(id); if (s != null) return s.Name;
             if (id == "shuiyue-lingsui") return "水月灵髓";
+            if (id == "jinghua-shuiyue") return "镜花水月";
             return id;
         }
     }
@@ -361,10 +363,10 @@ namespace NetBunny
                 n++;
             };
             DateTime t0 = new DateTime(2026, 10, 17, 12, 0, 0, DateTimeKind.Utc);
-            check(DongtianRecipes.Seeds.Length == 3 && DongtianRecipes.Pills.Length == 4 && DongtianRecipes.Gears.Length == 3, "catalog shape");
+            check(DongtianRecipes.Seeds.Length == 3 && DongtianRecipes.Pills.Length == 5 && DongtianRecipes.Gears.Length == 3, "catalog shape");
             foreach (DongtianPillDef pill in DongtianRecipes.Pills)
                 foreach (string mat in pill.Materials)
-                    check(DongtianRecipes.Seed(mat) != null || mat == "shuiyue-lingsui", "every pill material has a source: " + pill.Id);
+                    check(DongtianRecipes.Seed(mat) != null || mat == "shuiyue-lingsui" || mat == "jinghua-shuiyue", "every pill material has a source: " + pill.Id);
             // 灵田：时间制成熟，离线按真实流逝。
             DongtianProgress farm = new DongtianProgress();
             check(farm.UnlockedFields == 2 && !farm.Plant(2, "linggu", t0), "field slots are gated by the cave level");

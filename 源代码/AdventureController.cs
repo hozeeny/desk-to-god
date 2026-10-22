@@ -1877,7 +1877,7 @@ namespace NetBunny
                     c.area = new Rectangle(-24000, -24000, 1600, 1000); c.x = -23600; c.y = -23400; c.PositionLandmark(); c.ClampHero();
                     c.PlayDemo(); Application.DoEvents();
                     check(c.heroWindow.Visible && c.landmarkWindow.Visible && c.enemyWindows.Count == 5, "hero, landmark and five independent monster overlays");
-                    check(c.heroWindow.Owner == null && !c.heroWindow.ShowInTaskbar && c.heroWindow.TopMost, "desktop overlay independent of main window");
+                    check(c.heroWindow.Owner == null && !c.heroWindow.ShowInTaskbar && c.heroWindow.DesktopTopMost, "desktop overlay independent of main window");
                     check((GetWindowLong(c.heroWindow.Handle, -20) & 0x80000) != 0, "per-pixel layered window");
                     check(c.connectivity == null && c.region.Mode == "OFF" && !c.scanBusy && c.lastScan < 0, "demo starts without network probe or temp scan");
                     TaskCompletionSource<CleanupResult> completion = new TaskCompletionSource<CleanupResult>();

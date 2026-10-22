@@ -315,6 +315,7 @@ namespace NetBunny
 
     internal sealed class KnightLayeredWindow : Form
     {
+        internal static event EventHandler DesktopVisibilityChanged;
         private Bitmap current;
         private bool pointerPressed, dragging, suppressLeftClick;
         private Point mouseStart, formStart;
@@ -324,14 +325,24 @@ namespace NetBunny
         internal bool PassThrough;
         internal KnightLayeredWindow()
         {
-            FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true;
+            // Form.TopMost re-applies SetWindowPos during handle creation and
+            // can activate a new actor before its first transparent frame.
+            // Set the native extended style together with NOACTIVATE instead.
+            FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual; Text = "长枪骑士 · 网速宠物";
             Cursor = Cursors.Hand; AutoScaleMode = AutoScaleMode.None;
         }
         protected override bool ShowWithoutActivation { get { return true; } }
         protected override CreateParams CreateParams
         {
-            get { CreateParams p = base.CreateParams; p.ExStyle |= 0x00080000 | 0x08000000 | 0x00000080; if (PassThrough) p.ExStyle |= 0x20; return p; }
+            get { CreateParams p = base.CreateParams; p.ExStyle |= 0x00000008 | 0x00080000 | 0x08000000 | 0x00000080; if (PassThrough) p.ExStyle |= 0x20; return p; }
+        }
+        internal bool DesktopTopMost { get { return IsHandleCreated ? (GetWindowLongPtr(Handle, -20).ToInt64() & 8) != 0 : true; } }
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            EventHandler changed = DesktopVisibilityChanged;
+            if (changed != null) changed(this, e);
         }
         protected override void WndProc(ref Message message)
         {
@@ -442,6 +453,7 @@ namespace NetBunny
         [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
         [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr item);
         [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr item);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
     }
 
     internal sealed class KnightPetController : IDisposable

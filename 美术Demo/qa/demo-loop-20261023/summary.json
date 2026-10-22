@@ -1,0 +1,91 @@
+{
+  "scope": "bounded Demo gameplay and desktop usability update, not complete product acceptance",
+  "executable_sha256": "037d96da8606b2785454d1bdbc5e20d3e83886100e3fcc4e1a00577396bc7017",
+  "archive_sha256": "3efd7cb55d3b75dedf233b80e8d862010996a8a0f4da01146e428d337f0fb401",
+  "source_file_count": 56,
+  "all_baseline": {
+    "results": 22,
+    "nonpassing": 0
+  },
+  "panel_layering": {
+    "checks": 24,
+    "failures": 0,
+    "elapsed_seconds": 4.15,
+    "scope": "private native-window fixture, immediate new-actor z-order, owned-dialog plus exposed owner, foreground retention, hide/minimize/disposal"
+  },
+  "mirror_loop": {
+    "checks": 31,
+    "failures": 0,
+    "scope": "twice formal lord-reward callback, real transfer, paired ledger and failed-save retry, recipe collection and damage factor; stopped-clock/ready-slot fixtures; not natural exploration or 30-minute elapsed proof"
+  },
+  "feature_panels": {
+    "checks": 61,
+    "failures": 0
+  },
+  "art": {
+    "checks": 2754,
+    "failures": 0
+  },
+  "handbook_layout": {
+    "checks": 28,
+    "failures": 0
+  },
+  "native_seeded_x1": {
+    "passed": true,
+    "elapsed_seconds": 17.6966738,
+    "clicks": 6,
+    "assertions": 32,
+    "captures": 9,
+    "actor_pixel_ratios": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "source_report_sha256": "aeac9e58312306798286585dc35492982625316dae21e3bb3bdcad7528de643a",
+    "visually_inspected": [
+      "10-training-handbook.png",
+      "21-zhuji-after-real-breakthrough.png",
+      "30-dongtian-panel-on-real-desktop.png",
+      "41-lingyu-mirror-on-desktop.png"
+    ],
+    "scope": "exact final EXE, private qishi-full normal x1 feature fixture, real native input, stage switch, cave planting, mirror combat, save and same-process production Load; not natural growth or true new process restore"
+  },
+  "native_observe": {
+    "passed": true,
+    "elapsed_seconds": 5.1044789999999995,
+    "assertions": 29,
+    "formal_archives_unchanged": true,
+    "source_report_sha256": "20ed71a01203f51a8efe64232e4131cc692c4f8c506fbc1956b08bf86cea22ac",
+    "visually_inspected": [
+      "01-observe-real-file-actors.png",
+      "02-visible-ecology-panel.png",
+      "03-panels-closed-hero.png"
+    ],
+    "scope": "final source runner, real read-only inventory and actual file-monster pixels; all maintenance off"
+  },
+  "isolation": {
+    "runtime_private_files_preserved": 240,
+    "original_assets_identical_files": 22,
+    "package_files": 63,
+    "png_files": 31,
+    "raw_desktop_captures_published": false
+  },
+  "long_test": {
+    "status": "deferred_by_user",
+    "automation": "PAUSED",
+    "eight_hours_passed": false,
+    "first_natural_harvest_verified": false
+  },
+  "remaining": [
+    "natural growth pace and first natural harvest unvalidated; long test stays paused",
+    "mixed-DPI and lock/resume untested",
+    "earlier x6 capture failures retained, not rerun or reclassified",
+    "next game-completeness work follows approved roadmap; this is not final product acceptance"
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "output": "01-mortal-handbook-native-fixture.png",
+    "source": "verification\\panel-layering\\green-20261023-001626-310\\foreground-handbook-native.png",
+    "source_sha256": "611ff3bdac1d7376ed508a91f98db0df596dfcb2744409009ab33882100bb7e6",
+    "output_sha256": "611ff3bdac1d7376ed508a91f98db0df596dfcb2744409009ab33882100bb7e6",
+    "operation": "byte-identical native client capture of own private fixture, no background composition"
+  },
+  {
+    "output": "02-dongtian-native-client-crop.png",
+    "source": "qa\\desktop-accept-demo-loop-final-qishi-x1-20261023-r1\\30-dongtian-panel-on-real-desktop.png",
+    "source_sha256": "c7bcf32570b2b23028fa3edf07b3dc39b5c99d129600f5fc30f251523ea83de8",
+    "output_sha256": "f7bd5ce1e1327c2680579941433f9cb7ec59d29bade0d20fa0dabb46b8a0dce0",
+    "crop_box": [
+      40,
+      60,
+      690,
+      540
+    ],
+    "operation": "pixel-preserving crop inside own opaque cave panel; raw desktop includes other apps and stays local"
+  }
+]

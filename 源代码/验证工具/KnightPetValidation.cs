@@ -42,7 +42,7 @@ internal static class KnightPetValidation
                 pet.Enabled = true;
                 Check(pet.Enabled && window.Visible, "Off-screen overlay must open.");
                 Check(!window.ShowInTaskbar, "Pet must not create a taskbar button.");
-                Check(window.TopMost, "Pet must be topmost.");
+                Check(window.DesktopTopMost, "Pet must be natively topmost.");
                 Check(!owner.Visible, "Owner must remain hidden.");
                 Check(window.Owner == null, "Pet must be independent of owner hide.");
                 GC.Collect(); GC.WaitForPendingFinalizers();

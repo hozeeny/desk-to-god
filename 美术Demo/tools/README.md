@@ -2,6 +2,8 @@
 
 桌面短回归另见 `verify-desktop-ecology.ps1 -Suite Journey`（成长引导、目标来源、预警与阅读稳定性）及 `verify-feature-panel-usability.ps1`（四功能面板窄屏布局、洞天配方、库存与控件复用）。`-Suite All -Baseline` 包含 Journey；这些工具使用私有夹具，不启动八小时长测。
 
+`verify-desktop-panel-layering.ps1` 是约5秒的可见原生窗口夹具，检查新演员不抢焦点、前台手札及其所属弹窗命中、切换前台、隐藏与最小化；其中洋红方块只是故意覆盖按钮的测试窗口，不是游戏素材。不要与其他可见桌面验收并行。`verify-dongtian-mirage-loop.ps1` 检查重复蜃楼奖励到镜花入库、炼丹、战斗增益和私有存档恢复；它使用停止时钟与就绪炉位夹具，不能用作自然成长或等待30分钟的证明。
+
 仅处理独立美术 Demo。原图不会被改写；工具不会重绘、抠背景、替色或把完整人物裁块称为骨骼。输入必须已具备真实 alpha；无透明背景的输入会报错。
 
 使用 bundled Python（已含 Pillow）：

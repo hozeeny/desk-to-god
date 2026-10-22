@@ -17,6 +17,7 @@ namespace NetBunny
         readonly NotifyIcon tray;
         readonly System.Windows.Forms.Timer statusTimer;
         readonly Mutex profileGate;
+        readonly DesktopPanelLayerCoordinator panelLayers;
         DesktopPracticePanel panel;
         DesktopEcologyPanel ecology;
         bool exiting, disposedSession;
@@ -95,6 +96,7 @@ namespace NetBunny
             IntPtr hiddenOwner = owner.Handle;
             try
             {
+                panelLayers = new DesktopPanelLayerCoordinator();
                 if (seed != null) DesktopDemoProfiles.CreateSeed(ProfileRoot, seed);
                 Game = new AdventureController(owner, assets, false, null, false, ProfileRoot, observeSystem && !acceptanceMode && seed == null);
                 Game.DesktopPanelRequested = delegate { OpenPanel("practice"); };
@@ -145,12 +147,13 @@ namespace NetBunny
                 {
                     panel = new DesktopPracticePanel(this);
                     panel.ShowWelcome();
-                    PlaceFeaturePanel(panel);
+                    PlaceFeaturePanel(panel, true);
                 }
             }
             catch
             {
                 if (statusTimer != null) statusTimer.Dispose();
+                if (panelLayers != null) panelLayers.Dispose();
                 if (tray != null) { tray.Visible = false; if (tray.ContextMenuStrip != null) tray.ContextMenuStrip.Dispose(); tray.Dispose(); }
                 if (Game != null) Game.Dispose(); owner.Dispose(); profileGate.ReleaseMutex(); profileGate.Dispose(); throw;
             }
@@ -176,7 +179,7 @@ namespace NetBunny
             PlaceFeaturePanel(panel);
             panel.BringToFront(); panel.Activate();
         }
-        void PlaceFeaturePanel(Form form)
+        void PlaceFeaturePanel(Form form, bool initialWelcome = false)
         {
             if (form == null) return;
             Rectangle work = Screen.FromPoint(Game.DesktopHeroWindow.Bounds.Location).WorkingArea;
@@ -191,6 +194,7 @@ namespace NetBunny
             Point chosen = corners.OrderBy(overlap).First();
             form.StartPosition = FormStartPosition.Manual;
             form.Location = new Point(Math.Max(work.Left, chosen.X), Math.Max(work.Top, chosen.Y));
+            panelLayers.Register(form, initialWelcome);
         }
         internal void ClosePanels()
         {
@@ -231,6 +235,7 @@ namespace NetBunny
             {
                 Application.ApplicationExit -= ApplicationExit;
                 if (statusTimer != null) { statusTimer.Stop(); statusTimer.Dispose(); }
+                if (panelLayers != null) panelLayers.Dispose();
                 if (tray != null) { tray.Visible = false; if (tray.ContextMenuStrip != null) tray.ContextMenuStrip.Dispose(); tray.Dispose(); }
                 if (panel != null) panel.Dispose();
                 if (ecology != null) ecology.Dispose();

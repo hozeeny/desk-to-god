@@ -119,12 +119,14 @@ namespace NetBunny
             refresh.Interval = 250; refresh.Tick += delegate { if (Visible) UpdateState(); }; refresh.Start();
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             Shown += delegate { ResizeColumns(); };
-            Activated += delegate { TopMost = false; };
-            VisibleChanged += delegate { if (!Visible) TopMost = false; };
         }
 
         protected override bool ShowWithoutActivation { get { return welcomeWithoutActivation; } }
-        internal void ShowWelcome() { welcomeWithoutActivation = true; try { UpdateState(); TopMost = true; Show(); } finally { welcomeWithoutActivation = false; } }
+        protected override CreateParams CreateParams
+        {
+            get { CreateParams parameters = base.CreateParams; if (welcomeWithoutActivation) parameters.ExStyle |= 8; return parameters; }
+        }
+        internal void ShowWelcome() { welcomeWithoutActivation = true; try { UpdateState(); Show(); } finally { welcomeWithoutActivation = false; } }
         internal void OpenSection(string id) { tabs.SelectedIndex = id == "training" ? 1 : id == "inventory" ? 2 : 0; }
         internal void UpdateState()
         {

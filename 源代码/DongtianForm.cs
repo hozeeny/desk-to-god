@@ -101,7 +101,7 @@ namespace NetBunny
             if (!controller.DongtianUnlocked)
             {
                 status.Text = "洞天内苑（预览）\r\n\r\n筑基之后，方可开辟洞天、开垦灵田、筑炉炼丹、冶器养灵。\r\n"
-                    + "蜃楼带回的水月灵髓届时可入库入药——每一次秘境之行都在为洞天积攒家底。\r\n\r\n当前境界："
+                    + "蜃楼反复带回的镜花水月届时可入库炼丹；稀有水月灵髓也保留原有丹方。\r\n\r\n当前境界："
                     + controller.Cultivation.RealmName + " · 第" + controller.Cultivation.Layer + "层";
                 notice.Text = "";
                 overview.Text = "洞天内苑 · 筑基后开放"; plantingGuide.Text = "";
@@ -126,7 +126,7 @@ namespace NetBunny
             text.AppendLine("丹炉：" + SlotText(d.Furnace, "丹", utc));
             text.AppendLine("器位：" + SlotText(d.Forge, "器", utc));
             overview.Text = text.ToString().TrimEnd(); text.Length = 0;
-            plantingGuide.Text = "先种灵谷：2小时收2份，可炼聚气散或扩建。\r\n凝神花：6小时收2份，用于固神丹、悟真丹；剑心草：12小时收1份，用于养器。播种无需材料。";
+            plantingGuide.Text = "先种灵谷：2小时收2份，可炼聚气散或扩建。\r\n凝神花：6小时收2份，用于固神丹、悟真丹；剑心草：12小时收1份，用于养器。播种无需材料。\r\n蜃楼的镜花水月×2可炼镜花凝露丹，伤害+8%持续12小时；与凝露丹共用药力，不叠加。";
             if (expansion == null) text.AppendLine("洞天已满级 · 四畦灵田均已开辟");
             else text.AppendLine("下次扩建：Lv." + expansion.ToLevel + " · 新增一畦灵田 · 材料：" + MaterialsText(expansion.Materials));
             StringBuilder bag = new StringBuilder("洞天储物：");
@@ -154,6 +154,8 @@ namespace NetBunny
                     if (d.Fields[i] == null) { int captured = i; available.Add(new DongtianAction { Label = "种" + seed.Name + "→田" + (i + 1), Width = 150, Primary = true, Tip = seed.GrowSeconds / 3600 + " 小时成熟 · 收获 ×" + seed.Yield, Run = delegate { return controller.DongtianPlant(captured, seed.Id); } }); break; }
             int lingsui = controller.LingyuMaterialCount("shuiyue-lingsui");
             if (lingsui > 0) available.Add(new DongtianAction { Label = "灵髓入库", Width = 160, Tip = "灵域收藏剩 " + lingsui + " · 入库后可炼凝露丹；入库会转出灵域收藏中的灵髓。", Run = delegate { return controller.DongtianImport("shuiyue-lingsui"); } });
+            int mirrorMaterial = controller.LingyuMaterialCount("jinghua-shuiyue");
+            if (mirrorMaterial > 0) available.Add(new DongtianAction { Label = "镜花水月入库", Width = 160, Tip = "灵域收藏剩 " + mirrorMaterial + " · 每次转入1份，2份可炼镜花凝露丹；蜃楼宝箱、镜妖与主镜可重复获得。", Run = delegate { return controller.DongtianImport("jinghua-shuiyue"); } });
             if (expansion != null)
             {
                 int expectedLevel = d.Level;
