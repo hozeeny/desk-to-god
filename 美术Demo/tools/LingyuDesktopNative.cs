@@ -25,6 +25,7 @@ namespace NetBunny
         readonly Dictionary<string, string> realBefore;
         readonly string output, marker;
         readonly bool restore;
+        readonly bool crowdProbe;
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
         Dictionary<string, object> expected;
         bool busy, finished;
@@ -32,6 +33,9 @@ namespace NetBunny
         double next, startedBattle;
         string mirrorId;
         long qiBefore;
+        double crowdStarted, nextCrowdFrame;
+        string[] crowdIds;
+        int crowdFrame;
         internal int ExitCode { get; private set; }
         AdventureController Game { get { return session.Game; } }
         object Call(object instance, string method, params object[] args) { return instance.GetType().GetMethod(method, Hidden).Invoke(instance, args); }
@@ -54,20 +58,52 @@ namespace NetBunny
                 Environment.SetEnvironmentVariable(ArtDemoPack.EnvironmentVariable, Path.GetFullPath(args[1]));
                 using (DesktopDemoSession session = new DesktopDemoSession(Path.GetFullPath(args[0]), profile, true, restore ? null : "qishi-full"))
                 {
-                    LingyuDesktopNative test = new LingyuDesktopNative(session, output, restore); Application.Run(session); return test.ExitCode;
+                    LingyuDesktopNative test = new LingyuDesktopNative(session, output, restore, args.Length > 5 && args[5] == "crowd"); Application.Run(session); return test.ExitCode;
                 }
             }
             catch (Exception error) { Console.Error.WriteLine(error); return 2; }
         }
-        LingyuDesktopNative(DesktopDemoSession session, string output, bool restore)
+        LingyuDesktopNative(DesktopDemoSession session, string output, bool restore, bool crowdProbe)
         {
             this.session = session; this.output = output; this.restore = restore; ExitCode = 1;
+            this.crowdProbe = crowdProbe && restore;
             marker = Path.Combine(session.ProfileRoot, "lingyu-suspend-native-marker.json"); native = new DesktopDemoAcceptance(session, output, true);
             Native("SnapshotRealArchives");
             realBefore = new Dictionary<string, string>(Field<Dictionary<string, string>>(native, "realArchives"));
             report["phase"] = restore ? "restore" : "prepare"; report["processId"] = Process.GetCurrentProcess().Id;
             report["scope"] = "normal x1 private qishi-full initial feature fixture; native buttons and actual mirror click; no HP/time/probability injection; runner compiled with production source, not exact delivered EXE";
             report["checks"] = new List<string>(); timer.Tick += Tick; timer.Start(); next = .6;
+        }
+        PointF Feet(AdventureEnemy enemy)
+        {
+            Size size=(Size)Call(Game,"EnemySize",enemy);
+            return new PointF((float)(enemy.X+size.Width/2.0),(float)(enemy.Y+size.Height));
+        }
+        void BeginCrowdProbe(double now)
+        {
+            AdventureEnemy[] group=Game.Battle.Enemies.Where(a=>!a.IsBoss&&!a.Defeated&&!a.VisualDefeated&&a.IsVirtual).ToArray();
+            Check(group.Length==3,"crowd fixture has exactly two existing ordinary creatures plus the formal mirror");
+            Rectangle work=Field<Rectangle>(Game,"area");double scale=Field<float>(Game,"displayScale");
+            double feetX=work.Left+work.Width*.5,feetY=work.Top+Math.Max(240*scale,work.Height*.62);
+            Game.Roaming=false;
+            Game.GetType().GetField("x",Hidden).SetValue(Game,feetX-110*scale);
+            Game.GetType().GetField("y",Hidden).SetValue(Game,feetY-240*scale);
+            foreach(AdventureEnemy enemy in group)
+            {
+                Size size=(Size)Call(Game,"EnemySize",enemy);enemy.X=feetX-80*scale-size.Width/2.0;enemy.Y=feetY-size.Height;
+            }
+            crowdIds=group.Select(a=>a.Id).ToArray();crowdStarted=now;nextCrowdFrame=now;phase=107;
+            report["crowdFixture"]="Only the positions of the existing three private virtual actors are deliberately stacked; roaming off. Production x1 timers, HP, attack rules, realms and rewards unchanged. Not natural positioning or the exact shipped EXE.";
+            report["crowdFrames"]=new List<object>();Call(Game,"RenderWorld",true);
+        }
+        void CrowdFrame(double now)
+        {
+            if(now<nextCrowdFrame || crowdFrame>=24)return;nextCrowdFrame=now+.4;
+            Rectangle bounds=Game.DesktopEnemyWindows.Values.Where(w=>w.Visible).Select(w=>w.Bounds).Concat(new[]{Game.DesktopHeroWindow.Bounds}).Aggregate(Rectangle.Union);
+            bounds.Inflate(24,24);bounds=Rectangle.Intersect(bounds,SystemInformation.VirtualScreen);
+            string name="crowd-"+(crowdFrame++).ToString("D3")+".png";
+            using(Bitmap frame=DesktopFrameCapture.CaptureRegion(bounds,true))frame.Save(Path.Combine(output,name));
+            ((List<object>)report["crowdFrames"]).Add(new Dictionary<string,object>{{"image",name},{"seconds",now-crowdStarted},{"bounds",new[]{bounds.X,bounds.Y,bounds.Width,bounds.Height}}});
         }
         bool Painted(LingyuForm panel)
         {
@@ -191,10 +227,22 @@ namespace NetBunny
                 }
                 else if(phase==7)
                 {
+                    if(crowdProbe && crowdIds==null){BeginCrowdProbe(now);return;}
                     Native("Capture","06-restored-mirror-on-desktop",true,false,true);
                     AdventureEnemy mirror=Game.Battle.Enemies.Single(a=>a.Id==mirrorId);
                     if(!(bool)Native("ClickEnemy",mirror))return;
                     phase=17;next=now+.15;
+                }
+                else if(phase==107)
+                {
+                    CrowdFrame(now);
+                    if(now-crowdStarted<8)return;
+                    AdventureEnemy[] group=crowdIds.Select(id=>Game.Battle.Enemies.Single(a=>a.Id==id)).ToArray();
+                    double scale=Field<float>(Game,"displayScale"), minimum=Double.MaxValue;
+                    for(int i=0;i<group.Length;i++)for(int j=i+1;j<group.Length;j++)minimum=Math.Min(minimum,AdventureBattle.Distance(Feet(group[i]).X,Feet(group[i]).Y,Feet(group[j]).X,Feet(group[j]).Y));
+                    report["crowdMinimumFeetDistance"]=minimum;
+                    Check(minimum>=60*scale,"three previously stacked native actors separate by at least 60 scaled feet pixels through normal movement");
+                    phase=7;next=now+.1;
                 }
                 else if(phase==17)
                 {

@@ -1,0 +1,59 @@
+{
+  "scope": "Desktop spawn/ordinary-melee spacing improvement, continued Demo development; not complete product acceptance.",
+  "executable_sha256": "0e797aec6daca8384bba38b0892fc30d75cc011562ec29ef8409da7b50d8b1ab",
+  "archive_sha256": "4e3e721f2aee4f6e7006afefc339ad1e43b83bc3e768908e8d160de29eca54aa",
+  "source_files": 58,
+  "regression": {
+    "results": 38,
+    "nonpassing": 0
+  },
+  "spacing": {
+    "red_checks": 140,
+    "red_failures": 12,
+    "green_checks": 140,
+    "green_failures": 0,
+    "scope": "Hidden stopped-timer real controller, private archives, finite/bounds/speed/75 inner radius/86 attack/88 shortsword and stable 2/3 actor cases, random-call count/legacy/protected states/blackhole; not GUI or natural time."
+  },
+  "native_crowd": {
+    "passed": true,
+    "staged_geometry": true,
+    "observation_seconds": 8,
+    "minimum_feet_distance": 68.42122595485307,
+    "frame_count": 19,
+    "actual_mirror_selected": true,
+    "actual_reward_settled": true
+  },
+  "mortal_guard": {
+    "seconds": 7.2388955,
+    "native_clicks": 2,
+    "health_before": 100,
+    "health_after": 99,
+    "prevented": 3,
+    "lost": 1,
+    "glyph_matches": 483
+  },
+  "final_exe": {
+    "seconds": 21.606334399999998,
+    "native_clicks": 6,
+    "assertions": 34,
+    "captures": 10,
+    "screenshots_reviewed": 10,
+    "real_archives_unchanged": true
+  },
+  "isolation": {
+    "runtime_profile_files": 240,
+    "all_profile_hashes_unchanged": true,
+    "legacy_asset_files": 22,
+    "same_as_main": true,
+    "maintenance_off": true,
+    "raw_desktop_captures_packaged": false
+  },
+  "limitations": [
+    "Ordinary melee spacing reduces clumps; dense fights still partly overlap bodies and HUD. No universal 11-actor or tiny-screen no-overlap guarantee.",
+    "Fresh-mortal guard01/02 show an unselected idle creature walking over the hero head/HUD. Actual observed remaining usability issue; next priority is passive patrol avoidance. These images are not clean-HUD evidence.",
+    "Crowd probe deliberately changes initial geometry and uses an owned console in the background. Actual Windows frames/GIF stay local, not a formal scene-window Demo or natural progression evidence.",
+    "Only a single native mirror target was checked after separation, not every possible creature/boss/weapon combination.",
+    "Resource samples are approximately 22-second capture-inclusive observations, not long-duration stability.",
+    "Long testing stays paused. Natural harvest, mixed DPI and lock-screen recovery remain unverified."
+  ]
+}

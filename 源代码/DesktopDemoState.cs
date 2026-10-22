@@ -99,6 +99,93 @@ namespace NetBunny
                 && Math.Abs(y + HeroSize.Height - target.Y - enemySize.Height) < 150 * displayScale;
         }
 
+        private void PlaceDesktopSpawn(AdventureEnemy enemy)
+        {
+            Size size = EnemySize(enemy); PointF proposal = new PointF((float)enemy.X, (float)enemy.Y);
+            var candidates = new List<PointF> { proposal };
+            float gapX = size.Width + 12 * displayScale, gapY = size.Height + 12 * displayScale;
+            for (int row = -1; row <= 1; row++) for (int column = -1; column <= 1; column++)
+                if (row != 0 || column != 0) candidates.Add(new PointF(proposal.X + column * gapX, proposal.Y + row * gapY));
+            for (int row = 0; row < 5; row++) for (int column = 0; column < 5; column++)
+                candidates.Add(new PointF(area.Left + Math.Max(0, area.Width - size.Width) * column / 4f,
+                    area.Top + Math.Max(0, area.Height - size.Height) * row / 4f));
+            PointF best = proposal; double bestScore = Double.MaxValue;
+            foreach (PointF candidate in candidates)
+            {
+                PointF bounded = KnightPetController.BoundPosition(candidate.X, candidate.Y, size, area);
+                RectangleF body = new RectangleF(bounded, size);
+                double overlap = DesktopIntersectionArea(body, new RectangleF((float)x, (float)y, HeroSize.Width, HeroSize.Height));
+                foreach (AdventureEnemy other in battle.Enemies)
+                    if (other != enemy && !other.IsVisuallyHidden)
+                        overlap += DesktopIntersectionArea(body, new RectangleF((float)other.X, (float)other.Y, EnemySize(other).Width, EnemySize(other).Height));
+                double score = overlap * 1000 / Math.Max(1, size.Width * size.Height)
+                    + AdventureBattle.Distance(proposal.X, proposal.Y, bounded.X, bounded.Y) / Math.Max(1, area.Width + area.Height);
+                if (score + .000001 < bestScore) { best = bounded; bestScore = score; }
+            }
+            // Fixed candidates only: visual placement must not consume the
+            // shared story/random stream or postpone a mandatory mirror spawn.
+            enemy.X = best.X; enemy.Y = best.Y;
+        }
+        private static double DesktopIntersectionArea(RectangleF a, RectangleF b)
+        { RectangleF intersection = RectangleF.Intersect(a, b); return Math.Max(0, intersection.Width) * Math.Max(0, intersection.Height); }
+
+        private PointF DesktopBoundEnemyFeet(AdventureEnemy enemy, double feetX, double feetY)
+        {
+            Size size = EnemySize(enemy);
+            PointF origin = KnightPetController.BoundPosition(feetX - size.Width / 2.0, feetY - size.Height, size, area);
+            return new PointF(origin.X + size.Width / 2f, origin.Y + size.Height);
+        }
+        private static double DesktopBodyOverlap(PointF feet, Size size, PointF otherFeet, Size otherSize)
+        {
+            // Estimate the illustrated body, excluding transparent atlas padding.
+            double dx = (feet.X - otherFeet.X) / Math.Max(1, (size.Width + otherSize.Width) * .28);
+            double dy = (feet.Y - size.Height * .45 - otherFeet.Y + otherSize.Height * .45)
+                / Math.Max(1, (size.Height + otherSize.Height) * .28);
+            double overlap = Math.Max(0, 1 - Math.Sqrt(dx * dx + dy * dy)); return overlap * overlap;
+        }
+        private double DesktopStandScore(AdventureEnemy enemy, PointF feet, PointF current)
+        {
+            Size size = EnemySize(enemy);
+            double score = 2 * DesktopBodyOverlap(feet, size, new PointF((float)x + HeroSize.Width / 2f, (float)y + HeroSize.Height), HeroSize);
+            // Older actors keep their place; later arrivals yield. Symmetric
+            // per-frame pushing would make settled targets perpetually jitter.
+            foreach (AdventureEnemy other in battle.Enemies)
+            {
+                if (other == enemy) break;
+                if (other.IsVisuallyHidden) continue;
+                Size otherSize = EnemySize(other);
+                score += 8 * DesktopBodyOverlap(feet, size, new PointF((float)other.X + otherSize.Width / 2f, (float)other.Y + otherSize.Height), otherSize);
+            }
+            return score + .12 * AdventureBattle.Distance(current.X, current.Y, feet.X, feet.Y) / (80 * displayScale);
+        }
+        private PointF DesktopEnemyStandPoint(AdventureEnemy enemy)
+        {
+            Size size = EnemySize(enemy);
+            double heroX = x + HeroSize.Width / 2.0, heroY = y + HeroSize.Height, radius = 80 * displayScale;
+            PointF current = new PointF((float)enemy.X + size.Width / 2f, (float)enemy.Y + size.Height);
+            double distance = AdventureBattle.Distance(current.X, current.Y, heroX, heroY);
+            double angle = distance > .001 ? Math.Atan2(current.Y - heroY, current.X - heroX) : Math.PI;
+            PointF direct = DesktopBoundEnemyFeet(enemy, heroX + Math.Cos(angle) * radius, heroY + Math.Sin(angle) * radius);
+            if (distance > radius + 4 * displayScale) return direct;
+            PointF best = direct; double directScore = DesktopStandScore(enemy, direct, current), bestScore = directScore;
+            for (int i = 0; i < 16; i++)
+            {
+                double candidateAngle = i * Math.PI / 8;
+                PointF candidate = DesktopBoundEnemyFeet(enemy, heroX + Math.Cos(candidateAngle) * radius, heroY + Math.Sin(candidateAngle) * radius);
+                if (AdventureBattle.Distance(heroX, heroY, candidate.X, candidate.Y) > EnemyAttackReach(enemy) * displayScale) continue;
+                double score = DesktopStandScore(enemy, candidate, current);
+                if (score < bestScore) { best = candidate; bestScore = score; }
+            }
+            if (directScore - bestScore < .004) return direct;
+            double turn = Math.Atan2(best.Y - heroY, best.X - heroX) - angle;
+            while (turn > Math.PI) turn -= 2 * Math.PI;
+            while (turn < -Math.PI) turn += 2 * Math.PI;
+            // Small arc waypoints keep the straight movement segment outside
+            // the hero, even on a long frame. No teleport or speed override.
+            turn = Math.Max(-Math.PI / 12, Math.Min(Math.PI / 12, turn));
+            return DesktopBoundEnemyFeet(enemy, heroX + Math.Cos(angle + turn) * radius, heroY + Math.Sin(angle + turn) * radius);
+        }
+
         private void AdvanceDesktopManualApproach(AdventureEnemy target, double now, double dt)
         {
             double range = battle.Weapon.Range * displayScale * .8;

@@ -1,0 +1,13 @@
+{
+  "scope": "Separate production-source runner, fresh private mortal, x1, actual native select/guard and attack HP; not a full ten-kill or exact delivered EXE run.",
+  "passed": true,
+  "elapsed_seconds": 7.2388955,
+  "native_clicks": 2,
+  "health_before": 100,
+  "health_after": 99,
+  "result": "格挡成功 · 山中石傀 · 挡下3点 · 实受1点伤害 · 气血 99/100",
+  "glyph_samples": 483,
+  "glyph_matches": 483,
+  "captures": 3,
+  "source_report_sha256": "755ea33610bda3363f68fb8a6834488f2bc7bc6af9c525c842847b211bfa9ac7"
+}

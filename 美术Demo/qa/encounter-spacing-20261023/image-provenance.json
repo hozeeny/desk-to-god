@@ -1,0 +1,31 @@
+{
+  "source_paths_relative_to": "repository root",
+  "source_relative_path": "美术Demo/qa/desktop-accept-spacing-mortal-guard-20261023-r1/03-guard-history-handbook.png",
+  "source_sha256": "917ffe1eb5d582970dacfbcdba4f3a8fecba0cc79b139fec5dcd4aa9c2be927b",
+  "source_size": [
+    486,
+    739
+  ],
+  "crop_box": [
+    7,
+    0,
+    479,
+    732
+  ],
+  "crop_box_convention": "[left,top,right,bottom], right and bottom exclusive; original image pixels",
+  "output": "guard-history-native.png",
+  "output_size": [
+    472,
+    732
+  ],
+  "output_sha256": "aa14260ac1392139d63d12b517f5a1d7e9004d946dc166beee852ecf0319cba4",
+  "method": "Pillow Image.crop only; native Windows screenshot pixels retained without redraw, resize, compositing, masking or recoloring.",
+  "pixel_exact_source_crop": true,
+  "original_screenshot_copied": false,
+  "scope": "Native handbook record-panel evidence only: the visible 99/100 health and block result of 3 damage prevented / 1 damage received. This image makes no claim about unobstructed desktop actors, fully readable actor HUDs, natural progression or long-term stability.",
+  "visual_review": {
+    "tool": "view_image",
+    "accepted": true,
+    "detail": "Complete handbook title, health/block text and bottom buttons are legible; pixels outside the game window have been excluded."
+  }
+}

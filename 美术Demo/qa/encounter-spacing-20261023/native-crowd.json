@@ -1,0 +1,47 @@
+{
+  "scope": "Production-source runner, initial qishi-full private fixture, x1, only existing actor positions deliberately stacked and roaming disabled. Not final EXE or natural positioning/growth.",
+  "phases": [
+    {
+      "phase": "prepare",
+      "elapsed_seconds": 4.9662327,
+      "native_clicks": 6,
+      "checks": [
+        "native handbook action disables automatic combat without granting maintenance",
+        "suspend is available in the current pending battle",
+        "native suspend removes only the mirror and retains its unresolved outcome",
+        "all five private archives save the paused expedition",
+        "leaving the expedition keeps desktop cultivation active",
+        "maintenance authorization remained off"
+      ],
+      "captures": 4,
+      "source_report_sha256": "e0740445de6bacd6e52d38373c5d59551451fa22bbfa6aa98dd9189508fa150a"
+    },
+    {
+      "phase": "restore",
+      "elapsed_seconds": 13.523375,
+      "native_clicks": 3,
+      "checks": [
+        "a genuinely new process restores the paused profile",
+        "paused identity, node and unresolved outcome restore without rewards or automatic re-entry",
+        "paused startup never spawns its mirror",
+        "native continue restores exactly one mirror for the original pending battle",
+        "crowd fixture has exactly two existing ordinary creatures plus the formal mirror",
+        "three previously stacked native actors separate by at least 60 scaled feet pixels through normal movement",
+        "actual native click selects the specified mirror rather than an overlapping ordinary creature",
+        "native handbook action restores the player's automatic combat choice",
+        "restored mirror wins through actual combat and settles its formal reward",
+        "restored exploration saves all five private archives",
+        "production Load retains the one settled result",
+        "maintenance authorization remained off"
+      ],
+      "captures": 3,
+      "source_report_sha256": "1601acbaa00ad68e800d4e7fb2fe1a70f43019530750e154e166edd6d6357ba6"
+    }
+  ],
+  "crowd_minimum_feet_distance": 68.42122595485307,
+  "real_frames": 19,
+  "observation_seconds": 8,
+  "gif_sha256": "98113860e444970b1fc23c3c34bcd065fabc1d8201fcd59f75c9ba6f67dbd1de",
+  "gif_provenance_sha256": "75bc609862b043001d664f40c992fdf582616713d1e83ac2ed99333dac2a5321",
+  "raw_media_local_only": true
+}

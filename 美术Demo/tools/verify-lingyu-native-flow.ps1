@@ -1,4 +1,4 @@
-﻿param([switch]$RunNative)
+﻿param([switch]$RunNative, [switch]$CrowdProbe)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $sourceRoot = Join-Path $projectRoot '源代码'
@@ -27,6 +27,7 @@ $profile = Join-Path $outputRoot 'profiles\verify-lingyu-suspend'
 foreach ($phase in @('prepare', 'restore')) {
     $evidence = Join-Path $projectRoot ('美术Demo\qa\desktop-accept-lingyu-suspend-' + $phase + '-' + $stamp)
     $argsForRunner = @((Join-Path $sourceRoot 'Assets'), (Join-Path $sourceRoot 'ArtDemoAssets'), $evidence, $profile, $phase)
+    if ($CrowdProbe -and $phase -eq 'restore') { $argsForRunner += 'crowd' }
     $quoted = @($argsForRunner | ForEach-Object { '"' + $_ + '"' })
     $process = Start-Process -FilePath $executable -ArgumentList $quoted -WindowStyle Normal -PassThru -RedirectStandardOutput (Join-Path $outputRoot ($phase + '.log')) -RedirectStandardError (Join-Path $outputRoot ($phase + '-errors.log'))
     $ownHandle = $process.Handle

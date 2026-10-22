@@ -1527,7 +1527,9 @@ namespace NetBunny
         private void Spawn(AdventureEnemy enemy)
         {
             enemy.X = area.Left + 35 + random.NextDouble() * Math.Max(1, area.Width - 230);
-            enemy.Y = area.Top + 30 + random.NextDouble() * Math.Max(1, area.Height - 240); BoundEnemy(enemy); PickEnemyTarget(enemy);
+            enemy.Y = area.Top + 30 + random.NextDouble() * Math.Max(1, area.Height - 240); BoundEnemy(enemy);
+            if (IsolatedDesktop) PlaceDesktopSpawn(enemy);
+            PickEnemyTarget(enemy);
         }
         private void PickTarget() { targetX = area.Left + 10 + random.NextDouble() * Math.Max(1, area.Width - HeroSize.Width - 20); targetY = area.Top + 10 + random.NextDouble() * Math.Max(1, area.Height - HeroSize.Height - 20); }
         private void PickEnemyTarget(AdventureEnemy enemy)
@@ -1539,6 +1541,9 @@ namespace NetBunny
         {
             if (enemy.Dragging || enemy.Cleaning || enemy.VisualDefeated || enemy.Defeated || enemy.Failed || enemy.IsDiskWarning) return;
             if (DesktopMortalUnengaged(enemy)) canFight = false;
+            // The original field pull has already moved this actor this tick.
+            // Do not counteract it with desktop ring/patrol steering.
+            if (IsolatedDesktop && clock.Elapsed.TotalSeconds < blackholeUntil && enemy.Authorized && !enemy.IsBoss) return;
             double heroDistance = EnemyHeroDistance(enemy);
             if (canFight)
             {
@@ -1548,14 +1553,11 @@ namespace NetBunny
                 double reach = (!String.IsNullOrEmpty(enemy.EvilTheme) ? Math.Min(210,AdventureWeapon.Find(enemy.BossWeapon).Range*.5) : enemy.IsBoss ? 88 : 70) * displayScale;
                 if (IsolatedDesktop && !enemy.IsBoss && String.IsNullOrEmpty(enemy.EvilTheme))
                 {
-                    reach = 80 * displayScale;
-                    // Approach the stopping ring rather than the hero's exact
-                    // feet, so a long frame cannot overshoot into the portrait.
-                    if (heroDistance > reach)
-                    {
-                        chaseX += (enemy.X + size.Width / 2.0 - x - HeroSize.Width / 2.0) / heroDistance * reach;
-                        chaseY += (enemy.Y + size.Height - y - HeroSize.Height) / heroDistance * reach;
-                    }
+                    PointF feet = DesktopEnemyStandPoint(enemy);
+                    MoveEnemy(enemy, feet.X - size.Width / 2.0, feet.Y - size.Height,
+                        AdventureMonster.Find(enemy.MonsterKind).WalkSpeed * displayScale, dt);
+                    if (enemy.MoveSpeed <= .01) FaceEnemy(enemy, chaseX - enemy.X);
+                    return;
                 }
                 if (heroDistance > reach) MoveEnemy(enemy, chaseX, chaseY, (enemy.IsBoss ? 56 : AdventureMonster.Find(enemy.MonsterKind).WalkSpeed) * displayScale, dt);
                 else FaceEnemy(enemy, chaseX - enemy.X);

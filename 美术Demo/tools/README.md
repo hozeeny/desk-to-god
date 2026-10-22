@@ -47,3 +47,10 @@ JSON 示例见 `asset-manifest.example.json`。`source` 相对输入 manifest �
 验证暂离、真正新进程恢复、点选指定镜妖、正式战斗及奖励保存。
 运行器内含生产源码，但不是交付EXE本身。输出新目录，失败证据原样保留；
 真实存档哈希前后比较、维护全关。含其他应用的原始截图只保留本地，不加入发布包。
+
+`verify-desktop-encounter-spacing.ps1 -Stage green` 使用隐藏私有控制器，覆盖出生避占位、
+近身分散、缩放／负坐标／边角、步长／攻击距离、黑洞及保护状态；已纳入 `All` 的 `Spacing`。
+`verify-lingyu-native-flow.ps1 -RunNative -CrowdProbe` 额外在恢复进程中将现有三只虚拟妖物
+摆到同一脚底位置，关掉随机漫游，按正式×1时钟观察8秒分散，再真实点选指定镜妖并战斗结算。
+它只改变受控场景的初始几何，不注入气血、修为、奖励或时间；不代表自然成长或交付EXE本身。
+`crowd-*.png` 是实际Windows采集帧，其他应用内容可能在背景中，必须留在忽略的本地原始目录。

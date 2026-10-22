@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'All')]
+    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'All')]
     [string]$Suite = 'Policy',
     [switch]$Baseline
 )
@@ -150,7 +150,7 @@ Write-Host ('Ecology verification artifacts: ' + $runRoot)
 try {
     # Always prove the unmodified production source set still builds independently.
     $baselineExecutable = Build-Runner 'Baseline' 'NetBunny.Program' $null
-    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow') } else { @($Suite) })
+    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing') } else { @($Suite) })
     $suiteFiles = @{
         Policy = 'DesktopEnvironmentTests'
         Sources = 'DesktopSourceTests'
@@ -165,6 +165,7 @@ try {
         Guidance = 'BreakthroughGuidanceTests'
         SuspendCore = 'LingyuSuspendCoreTests'
         LingyuFlow = 'LingyuDesktopFlowTests'
+        Spacing = 'DesktopEncounterSpacingTests'
     }
     foreach ($suiteName in $suiteNames) {
         $className = $suiteFiles[$suiteName]
