@@ -1,0 +1,18 @@
+{
+  "checks": 57,
+  "failures": 0,
+  "executedCases": 12,
+  "seconds": 6.0961875,
+  "nativeTrimCalled": false,
+  "globalCandidateEnumerationCalled": false,
+  "observations": [
+    "baseline summary: Boss 已击败 · 工作集整理：系统内存采样暂不可用；已核实整理 2 个，跳过 3 个；已观测工作集减少 1.0 MiB",
+    "first-success cancellation: Boss 已击败 · 工作集整理：76.9% → 77.0%；已核实整理 1 个，跳过 0 个；已观测工作集减少 3.0 MiB；已取消（以上为实际完成量）",
+    "last-candidate cancellation: Boss 已击败 · 工作集整理：77.0% → 77.0%；已核实整理 1 个，跳过 0 个；已观测工作集减少 1.0 MiB；已取消（以上为实际完成量）",
+    "partial unknown sampling: Boss 已击败 · 工作集整理：76.9% → 77.0%；已核实整理 2 个，跳过 1 个；已观测工作集减少 10.0 MiB；其中 1 个整理后采样不可用，未知变化不计入减少量",
+    "all unknown sampling: Boss 已击败 · 工作集整理：76.9% → 76.9%；已核实整理 2 个，跳过 0 个；工作集减少量未能核实；其中 2 个整理后采样不可用，未知变化不计入减少量",
+    "24 process cap: Boss 已击败 · 工作集整理：76.9% → 77.0%；已核实整理 24 个，跳过 0 个；已观测工作集减少 24.0 MiB；已达本轮24个进程上限，未继续处理其余候选",
+    "five second bound: Boss 已击败 · 工作集整理：77.0% → 76.9%；已核实整理 1 个，跳过 0 个；已观测工作集减少 1.0 MiB；已达本轮5秒时限，未继续处理其余候选"
+  ],
+  "scope": "Synthetic callbacks over explicit owned child candidates; real loop/filters/caps and private controller-history settlement, no native trim/global enumeration/forms."
+}

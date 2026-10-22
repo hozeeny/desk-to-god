@@ -1,0 +1,19 @@
+{
+  "file_first_run": {
+    "passed": false,
+    "reason": "The real file mutation succeeded, but the test incorrectly demanded usable Qi for a mortal. Production stores it in DeferredQi/LifetimeQi. Corrected fixture asserts the real mortal rule, no game change.",
+    "source_report_sha256": "54c23359c498cc1b72273bcf10ccdc66f957dc7e2f9cb38fa24df5f4817437d3"
+  },
+  "first_feature_baiye_frame": {
+    "accepted_for_presentation": false,
+    "reason": "r1 image 11 visibly contained another panel ghost/transition and is excluded; no cause inferred. Same exact EXE r2 supplied a clear frame.",
+    "source_image_sha256": "15ed0ebdca06090df523adf81610ccdda754b5f29d6159fcbef83ab5e6c6507f"
+  },
+  "red_contract": {
+    "checks": 13,
+    "failures": 10,
+    "executed_cases": 0,
+    "scope": "Old source compiled; new structured outcome contract absent and old summary omitted skip count. Loop cases were not executed until the seam existed."
+  },
+  "raw_local_only": true
+}

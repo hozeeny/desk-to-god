@@ -1,0 +1,41 @@
+[
+  {
+    "source_image": "05-actual-one-delete-one-locked-skip.png",
+    "source_sha256": "8e8d07e98ed9cd612baa5fdd175dec475d27ce8a3e7f058cfe71e521b4798279",
+    "crop_box": [
+      7,
+      0,
+      519,
+      732
+    ],
+    "output": "native-actual-file-result.png",
+    "output_sha256": "20d069137491dbfcf0857dc7f5878f41cda40af9e1bb1f709c3b8e13140ef92c",
+    "scope": "Reviewed opaque owned-panel crop only, original native pixels without rescaling/redrawing; other-app background excluded."
+  },
+  {
+    "source_image": "07-file-scope-revoked.png",
+    "source_sha256": "cdef7d8019a56e89261861df8e57df2becbb8aa68d46d8e895a397f2d6e5123b",
+    "crop_box": [
+      7,
+      0,
+      519,
+      732
+    ],
+    "output": "native-file-consent-revoked.png",
+    "output_sha256": "f4d41b99e3f13b6c826366d08d2f702fb2133a49d699c8b818a854d07769fc98",
+    "scope": "Reviewed opaque owned-panel crop only, original native pixels without rescaling/redrawing; other-app background excluded."
+  },
+  {
+    "source_image": "11-baiye-from-handbook.png",
+    "source_sha256": "73b633e0aeb2356e8c0f47fec551e36ee71774af0442814b85ae13ac18716941",
+    "crop_box": [
+      7,
+      0,
+      713,
+      873
+    ],
+    "output": "native-baiye-panel.png",
+    "output_sha256": "f5c2819430f459819e358fd8860238f5bf5bea0f36fed032822b1b6f944091bc",
+    "scope": "Reviewed opaque owned-panel crop only, original native pixels without rescaling/redrawing; other-app background excluded."
+  }
+]

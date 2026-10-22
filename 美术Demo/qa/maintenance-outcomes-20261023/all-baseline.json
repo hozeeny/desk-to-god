@@ -1,0 +1,232 @@
+[
+  {
+    "name": "BaselineBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the production Program Main."
+  },
+  {
+    "name": "DesktopEnvironmentTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Policy",
+    "status": "Pass",
+    "detail": "Desktop environment regression: 112 checks, 0 failures."
+  },
+  {
+    "name": "DesktopSourceTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Sources",
+    "status": "Pass",
+    "detail": "Desktop sources: 12 checks passed; synthetic census only, no system worker started."
+  },
+  {
+    "name": "DesktopMaintenanceTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "ProcessFixtureBuild",
+    "status": "Pass",
+    "detail": "Built the dedicated close/save-prompt fixture; no user application is a test target."
+  },
+  {
+    "name": "Maintenance",
+    "status": "Pass",
+    "detail": "Desktop maintenance: 28 checks passed; owned file/process fixtures and injected memory, no user targets."
+  },
+  {
+    "name": "DesktopProcessTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "ProcessFixtureBuild",
+    "status": "Pass",
+    "detail": "Built the dedicated close/save-prompt fixture; no user application is a test target."
+  },
+  {
+    "name": "Processes",
+    "status": "Pass",
+    "detail": "Process backend: 25 checks, 0 failures. Only dedicated fixtures received normal-close requests."
+  },
+  {
+    "name": "DongtianExpansionTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Cave",
+    "status": "Pass",
+    "detail": "Dongtian expansion: 30 checks, 0 failures."
+  },
+  {
+    "name": "DesktopJourneyTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Journey",
+    "status": "Pass",
+    "detail": "Desktop journey: 32 checks, 0 failures."
+  },
+  {
+    "name": "DesktopEquipmentFlowTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Equipment",
+    "status": "Pass",
+    "detail": "Desktop equipment flow: 18 checks, 0 failures; hidden/private fixtures only."
+  },
+  {
+    "name": "DesktopCombatFeedbackTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Combat",
+    "status": "Pass",
+    "detail": "Desktop combat feedback: 22 checks, 0 failures. No forms, probes, saves, actors or natural-time advancement."
+  },
+  {
+    "name": "LingyuRealmGateTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Realm",
+    "status": "Pass",
+    "detail": "Lingyu realm gates: 17 checks, 0 failures. Pure logic only; no GUI, natural archives or natural-time advancement."
+  },
+  {
+    "name": "DesktopAutoBattleConsentTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "AutoBattle",
+    "status": "Pass",
+    "detail": "Desktop automatic combat consent: 87 checks, 0 failures. No forms, observers, processes, maintenance, saves or natural-time advancement."
+  },
+  {
+    "name": "BreakthroughGuidanceTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Guidance",
+    "status": "Pass",
+    "detail": "Breakthrough guidance: 38 checks, 0 failures; hidden/private functional fixtures only."
+  },
+  {
+    "name": "LingyuSuspendCoreTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "SuspendCore",
+    "status": "Pass",
+    "detail": "Lingyu suspension core: 63 checks, 0 failures. Pure logic/private archives; no GUI, live profiles or system probes."
+  },
+  {
+    "name": "LingyuDesktopFlowTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "LingyuFlow",
+    "status": "Pass",
+    "detail": "Lingyu desktop flow: 31 checks, 0 failures; hidden/private story and queue fixtures only."
+  },
+  {
+    "name": "DesktopEncounterSpacingTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "Spacing",
+    "status": "Pass",
+    "detail": "Desktop encounter spacing: 274 checks, 0 failures. Hidden controller/private archives, no native input or natural-time claim."
+  },
+  {
+    "name": "DesktopConsentFeedbackTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "ConsentFeedback",
+    "status": "Pass",
+    "detail": "Desktop consent feedback: 148 checks, 0 failures. Private consent files only; no forms, observers, maintenance workers, business archives or natural-time advancement."
+  },
+  {
+    "name": "DesktopMaterialGuidanceTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "MaterialGuidance",
+    "status": "Pass",
+    "detail": "Desktop material guidance: 112 checks, 0 failures. Hidden private fixture; no native navigation, natural-time claim or maintenance."
+  },
+  {
+    "name": "DesktopDisplayLayoutTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "DisplayLayout",
+    "status": "Pass",
+    "detail": "Desktop display layout: 44 checks, 0 failures. Private/hidden fixtures; no display changes, native input, real archives or hot-plug claim."
+  },
+  {
+    "name": "DesktopMemoryOutcomeTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "MemoryOutcomes",
+    "status": "Pass",
+    "detail": "Desktop memory outcomes: 57 checks, 0 failures; 12 cases, 6.126 seconds. Synthetic trims of explicit owned candidates only; no forms, global candidate enumeration, native trim, real archives or natural-time advancement."
+  },
+  {
+    "name": "DesktopDemoStateTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "DesktopDemoStateTests",
+    "status": "Pass",
+    "detail": "Evidence profiles: E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\eco-tests\\20261023-035530-613-095d38\\bin\\evidence-DesktopDemoStateTests\\state-smoke-20261022-195736-20eb3e"
+  },
+  {
+    "name": "DesktopPlayerViewTestsBuild",
+    "status": "Pass",
+    "detail": "Compiled all 60 production files with the dedicated test Main."
+  },
+  {
+    "name": "DesktopPlayerViewTests",
+    "status": "Pass",
+    "detail": "Desktop player regression: 32 checks, 0 failures."
+  },
+  {
+    "name": "SelfTest",
+    "status": "Pass",
+    "detail": "V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership."
+  },
+  {
+    "name": "AdventureSmoke",
+    "status": "Pass",
+    "detail": "Growth integration: 81 checks passed (mortal tempering, awakening, breakthrough loop, combat linkage)."
+  },
+  {
+    "name": "FormalArchiveIsolation",
+    "status": "Pass",
+    "detail": "4 archive/authorization SHA256 hashes unchanged."
+  }
+]

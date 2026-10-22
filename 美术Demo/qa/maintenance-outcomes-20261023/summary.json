@@ -1,0 +1,54 @@
+{
+  "scope": "Maintenance outcome correctness and actual self-owned maintenance verification; continued playable desktop Demo development, not all-product acceptance.",
+  "executable_sha256": "3a63b9f915ed1dc4ff5a449c18e7871366ef87b83c24ac8abc5b724421d541e1",
+  "archive_sha256": "6b9e4130b3973cd6848bb43c961a519080fa5ff2faf40f7e92df64f30f616530",
+  "production_sources": 60,
+  "all_baseline_results": 46,
+  "nonpassing": 0,
+  "memory_outcomes": {
+    "checks": 57,
+    "failures": 0,
+    "cases": 12,
+    "native_trims": false
+  },
+  "owned_kernel": {
+    "seconds": 0.7341076999999999,
+    "actual_api_calls": 1,
+    "trimmed": 1,
+    "cancelled": true,
+    "observed_reduction": 117530624,
+    "normal_stop": true
+  },
+  "native_files": {
+    "seconds": 11.9697795,
+    "clicks": 12,
+    "checks": 12,
+    "deleted": 1,
+    "skipped_locked": 1,
+    "disk_bytes": 4096,
+    "captures": 9,
+    "reviewed": 9
+  },
+  "final_exe": {
+    "seconds": 21.704172399999997,
+    "clicks": 9,
+    "assertions": 34,
+    "captures": 10,
+    "reviewed": 10
+  },
+  "isolation": {
+    "runtime_profile_files": 240,
+    "all_hashes_unchanged": true,
+    "legacy_asset_files": 22,
+    "same_as_main": true,
+    "authorization_off_after_tests": true,
+    "raw_other_app_images_uploaded": false
+  },
+  "limitations": [
+    "Actual file flow is a source-runner with an explicitly staged own batch, not natural discovery or the distributed EXE; new controller Load remains same-process.",
+    "Owned-memory kernel verification is an API/loop test, not a complete native memory-Boss authorization/battle/UI flow. Working-set bytes are instantaneous samples, not permanently freed RAM or a speed claim.",
+    "Unknown-after-API sampling and budget boundaries are covered by synthetic callbacks, not forced failures in a user process.",
+    "Dark confirmation frame excluded from public presentation; r1 Baiye ghost frame retained and excluded. Actor/effect overlap still occurs in dense scenes.",
+    "Natural first harvest, multi-hour/lock-screen/mixed-DPI coverage remain unverified; long test and automation-3 remain PAUSED by user instruction."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "scope": "Opt-in real Windows working-set API; only this invocation's hidden 96 MiB child. No GUI, process enumeration, controller, boss gameplay or long-soak claim.",
+  "passed": true,
+  "seconds": 0.7341076999999999,
+  "actual_api_calls": 1,
+  "callback_count": 1,
+  "actual_trim_observation": {
+    "applied": true,
+    "observed": true,
+    "before": 117530624,
+    "after": 0
+  },
+  "result": {
+    "trimmed": 1,
+    "skipped": 0,
+    "unobserved": 0,
+    "cancelled": true,
+    "timedOut": false,
+    "processLimited": false,
+    "workingSetReduction": 117530624,
+    "error": null,
+    "summary": "Boss 已击败 · 工作集整理：78.0% → 78.0%；已核实整理 1 个，跳过 0 个；已观测工作集减少 112.1 MiB；已取消（以上为实际完成量）",
+    "systemBefore": {
+      "available": true,
+      "usedPercent": 77.97483892984057,
+      "totalBytes": 16984002560,
+      "usedBytes": 13243248640,
+      "availableBytes": 3740753920
+    },
+    "systemAfter": {
+      "available": true,
+      "usedPercent": 77.97802234904985,
+      "totalBytes": 16984002560,
+      "usedBytes": 13243789312,
+      "availableBytes": 3740213248
+    }
+  },
+  "pre_cancelled_callbacks": 0,
+  "data_integrity": "Child re-read every byte of 24576 pages and retained original SHA; VERIFY touches pages again and may make them resident.",
+  "normal_stop": true,
+  "child_exit_code": 0,
+  "real_archives_unchanged": true,
+  "source_report_sha256": "3417437089950a34a8b65ad5e97d47a1a4f9e694c7eed399912c732cb68e4d9f"
+}

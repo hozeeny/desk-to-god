@@ -10,16 +10,29 @@ namespace NetBunny
     {
         internal MemorySnapshot Before, After;
         internal long WorkingSetReduction;
-        internal int Trimmed, Skipped;
+        internal int Trimmed, Skipped, Unobserved;
+        internal bool Cancelled, TimedOut, ProcessLimited;
         internal string Error;
         internal string Summary
         {
             get
             {
                 string usage = Before != null && Before.Available && After != null && After.Available ? Before.UsedPercent.ToString("0.0") + "% → " + After.UsedPercent.ToString("0.0") + "%" : "系统内存采样暂不可用";
-                return "Boss 已击败 · 内存回收：" + usage + "；" + Trimmed + " 个后台进程工作集减少 " + AdventureBattle.FormatBytes(WorkingSetReduction) + (String.IsNullOrEmpty(Error) ? "" : "；" + Error);
+                string measured = Trimmed > 0 && Unobserved >= Trimmed ? "工作集减少量未能核实"
+                    : "已观测工作集减少 " + AdventureBattle.FormatBytes(WorkingSetReduction);
+                string stop = Cancelled ? "；已取消（以上为实际完成量）"
+                    : TimedOut ? "；已达本轮5秒时限，未继续处理其余候选"
+                    : ProcessLimited ? "；已达本轮24个进程上限，未继续处理其余候选" : "";
+                return "Boss 已击败 · 工作集整理：" + usage + "；已核实整理 " + Trimmed + " 个，跳过 " + Skipped + " 个；" + measured
+                    + (Unobserved > 0 ? "；其中 " + Unobserved + " 个整理后采样不可用，未知变化不计入减少量" : "")
+                    + stop + (String.IsNullOrEmpty(Error) ? "" : "；" + Error);
             }
         }
+    }
+    internal sealed class MemoryTrimObservation
+    {
+        internal bool Applied, Observed;
+        internal long Before, After;
     }
     internal static class MemoryReclaimer
     {
@@ -30,9 +43,15 @@ namespace NetBunny
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint pid);
         internal static MemoryReclaimResult Reclaim(CancellationToken token)
+        { return Reclaim(token, Process.GetProcesses(), TrimWorkingSet); }
+
+        // The worker owns/disposes this snapshot. A caller supplying a restricted
+        // set must retain separate Process objects for its own lifetime handling.
+        internal static MemoryReclaimResult Reclaim(CancellationToken token, Process[] processes, Func<Process, CancellationToken, MemoryTrimObservation> trim)
         {
+            if (processes == null) throw new ArgumentNullException("processes");
+            if (trim == null) throw new ArgumentNullException("trim");
             MemoryReclaimResult result = new MemoryReclaimResult { Before = CleanupService.ReadMemory() };
-            Process[] processes = Process.GetProcesses();
             Stopwatch elapsed = Stopwatch.StartNew();
             int own, session;
             using (Process self = Process.GetCurrentProcess()) { own = self.Id; session = self.SessionId; }
@@ -41,18 +60,21 @@ namespace NetBunny
             {
                 foreach (Process process in processes)
                 {
-                    if (token.IsCancellationRequested || elapsed.Elapsed.TotalSeconds > 5 || result.Trimmed >= 24) break;
+                    if (token.IsCancellationRequested) { result.Cancelled = true; break; }
+                    if (elapsed.Elapsed.TotalSeconds > 5) { result.TimedOut = true; break; }
+                    if (result.Trimmed >= 24) { result.ProcessLimited = true; break; }
                     try
                     {
                         GetWindowThreadProcessId(GetForegroundWindow(), out foreground);
                         if (process.Id == own || process.Id == foreground || process.SessionId != session || process.HasExited || process.WorkingSet64 < 32L*1024*1024) { result.Skipped++; continue; }
                         string path = process.MainModule.FileName;
                         if (path.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.Windows) + "\\", StringComparison.OrdinalIgnoreCase)) { result.Skipped++; continue; }
-                        long before, after;
-                        if (TryTrim(process,token,out before,out after))
+                        MemoryTrimObservation observed = trim(process, token);
+                        if (observed != null && observed.Applied)
                         {
                             result.Trimmed++;
-                            result.WorkingSetReduction += Math.Max(0, before - after);
+                            if (observed.Observed) result.WorkingSetReduction += Math.Max(0, observed.Before - observed.After);
+                            else result.Unobserved++;
                         }
                         else result.Skipped++;
                     }
@@ -62,21 +84,36 @@ namespace NetBunny
             catch (Exception e) { result.Error = e.Message; }
             finally { foreach (Process process in processes) process.Dispose(); }
             result.After = CleanupService.ReadMemory();
-            if (result.Trimmed == 0 && result.Error == null) result.Error = token.IsCancellationRequested ? "已取消" : "当前没有可回收的后台工作集";
+            // The last candidate can observe cancellation without a subsequent
+            // loop iteration. Preserve it even when some native work succeeded.
+            result.Cancelled |= token.IsCancellationRequested;
+            if (result.Trimmed == 0 && result.Error == null && !result.Cancelled && !result.TimedOut && !result.ProcessLimited)
+                result.Error = "本次未整理后台工作集";
             return result;
         }
         internal static bool TryTrim(Process process, CancellationToken token, out long before, out long after)
         {
-            before = after = 0;
-            if (token.IsCancellationRequested) return false;
+            MemoryTrimObservation result = TrimWorkingSet(process, token);
+            before = result.Before; after = result.After;
+            return result.Applied && result.Observed;
+        }
+        internal static MemoryTrimObservation TrimWorkingSet(Process process, CancellationToken token)
+        {
+            MemoryTrimObservation result = new MemoryTrimObservation();
+            if (token.IsCancellationRequested) return result;
             IntPtr handle = OpenProcess(0x100 | 0x1000, false, process.Id);
             try
             {
                 bool critical;
-                if (handle == IntPtr.Zero || !IsProcessCritical(handle,out critical) || critical) return false;
-                process.Refresh(); before=process.WorkingSet64;
-                if (token.IsCancellationRequested || !EmptyWorkingSet(handle)) return false;
-                process.Refresh(); after=process.WorkingSet64; return true;
+                if (handle == IntPtr.Zero || !IsProcessCritical(handle,out critical) || critical) return result;
+                process.Refresh(); result.Before = process.WorkingSet64;
+                if (token.IsCancellationRequested || !EmptyWorkingSet(handle)) return result;
+                result.Applied = true;
+                // A process may exit or deny inspection after a successful API
+                // call. Keep that known action; do not invent its byte change.
+                try { process.Refresh(); result.After = process.WorkingSet64; result.Observed = true; }
+                catch { }
+                return result;
             }
             finally { if(handle!=IntPtr.Zero)CloseHandle(handle); }
         }

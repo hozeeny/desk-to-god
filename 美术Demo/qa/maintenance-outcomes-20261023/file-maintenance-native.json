@@ -1,0 +1,85 @@
+{
+  "scope": "Source-compiled native runner, not final distributed EXE or natural growth. Fresh unseeded mortal, ordinary observe=true host, x1; read-only local ecology allowed. Only an explicitly bound batch from two owned GUID-directory Temp files may be cleaned. Factory HP, realm, damage, cooldown and game clock are unchanged; only this source fixture's initial position is arranged. Other applications and raw desktop pixels remain local.",
+  "passed": true,
+  "seconds": 11.9697795,
+  "native_clicks": 12,
+  "checks": [
+    "Before native file consent, both owned files exist and no cleanup has run",
+    "Only actual native Yes enables the private persisted file grant; no cleanup occurs at authorization",
+    "First native exact-actor click selects a living full-rule manual opponent",
+    "The owned opponent fell through repeated actual native manual strikes, without HP/cooldown/time edits",
+    "Exactly one allowlisted real Clean deleted 4096 bytes and skipped the actually locked 512-byte file",
+    "Actual disk result and one mortal kill agree; combat experience/score settle, while the real cultivation reward is deferred until awakening and Qi remains unchanged",
+    "The skipped owned file retains its exact original SHA256 after releasing the exclusive lock",
+    "Native file-scope revoke is immediately off and durably persisted with no retry pending",
+    "The actual controller saves all five archives only in the new private profile",
+    "The actual main archives preserve deletion, one mortal kill, combat rewards and deferred cultivation reward without adding usable Qi",
+    "A new stopped, unshown, non-observing production controller reloads actual maintenance and mortal deferred-reward counters",
+    "Final five-archive private save succeeds"
+  ],
+  "source_fixture": "Two self-created, aged, exact-identity allowlisted files; selected by real native mouse input before one file was exclusively locked. Read-only normal census allowed; no other real maintenance.",
+  "actual_result": {
+    "DeletedFiles": 1,
+    "SkippedFiles": 1,
+    "FreedBytes": 4096,
+    "Cancelled": false,
+    "Message": "已删除 1 个临时文件，跳过 1 个（占用、变化或不符合规则）。释放的是磁盘文件空间，不是运行内存。"
+  },
+  "clean_calls": 1,
+  "accepted_clean_calls": 1,
+  "rejected_clean_calls": 0,
+  "counters_before": {
+    "Score": 0,
+    "Experience": 0,
+    "FreedBytes": 0,
+    "Mortal": true,
+    "MortalKills": 0,
+    "Qi": 0,
+    "DeferredQi": 0,
+    "LifetimeQi": 0
+  },
+  "counters_after": {
+    "Score": 15,
+    "Experience": 3,
+    "FreedBytes": 4096,
+    "Mortal": true,
+    "MortalKills": 1,
+    "Qi": 0,
+    "DeferredQi": 8,
+    "LifetimeQi": 8
+  },
+  "counters_saved_main": {
+    "Score": 15,
+    "Experience": 3,
+    "FreedBytes": 4096,
+    "Mortal": true,
+    "MortalKills": 1,
+    "Qi": 0,
+    "DeferredQi": 8,
+    "LifetimeQi": 8
+  },
+  "counters_restored_controller": {
+    "Score": 15,
+    "Experience": 3,
+    "FreedBytes": 4096,
+    "Mortal": true,
+    "MortalKills": 1,
+    "Qi": 0,
+    "DeferredQi": 8,
+    "LifetimeQi": 8
+  },
+  "rewards": {
+    "KillExperience": 3,
+    "CultivationRewardQi": 8,
+    "KillRewarded": true,
+    "CultivationRewarded": true,
+    "settlement": "Mortal cultivation rewards increase DeferredQi and LifetimeQi; usable Qi is unchanged until actual awakening."
+  },
+  "all_scopes_off_at_exit": true,
+  "real_archives_unchanged": true,
+  "captures": 9,
+  "screenshots_reviewed": 9,
+  "known_capture_limit": "Confirmation frame 02 is dark and retained only as input evidence, not a public presentation image.",
+  "restoration_scope": "New stopped hidden controller in the same test process, not a new game process or final distributed EXE.",
+  "source_report_sha256": "a3e5e72a4929f8960289d40e3e6cfcae0b1f16bfc4f49db6e436f9d0eca7237e"
+}

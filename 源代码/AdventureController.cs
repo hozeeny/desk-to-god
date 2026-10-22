@@ -1484,7 +1484,7 @@ namespace NetBunny
         private void DrainMemoryReclaim()
         {
             if (memoryReclaimTask == null || !memoryReclaimTask.IsCompleted) return;
-            MemoryReclaimResult result = memoryReclaimTask.IsFaulted ? new MemoryReclaimResult {Error="工作集回收失败"} : memoryReclaimTask.IsCanceled ? new MemoryReclaimResult {Error="回收已取消"} : memoryReclaimTask.Result;
+            MemoryReclaimResult result = memoryReclaimTask.IsFaulted ? new MemoryReclaimResult {Error="工作集回收失败"} : memoryReclaimTask.IsCanceled ? new MemoryReclaimResult {Cancelled=true} : memoryReclaimTask.Result;
             memoryReclaimTask = null; memoryReclaimCancellation.Dispose(); memoryReclaimCancellation = null;
             cleanupNotice = result.Summary; battle.LastReward = result.Summary;
             RecordDesktopMaintenance(new DesktopMaintenanceEntry { Kind = "Memory", Summary = result.Summary, WorkingSetReduction = result.WorkingSetReduction, TrimmedProcesses = result.Trimmed });
