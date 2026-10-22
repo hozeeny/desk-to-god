@@ -42,5 +42,6 @@ foreach ($phase in @('prepare', 'restore')) {
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $reportFile)) { throw ('Native ' + $phase + ' failed; retained ' + $evidence) }
     $report = Get-Content -LiteralPath $reportFile -Raw -Encoding UTF8 | ConvertFrom-Json
     if (-not $report.passed -or -not $report.realArchivesUnchanged) { throw ('Native report failed; retained ' + $evidence) }
+    if ($phase -eq 'restore' -and (-not $report.returnTaskNativeReadable -or -not $report.returnTaskNavigationOnly)) { throw ('Native return-task presentation/navigation evidence missing; retained ' + $evidence) }
     Write-Host ('Native ' + $phase + ': PASS; ' + $report.elapsedSeconds + ' seconds; ' + $report.nativeClicks + ' clicks; ' + $evidence)
 }

@@ -18,6 +18,11 @@ namespace NetBunny
         internal string TargetSourceDetail, TargetAction;
         internal DesktopMaintenanceEntry[] MaintenanceResults;
         internal DesktopEnemyChoice[] Enemies;
+        internal DesktopReturnTask[] ReturnTasks;
+    }
+    internal sealed class DesktopReturnTask
+    {
+        internal string PanelId, Text, ActionText;
     }
     internal sealed class DesktopEnemyChoice
     {
@@ -168,6 +173,7 @@ namespace NetBunny
                 RestSeconds = rest, RecentEvents = desktopRecentEvents.Reverse().ToArray(),
                 EcologyStatus = DesktopEcologyStatus, MaintenanceResults = desktopMaintenance.Reverse().ToArray(),
                 Enemies = enemies, NextStep = nextStep, NextActionId = actionId, NextActionText = actionText,
+                ReturnTasks = ReadDesktopReturnTasks(DateTime.UtcNow),
                 TargetSourceDetail = selected == null ? "尚未选中妖物。先从桌面或手札选敌，再查看该目标的来源。" : selected.SourceDetail,
                 TargetAction = selected == null ? "选择目标不会授予任何电脑维护权限。" : selected.Action
             };
@@ -217,6 +223,29 @@ namespace NetBunny
             return new DesktopEnemyChoice { Id = enemy.Id, Name = DesktopEnemyName(enemy), Source = source, SourceDetail = detail, Action = action,
                 Health = enemy.Health, MaxHealth = enemy.MaxHealth, Selected = enemy == battle.Target,
                 CanSelect = !battle.Progress.Dead && !enemy.IsDiskWarning && !enemy.CleanupStarted };
+        }
+
+        private DesktopReturnTask[] ReadDesktopReturnTasks(DateTime utc)
+        {
+            var tasks = new List<DesktopReturnTask>();
+            JiyuanDef offer = JiyuanEngine.FindPendingOffer(lingyu);
+            if (lingyu.RealmEntered.Contains("qianmian") && !String.IsNullOrEmpty(lingyu.ExpeditionNode)
+                && (!lingyu.ExpeditionActive || lingyu.CombatPending || offer != null))
+            {
+                string text = "千面蜃楼 · " + MirageEngine.NodeTitle(lingyu.ExpeditionNode);
+                if (!lingyu.ExpeditionActive) text += " · 已暂存";
+                if (lingyu.CombatPending) text += " · 镜妖待战";
+                else if (offer != null) text += " · 待抉择：" + offer.Name;
+                tasks.Add(new DesktopReturnTask { PanelId = "lingyu", Text = text, ActionText = "查看灵域" });
+            }
+            if (DongtianUnlocked)
+            {
+                int fields = Enumerable.Range(0, dongtian.UnlockedFields).Count(i => dongtian.FieldReady(i, utc));
+                int pills = dongtian.FurnaceReady(utc) ? 1 : 0, gears = dongtian.ForgeReady(utc) ? 1 : 0;
+                if (fields + pills + gears > 0)
+                    tasks.Add(new DesktopReturnTask { PanelId = "dongtian", Text = "洞天可收取 · 灵田" + fields + "畦 / 丹炉" + pills + "份 / 器位" + gears + "件", ActionText = "查看洞天" });
+            }
+            return tasks.ToArray();
         }
 
         private void DesktopNextStep(bool dead, int rest, out string step, out string actionId, out string actionText)

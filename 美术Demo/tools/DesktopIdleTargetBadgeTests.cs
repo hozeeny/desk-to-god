@@ -32,6 +32,72 @@ namespace NetBunny
                 if (current == a.Handle) return true;
             return false;
         }
+        static object FirstShot(AdventureEffects effects)
+        { return ((System.Collections.IList)Field<object>(effects, "shots"))[0]; }
+        static double EffectCoverage(KnightLayeredWindow hero, KnightLayeredWindow effect, Rectangle logical)
+        {
+            Bitmap h = Field<Bitmap>(hero, "current"), e = Field<Bitmap>(effect, "current"); int total = 0, covered = 0;
+            float s = Math.Min(h.Width / 220f, h.Height / 220f), dx = (h.Width - 220 * s) / 2, dy = (h.Height - 220 * s) / 2;
+            Rectangle region = Rectangle.Intersect(new Rectangle(Point.Empty, h.Size), Rectangle.FromLTRB((int)(dx + logical.Left * s), (int)(dy + logical.Top * s), (int)(dx + logical.Right * s), (int)(dy + logical.Bottom * s)));
+            bool higher = Above(effect, hero);
+            for (int y = region.Top; y < region.Bottom; y++) for (int x = region.Left; x < region.Right; x++)
+            {
+                if (h.GetPixel(x, y).A < 20) continue; total++;
+                int ex = hero.Left + x - effect.Left, ey = hero.Top + y - effect.Top;
+                if (higher && ex >= 0 && ey >= 0 && ex < e.Width && ey < e.Height && e.GetPixel(ex, ey).A >= 20) covered++;
+            }
+            return total == 0 ? 1 : covered / (double)total;
+        }
+        static PointF LowerAnchor(Form actor)
+        {
+            float s = Math.Min(actor.Width / 220f, actor.Height / 220f);
+            return new PointF(actor.Left + actor.Width / 2f, actor.Top + (actor.Height - 220 * s) / 2 + 150 * s);
+        }
+        static bool Near(PointF a, PointF b) { return Math.Abs(a.X - b.X) < 1.1 && Math.Abs(a.Y - b.Y) < 1.1; }
+        static void EffectChecks(string assets, string output)
+        {
+            float[] scales = { .8f, 1f, 1.2f };
+            for (int i = 0; i < scales.Length; i++) using (Host h = new Host(assets, Path.Combine(output, "private-effect-" + i)))
+            {
+                AdventureController game = h.Game; float scale = scales[i]; Set(game, "displayScale", scale);
+                game.Cultivation.Mortal = i == 0; game.Cultivation.RealmIndex = i == 2 ? 1 : 0;
+                AdventureEnemy boss = EnemyBalance.MemoryBoss(game.Battle.Progress, game.Battle.Weapon, Field<Random>(game, "random"));
+                Size size = (Size)typeof(AdventureController).GetMethod("EnemySize", Hidden).Invoke(game, new object[] { boss });
+                boss.X = Field<double>(game, "x") + 110 * scale - 24 * scale - size.Width / 2f;
+                boss.Y = Field<double>(game, "y") + 240 * scale - size.Height;
+                game.Battle.Enemies.Add(boss); game.Battle.Authorize(boss); Render(game);
+                KnightLayeredWindow hero = game.DesktopHeroWindow, target = game.DesktopEnemyWindows[boss.Id];
+                AdventureEffects effects = Field<AdventureEffects>(game, "effects");
+                typeof(AdventureController).GetMethod("StrikeTarget", Hidden).Invoke(game, new object[] { boss, 0d });
+                object shot = FirstShot(effects); KnightLayeredWindow window = Field<KnightLayeredWindow>(shot, "Window");
+                Check(Near(Field<PointF>(shot, "From"), LowerAnchor(hero)) && Near(Field<PointF>(shot, "To"), LowerAnchor(target)), "player strike uses the actual rendered lower-body anchors at scale " + scale);
+                Check(window.Width == (int)(144 * scale) && window.Height == (int)(144 * scale), "new illustrated projectile has the bounded 144-unit footprint at scale " + scale);
+                Render(game);
+                Check(Above(hero, window) && Above(window, target), "real relative order puts hero above effect above current target at scale " + scale);
+                Check(window.PassThrough && EffectCoverage(hero, window, new Rectangle(55, 15, 110, 100)) == 0 && EffectCoverage(hero, window, new Rectangle(8, 0, 204, 25)) == 0 && EffectCoverage(hero, window, new Rectangle(34, 194, 152, 29)) == 0,
+                    "fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale " + scale);
+                double duration = Field<double>(shot, "Duration"); effects.Tick(.2); Render(game);
+                Check(Math.Abs(Field<double>(shot, "Age") - .2) < .000001 && Math.Abs(duration - .5) < .000001 && effects.ActiveCount == 1,
+                    "visual refinement preserves the normal projectile age and duration at scale " + scale);
+                Check(Above(hero, window) && window.Visible && Field<Bitmap>(window, "current").Width == (int)(144 * scale), "moving projectile remains visible and below hero without hiding or clearing at scale " + scale);
+                effects.Clear(); int health = game.Battle.Progress.Health;
+                double cooldown = (double)typeof(AdventureController).GetMethod("EnemyAttackCooldown", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { boss });
+                typeof(AdventureController).GetMethod("AttackHero", Hidden).Invoke(game, new object[] { boss, true, cooldown + .01 });
+                Check(effects.ActiveCount == 1 && game.Battle.Progress.Health < health, "real Boss attack still damages through its existing path and emits an effect at scale " + scale);
+                shot = FirstShot(effects); window = Field<KnightLayeredWindow>(shot, "Window"); Render(game);
+                Check(Near(Field<PointF>(shot, "From"), LowerAnchor(target)) && Near(Field<PointF>(shot, "To"), LowerAnchor(hero)), "Boss response uses the same lower-body mapping in the reverse direction at scale " + scale);
+                using (var layers = new DesktopPanelLayerCoordinator()) using (var panel = new PassivePanel(new Point(hero.Left - 600, hero.Top)))
+                {
+                    panel.Show(); layers.Register(panel, true); effects.Fire(LowerAnchor(target), LowerAnchor(hero), "wave", scale); Render(game);
+                    var shots = (System.Collections.IList)Field<object>(effects, "shots");
+                    Check(shots.Cast<object>().All(s => Above(panel, Field<KnightLayeredWindow>(s, "Window")) && Above(hero, Field<KnightLayeredWindow>(s, "Window"))),
+                        "later effect windows preserve the protected panel and hero ceiling at scale " + scale);
+                }
+                for (int tick = 0; tick < 5; tick++) effects.Tick(.2);
+                Check(effects.ActiveCount == 0 && game.DesktopRealWorkIdle, "original effect lifetime disposes its windows with no real worker at scale " + scale);
+                h.VerifyScope();
+            }
+        }
         sealed class PassivePanel : Form
         {
             internal PassivePanel(Point point) { ShowInTaskbar = false; StartPosition = FormStartPosition.Manual; Location = point; Size = new Size(300, 180); }
@@ -170,6 +236,7 @@ namespace NetBunny
                         "a second frame with unchanged stationary semantics retains both original Bitmap instances");
                 }
                 OrderChecks(assets, output);
+                EffectChecks(assets, output);
                 Check(GetForegroundWindow() == foreground, "off-screen production rendering and disposal never change foreground focus");
                 Console.WriteLine("Idle target badge: " + checks + " checks, " + failures + " failures. Real source frames; no native screenshot, input, HP edit, Advance or production-archive write.");
                 return failures == 0 ? 0 : 1;

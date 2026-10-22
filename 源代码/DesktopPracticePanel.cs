@@ -20,6 +20,10 @@ namespace NetBunny
         readonly Button equipWeapon = new Button();
         readonly Button strike = new Button(), block = new Button(), awaken = new Button(), automatic = new Button(), practice = new Button();
         readonly Button nextAction = new Button();
+        readonly FlowLayoutPanel returnTasks = new FlowLayoutPanel();
+        readonly Button[] returnTaskButtons = { new Button(), new Button() };
+        readonly Label[] returnTaskLabels = { new Label(), new Label() };
+        readonly Action<string> returnTaskNavigate;
         readonly FlowLayoutPanel combatActions = new FlowLayoutPanel();
         readonly ComboBox weapons = new ComboBox(), techniques = new ComboBox();
         readonly FlowLayoutPanel targets = new FlowLayoutPanel(), materials = new FlowLayoutPanel();
@@ -42,6 +46,7 @@ namespace NetBunny
         internal DesktopPracticePanel(DesktopDemoSession session)
         {
             this.session = session;
+            returnTaskNavigate = session.OpenPanel;
             Text = "桌面修仙传 · 修行手札";
             Font = new Font("Microsoft YaHei UI", 10);
             BackColor = Paper; ForeColor = Ink; AutoScaleMode = AutoScaleMode.Dpi;
@@ -71,6 +76,21 @@ namespace NetBunny
 
             FlowLayoutPanel battle = Column("桌面历练");
             StyleLabel(hint); hint.AccessibleName = "下一步操作"; battle.Controls.Add(hint);
+            returnTasks.AutoSize = true; returnTasks.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            returnTasks.FlowDirection = FlowDirection.TopDown; returnTasks.WrapContents = false; returnTasks.Margin = Padding.Empty;
+            for (int i = 0; i < returnTaskButtons.Length; i++)
+            {
+                string route = i == 0 ? "lingyu" : "dongtian"; Button button = returnTaskButtons[i]; Label text = returnTaskLabels[i];
+                Configure(button, "", delegate { returnTaskNavigate(route); });
+                button.Name = "return-task-" + route; button.Tag = route; button.Width = 92; button.Margin = Padding.Empty;
+                button.ForeColor = Jade; button.UseMnemonic = false;
+                StyleLabel(text); text.Name = "return-task-text-" + route; text.Margin = new Padding(0, 5, 8, 0);
+                var row = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, RowCount = 1, Margin = new Padding(0, 0, 0, 8) };
+                row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 92));
+                row.Controls.Add(text, 0, 0); row.Controls.Add(button, 1, 0);
+                button.Visible = false; row.Visible = false; returnTasks.Controls.Add(row);
+            }
+            returnTasks.Visible = false; battle.Controls.Add(returnTasks);
             Add(battle, "电脑生态 · 查看来源与维护结果", delegate { session.OpenPanel("ecology"); });
             StyleLabel(attackState); StyleLabel(blockState); battle.Controls.Add(attackState); battle.Controls.Add(blockState);
             combatActions.AutoSize = true; combatActions.AutoSizeMode = AutoSizeMode.GrowAndShrink; combatActions.WrapContents = true; combatActions.Margin = Padding.Empty;
@@ -151,6 +171,7 @@ namespace NetBunny
             meter.Value = c.Mortal ? c.MortalKills / 10.0 : c.RealmComplete ? 1 : c.Qi / (double)Math.Max(1, c.NextLayerCost);
             hint.Text = view.NextStep; hint.AccessibleDescription = view.Hint;
             nextAction.Text = view.NextActionText; nextAction.Visible = !String.IsNullOrEmpty(view.NextActionId);
+            UpdateReturnTasks(view.ReturnTasks);
             attackState.Text = "目标：" + view.TargetName + "\n" + view.AttackText;
             blockState.Text = view.BlockText;
             strike.Enabled = view.StrikeReady; block.Enabled = view.BlockReady;
@@ -360,6 +381,20 @@ namespace NetBunny
             using (Image source = Image.FromFile(path)) thumbnail = new Bitmap(source);
             thumbnail.Tag = image; ownedImages.Add(thumbnail); return thumbnail;
         }
+        void UpdateReturnTasks(DesktopReturnTask[] tasks)
+        {
+            for (int i = 0; i < returnTaskButtons.Length; i++)
+            {
+                Button button = returnTaskButtons[i];
+                DesktopReturnTask task = tasks.FirstOrDefault(t => t.PanelId == (string)button.Tag);
+                if (task == null && !ContainsFocus && ActiveControl == button) ActiveControl = null;
+                button.Visible = button.Parent.Visible = task != null;
+                if (task == null) continue;
+                button.Text = task.ActionText; returnTaskLabels[i].Text = task.Text;
+                button.AccessibleName = task.ActionText; button.AccessibleDescription = task.Text;
+            }
+            returnTasks.Visible = tasks.Length > 0;
+        }
         FlowLayoutPanel Column(string title)
         {
             var page = new TabPage(title) { BackColor = Paper, Padding = new Padding(10) }; tabs.TabPages.Add(page);
@@ -373,6 +408,12 @@ namespace NetBunny
                 int width = Math.Max(240, column.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 16);
                 foreach (Control control in column.Controls) { control.Width = width; if (control is Label) control.MaximumSize = new Size(width, 0); }
                 foreach (Control control in targets.Controls) control.Width = width;
+                if (column == columns[0])
+                    for (int i = 0; i < returnTaskButtons.Length; i++)
+                    {
+                        returnTaskButtons[i].Parent.Width = width;
+                        returnTaskLabels[i].MaximumSize = new Size(Math.Max(1, width - 100), 0);
+                    }
                 if (column == columns[2])
                 {
                     foreach (Control control in materials.Controls)

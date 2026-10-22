@@ -1,0 +1,29 @@
+PASS five real archives are established only in the private fixture profile
+PASS the existing full-realm breakthrough next-step remains unchanged
+PASS full realm, suspended expedition and ready cave produce two independent return tasks together
+PASS suspended formal pending offer is named as a saved choice, not a fresh event
+PASS actual UTC-ready field, pill and gear counts are separate and ignore locked fields
+PASS recovery guidance keeps both read-only return tasks visible while suppressing the original combat action
+PASS pending real expedition combat takes precedence over a stale pending-offer ID without spawning anything
+PASS an active unresolved battle is discoverable without falsely calling it suspended
+PASS an active valid pending choice remains a distinct return task
+PASS an unknown saved offer cannot invent a pending choice for an otherwise active journey
+PASS ordinary suspended node remains resumable without fabricating a choice
+PASS empty/immature old-compatible states have no return tasks and no invented harvest
+PASS return tasks are detached snapshots, not a second mutable persistent state
+PASS reading return tasks does not enter/resume, spawn, collect, consume, reward or save
+PASS two real native return buttons exist independently of the current growth button
+PASS production return buttons use the existing session.OpenPanel navigation only
+PASS actual Click handlers forward exactly the two existing panel IDs and perform no game or archive mutation
+PASS repeated live refresh reuses the same two controls without allocating/replacing rows
+PASS {Width=390, Height=490}: both tasks stay inside the narrow native content column
+PASS {Width=390, Height=490}: full real task text wraps without clipping its native button
+PASS {Width=390, Height=490}: full summaries use actual wrapping native labels; short navigation labels remain fully visible
+PASS {Width=470, Height=700}: both tasks stay inside the narrow native content column
+PASS {Width=470, Height=700}: full real task text wraps without clipping its native button
+PASS {Width=470, Height=700}: full summaries use actual wrapping native labels; short navigation labels remain fully visible
+PASS no pending state hides both task controls instead of showing empty placeholders
+PASS reappearing tasks restore the original control identities
+PASS all fixture windows stay hidden and both simulation and panel timers stay stopped
+PASS return guidance grants no maintenance authority and starts no system worker
+Desktop return tasks: 28 checks, 0 failures. Private ready-state fixture, hidden native controls; no GUI input, natural waiting-time claim or system maintenance.

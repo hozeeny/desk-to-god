@@ -124,7 +124,7 @@ if ($runError -or $timedOut -or -not $sourceSame -or -not $realSame -or $foregro
 $reportPath = Join-Path $evidence 'crowding-native.json'
 if (-not (Test-Path -LiteralPath $reportPath)) { throw ('Native crowding report missing; retain ' + $evidence) }
 $report = Get-Content -LiteralPath $reportPath -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($report.passed -isnot [bool] -or -not $report.passed -or $report.nativeInputs -ne 0 -or $report.captures.Count -ne 2) {
+if ($report.passed -isnot [bool] -or -not $report.passed -or $report.nativeInputs -ne 0 -or $report.captures.Count -ne 3 -or $report.capturesWithVisibleEffect -lt 1) {
     throw ('Native crowding business report rejected the observation; retain ' + $evidence)
 }
-Write-Host ('Crowding native PASS: ' + $report.elapsedSeconds + ' seconds, two raw captures, no inputs; ' + $evidence)
+Write-Host ('Crowding native PASS: ' + $report.elapsedSeconds + ' seconds, three raw captures including a natural effect, no inputs; ' + $evidence)

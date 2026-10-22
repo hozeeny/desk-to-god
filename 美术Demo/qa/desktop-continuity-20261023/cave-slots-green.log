@@ -1,0 +1,43 @@
+PASS each of the two unlocked empty fields has its own seed operation, including field two first
+PASS field-two state and its operation are grouped in the same independent row
+PASS locked third/fourth fields do not claim to be usable
+PASS clicking field two plants only field two through the real controller
+PASS the actual selected field survives private archive reload
+PASS field and seed controls survive the empty-to-growing transition
+PASS growing field shows its actual short remaining time instead of a rounded six-minute minimum
+PASS growing field does not offer planting or early harvest
+PASS mature harvest is beside the corresponding field state
+PASS harvesting field two gives its original yield and clears only that field
+PASS the original seed control returns after harvesting
+PASS real paid expansion unlocks a separately actionable third field
+PASS second real paid expansion exposes the fourth field without rebuilding earlier fields
+PASS expansion preserves existing field-row instances
+PASS pending persistence disables all operations including a queued slot click
+PASS original alchemy recipe and exact material consumption remain available
+PASS ready furnace retains its real collection action next to furnace state
+PASS ready forge retains its real collection action next to forge state
+PASS collection applies the original real buff/gear and clears their own production slots
+PASS benefit summary identifies cave contribution and actual remaining buff lifetime
+PASS collected gear shows its actual permanent effect rather than only its name
+PASS displayed cave factors read the existing actual contribution APIs
+PASS expired buff is not presented as an active benefit
+PASS repeated state/benefit refreshes do not write archives or consume/reward inventory
+PASS stable and state-changing refreshes retain fixed field/furnace rows
+PASS slot layout only scrolls vertically at {Width=700, Height=520}
+PASS every slot/action stays inside its row at {Width=700, Height=520}
+PASS slot and benefit text wraps without clipping at {Width=700, Height=520}
+PASS first viewport still offers a real seed operation at {Width=700, Height=520}
+PASS mature first field can be harvested without scrolling at {Width=700, Height=520}
+PASS slot layout only scrolls vertically at {Width=390, Height=490}
+PASS every slot/action stays inside its row at {Width=390, Height=490}
+PASS slot and benefit text wraps without clipping at {Width=390, Height=490}
+PASS first viewport still offers a real seed operation at {Width=390, Height=490}
+PASS mature first field can be harvested without scrolling at {Width=390, Height=490}
+PASS slot layout only scrolls vertically at {Width=470, Height=700}
+PASS every slot/action stays inside its row at {Width=470, Height=700}
+PASS slot and benefit text wraps without clipping at {Width=470, Height=700}
+PASS first viewport still offers a real seed operation at {Width=470, Height=700}
+PASS mature first field can be harvested without scrolling at {Width=470, Height=700}
+PASS every fixture and actor remains hidden with zero presented frames
+PASS slot operations start no real worker, observation or maintenance authorization
+Cave slots: 42 checks, 0 failures.

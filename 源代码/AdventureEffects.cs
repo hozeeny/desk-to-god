@@ -23,6 +23,15 @@ namespace NetBunny
         double repaint;
         bool disposed;
         internal int ActiveCount { get { return shots.Count; } }
+        internal KnightLayeredWindow[] ActiveWindows
+        {
+            get
+            {
+                KnightLayeredWindow[] result = new KnightLayeredWindow[shots.Count];
+                for (int i = 0; i < shots.Count; i++) result[i] = shots[i].Window;
+                return result;
+            }
+        }
         internal void Fire(PointF origin, PointF target, string weaponId, float scale)
         { FireCore(origin, target, weaponId, scale, 3); }
         internal void FireField(PointF origin, IEnumerable<PointF> targets, float scale)
@@ -78,7 +87,7 @@ namespace NetBunny
             double t=s.Weapon=="boomerang" ? Math.Sin(progress*Math.PI) : Math.Min(1,progress*1.5);
             if(s.Weapon=="blackhole")t=1;
             float x=(float)(s.From.X+(s.To.X-s.From.X)*t),y=(float)(s.From.Y+(s.To.Y-s.From.Y)*t);
-            int size=(int)(192*s.Scale);Bitmap frame=new Bitmap(size,size,PixelFormat.Format32bppPArgb);
+            int size=(int)((artDemo == null ? 192 : 144)*s.Scale);Bitmap frame=new Bitmap(size,size,PixelFormat.Format32bppPArgb);
             using(Graphics g=Graphics.FromImage(frame))
             {
                 if (artDemo != null) { g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic; g.PixelOffsetMode = PixelOffsetMode.HighQuality; }

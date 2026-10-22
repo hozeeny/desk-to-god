@@ -1,0 +1,56 @@
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS out-of-range selection uses the production entry and changes only combat focus, without a strike
+PASS a stationary merely-selected enemy immediately gains target-badge pixels in the real presented frame
+PASS real planner establishes the nearest automatic target before a manual preemption
+PASS real manual authorization renumbers the old automatic target instead of cancelling its queue
+PASS stationary old automatic target replaces its target word with its new queue-number pixels
+PASS stationary new manual target immediately receives target-badge pixels
+PASS cancelling a stationary target removes its badge immediately through the existing invalidation path
+PASS renumbering another actor does not rerasterize an unchanged stationary target
+PASS a second frame with unchanged stationary semantics retains both original Bitmap instances
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS actual native actor order keeps the hero and its HUD above all enemies
+PASS the current target stays above other enemies independent of creation order
+PASS actor ordering does not rerasterize unchanged stationary enemies
+PASS new actor priority remains below the existing protected feature panel
+PASS later enemies cannot cover the hero HUD or the current target under a protected panel
+PASS a dragged actor remains visible while the feature panel still outranks it
+PASS ending an actor drag restores hero and current-target visibility without raising past the panel
+PASS the fixture starts its unrelated own topmost window above the disturbed actor group
+PASS relative repair preserves a window already above the group instead of globally raising the game
+PASS native ordering changes no combat authorization, HP, queue or real worker
+PASS player strike uses the actual rendered lower-body anchors at scale 0.8
+PASS new illustrated projectile has the bounded 144-unit footprint at scale 0.8
+PASS real relative order puts hero above effect above current target at scale 0.8
+PASS fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale 0.8
+PASS visual refinement preserves the normal projectile age and duration at scale 0.8
+PASS moving projectile remains visible and below hero without hiding or clearing at scale 0.8
+PASS real Boss attack still damages through its existing path and emits an effect at scale 0.8
+PASS Boss response uses the same lower-body mapping in the reverse direction at scale 0.8
+PASS later effect windows preserve the protected panel and hero ceiling at scale 0.8
+PASS original effect lifetime disposes its windows with no real worker at scale 0.8
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS player strike uses the actual rendered lower-body anchors at scale 1
+PASS new illustrated projectile has the bounded 144-unit footprint at scale 1
+PASS real relative order puts hero above effect above current target at scale 1
+PASS fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale 1
+PASS visual refinement preserves the normal projectile age and duration at scale 1
+PASS moving projectile remains visible and below hero without hiding or clearing at scale 1
+PASS real Boss attack still damages through its existing path and emits an effect at scale 1
+PASS Boss response uses the same lower-body mapping in the reverse direction at scale 1
+PASS later effect windows preserve the protected panel and hero ceiling at scale 1
+PASS original effect lifetime disposes its windows with no real worker at scale 1
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS player strike uses the actual rendered lower-body anchors at scale 1.2
+PASS new illustrated projectile has the bounded 144-unit footprint at scale 1.2
+PASS real relative order puts hero above effect above current target at scale 1.2
+PASS fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale 1.2
+PASS visual refinement preserves the normal projectile age and duration at scale 1.2
+PASS moving projectile remains visible and below hero without hiding or clearing at scale 1.2
+PASS real Boss attack still damages through its existing path and emits an effect at scale 1.2
+PASS Boss response uses the same lower-body mapping in the reverse direction at scale 1.2
+PASS later effect windows preserve the protected panel and hero ceiling at scale 1.2
+PASS original effect lifetime disposes its windows with no real worker at scale 1.2
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS off-screen production rendering and disposal never change foreground focus
+Idle target badge: 55 checks, 0 failures. Real source frames; no native screenshot, input, HP edit, Advance or production-archive write.

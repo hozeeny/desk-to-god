@@ -1,0 +1,43 @@
+{
+  "scope": "normal x1 private qishi-full initial feature fixture; native buttons and actual mirror click; no HP/time/probability injection; runner compiled with production source, not exact delivered EXE",
+  "passed": true,
+  "genuinely_distinct_processes": true,
+  "prepare_seconds": 4.5469557,
+  "restore_seconds": 9.8098087,
+  "prepare_clicks": 4,
+  "restore_clicks": 4,
+  "prepare_checks": [
+    "native handbook action disables automatic combat without granting maintenance",
+    "suspend is available in the current pending battle",
+    "native suspend removes only the mirror and retains its unresolved outcome",
+    "all five private archives save the paused expedition",
+    "leaving the expedition keeps desktop cultivation active",
+    "maintenance authorization remained off"
+  ],
+  "restore_checks": [
+    "a genuinely new process restores the paused profile",
+    "paused identity, node and unresolved outcome restore without rewards or automatic re-entry",
+    "paused startup never spawns its mirror",
+    "restored handbook opens its existing desktop-adventure page",
+    "the real restored pending battle produces its readable saved-task summary and short navigation button",
+    "reading and presenting the restored return task neither re-enters nor settles the paused expedition",
+    "native return-task navigation only opens Lingyu: original node, pending outcome, choices, grants and inventory remain unchanged with no mirror spawned",
+    "the existing explicit Continue action is still required after return-task navigation",
+    "native continue restores exactly one mirror for the original pending battle",
+    "actual native click selects the specified mirror rather than an overlapping ordinary creature",
+    "native handbook action restores the player's automatic combat choice",
+    "restored mirror wins through actual combat and settles its formal reward",
+    "restored exploration saves all five private archives",
+    "production Load retains the one settled result",
+    "maintenance authorization remained off"
+  ],
+  "return_task_text": "千面蜃楼 · 镜廊深处 · 已暂存 · 镜妖待战",
+  "return_task_button": "查看灵域",
+  "native_readable": true,
+  "navigation_only": true,
+  "paused_fingerprint_unchanged": true,
+  "real_archives_unchanged": true,
+  "primary_native_images_reviewed": 8,
+  "prepare_report_sha256": "5a648af5cb0054939bbbb6323886f59de5ed271b2475dee883afd10cf384fcd1",
+  "restore_report_sha256": "21b949397b73e0493dccba830a1daa9718c1935c498d48b5fbad0157c6ac5411"
+}

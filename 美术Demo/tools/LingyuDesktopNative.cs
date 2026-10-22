@@ -32,6 +32,8 @@ namespace NetBunny
         int phase, steps;
         double next, startedBattle;
         string mirrorId;
+        string pausedBeforeNavigation;
+        double returnTaskOpenedAt;
         long qiBefore;
         double crowdStarted, nextCrowdFrame;
         string[] crowdIds;
@@ -133,6 +135,14 @@ namespace NetBunny
             }
             return true;
         }
+        string PausedState()
+        {
+            LingyuProgress p = Game.Lingyu;
+            return json.Serialize(new { p.ExpeditionActive, p.ExpeditionNode, p.ExpeditionDepth, p.CombatPending, p.CombatOutcome, p.PendingJiyuanId, p.EventCounter,
+                flags = p.ExpeditionFlags.OrderBy(s => s).ToArray(), grants = p.Grants.OrderBy(v => v.Key).ToArray(), qi = p.PendingQi.OrderBy(v => v.Key).ToArray(),
+                materials = p.Materials.OrderBy(v => v.Key).ToArray(), visits = p.RealmVisits.OrderBy(v => v.Key).ToArray(), scrolls = p.Scrolls.OrderBy(v => v.Key).ToArray(), heritages = p.Heritages.ToArray(),
+                choices = p.JiyuanChoices.OrderBy(v => v.Key).ToArray(), entered = p.RealmEntered.OrderBy(s => s).ToArray(), log = p.ExpeditionLog.ToArray() });
+        }
         void Tick(object sender, EventArgs e)
         {
             if (busy || finished) return; busy=true;
@@ -153,7 +163,8 @@ namespace NetBunny
                             && Game.Lingyu.CombatOutcome==Convert.ToString(expected["outcome"]) && Game.Lingyu.ExpeditionNode==Convert.ToString(expected["node"])
                             && Game.Lingyu.Grants.Count==Convert.ToInt32(expected["grants"]),"paused identity, node and unresolved outcome restore without rewards or automatic re-entry");
                         Check(!Game.Battle.Enemies.Any(a=>a.NoFieldClear),"paused startup never spawns its mirror");
-                        session.OpenPanel("lingyu"); phase=6; next=now+.15;
+                        pausedBeforeNavigation=PausedState();
+                        session.OpenPanel("practice"); returnTaskOpenedAt=wall.Elapsed.TotalSeconds; phase=60; next=returnTaskOpenedAt+.5;
                     }
                     else { session.OpenPanel("practice"); phase=1; next=now+.2; }
                 }
@@ -218,6 +229,35 @@ namespace NetBunny
                     if(!Painted(Panel))return;Native("CapturePanel",Panel,"05-restored-paused-panel");
                     if(!Click(Field<Button>(Panel,"continueExpedition")))return;
                     phase=16;next=now+.15;
+                }
+                else if(phase==60)
+                {
+                    DesktopPracticePanel handbook=Application.OpenForms.OfType<DesktopPracticePanel>().Single(f=>f.Visible);
+                    Check(Field<TabControl>(handbook,"tabs").SelectedIndex==0,"restored handbook opens its existing desktop-adventure page");
+                    Button button=Field<Button[]>(handbook,"returnTaskButtons").Single(b=>(string)b.Tag=="lingyu");
+                    Label text=Field<Label[]>(handbook,"returnTaskLabels").Single(l=>l.Name=="return-task-text-lingyu");
+                    Check(button.Visible&&button.Enabled&&text.Visible&&text.Text.Contains("暂存")&&text.Text.Contains("待战")
+                        &&button.Text=="查看灵域","the real restored pending battle produces its readable saved-task summary and short navigation button");
+                    if(!(bool)Native("NativePreviewContentMatches",text,true)||!(bool)Native("NativePreviewContentMatches",button,true))
+                    {if(wall.Elapsed.TotalSeconds-returnTaskOpenedAt>10)throw new InvalidOperationException("Return-task native text/button glyphs never reached the existing eighty-percent presentation threshold.");return;}
+                    Check(PausedState()==pausedBeforeNavigation&&!Game.Battle.Enemies.Any(a=>a.NoFieldClear),"reading and presenting the restored return task neither re-enters nor settles the paused expedition");
+                    report["returnTaskText"]=text.Text;report["returnTaskButton"]=button.Text;
+                    report["returnTaskNativeReadable"]=true;report["returnTaskPresentation"]="Existing native foreground-glyph match >=80% for both summary Label and short Button; no remaining-visible-pixel denominator.";
+                    report["returnTaskBeforeNavigation"]=pausedBeforeNavigation;
+                    Native("CapturePanel",handbook,"05-restored-handbook-return-task");
+                    if(!Click(button))return;
+                    phase=61;next=wall.Elapsed.TotalSeconds+.2;
+                }
+                else if(phase==61)
+                {
+                    LingyuForm panel=Application.OpenForms.OfType<LingyuForm>().SingleOrDefault(f=>f.Visible);
+                    if(panel==null){if(wall.Elapsed.TotalSeconds-returnTaskOpenedAt>12)throw new InvalidOperationException("The native return-task click did not open the existing Lingyu window.");return;}
+                    Check(PausedState()==pausedBeforeNavigation&&!Game.Lingyu.ExpeditionActive&&Game.Lingyu.CombatPending
+                        &&!Game.Battle.Enemies.Any(a=>a.NoFieldClear),"native return-task navigation only opens Lingyu: original node, pending outcome, choices, grants and inventory remain unchanged with no mirror spawned");
+                    Check(Field<Button>(panel,"continueExpedition").Visible&&Field<Button>(panel,"continueExpedition").Enabled,
+                        "the existing explicit Continue action is still required after return-task navigation");
+                    report["returnTaskAfterNavigation"]=PausedState();report["returnTaskNavigationOnly"]=true;
+                    phase=6;next=wall.Elapsed.TotalSeconds+.15;
                 }
                 else if(phase==16)
                 {

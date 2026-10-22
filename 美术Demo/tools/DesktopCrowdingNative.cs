@@ -42,7 +42,8 @@ namespace NetBunny
         readonly Rectangle area;
         double nextSample;
         double cpuStart, peakCpu, peakGdi, peakUser, peakHandles, captureCpuMs, captureWallSeconds;
-        bool busy, finished, captured8, captured12;
+        bool busy, finished, captured8, captured12, capturedNaturalEffect;
+        int capturesWithVisibleEffect;
         internal int ExitCode { get; private set; }
 
         static object Call(object target, string name, params object[] args)
@@ -139,6 +140,11 @@ namespace NetBunny
                 Require(wall.Elapsed.TotalSeconds < 23, "Observation exceeded the owned child's bounded run.");
                 Require(game.DesktopAcceptanceMaintenanceOff() && game.DesktopRealWorkIdle && !game.DesktopObservesSystem, "Maintenance/observation boundary changed.");
                 if (wall.Elapsed.TotalSeconds >= nextSample) { Sample(); nextSample = wall.Elapsed.TotalSeconds + 1; }
+                if (!capturedNaturalEffect && wall.Elapsed.TotalSeconds >= 4
+                    && Field<AdventureEffects>(game, "effects").ActiveWindows.Any(w => !w.IsDisposed && w.Visible && w.IsHandleCreated))
+                {
+                    capturedNaturalEffect = true; Capture("00-first-natural-effect-after-4s", 4); return;
+                }
                 if (!captured8 && wall.Elapsed.TotalSeconds >= 8) { captured8 = true; Capture("01-crowded-at-8s", 8); }
                 if (!captured12 && wall.Elapsed.TotalSeconds >= 12) { captured12 = true; Capture("02-crowded-at-12s", 12); Finish(null); }
             }
@@ -151,7 +157,10 @@ namespace NetBunny
             // Synchronous capture of already presented frames: no DoEvents,
             // actor hide/show, artificial repaint, timer pause or time-mark reset.
             List<ArtDemoActorFrame> actors = game.SnapshotArtDemoActors();
+            KnightLayeredWindow[] effectWindows = Field<AdventureEffects>(game, "effects").ActiveWindows;
+            ArtDemoActorFrame[] effectFrames = actors.Where(a => effectWindows.Contains(a.Window)).ToArray();
             var entries = new List<object>(); double at = wall.Elapsed.TotalSeconds, captureCpuStart = self.TotalProcessorTime.TotalMilliseconds;
+            bool visibleEffectPixels = false;
             try
             {
                 using (Bitmap actual = DesktopFrameCapture.CaptureRegion(area))
@@ -159,33 +168,58 @@ namespace NetBunny
                     actual.Save(Path.Combine(output, name + ".png"), ImageFormat.Png);
                     foreach (ArtDemoActorFrame actor in actors)
                     {
-                        int sourceOpaque = 0, ownCovered = 0, samplesCount = 0, matches = 0, rootMatches = 0;
-                        HashSet<int> colors = new HashSet<int>();
-                        foreach (Point point in OpaquePoints(actor))
+                        int sourceOpaque = 0, ownCovered = 0, samplesCount = 0, matches = 0, rootMatches = 0, compositedSamples = 0, unverifiableTranslucent = 0, coveredTranslucent = 0, opaqueVisible = 0, opaqueMatches = 0;
+                        bool combatEffect = effectWindows.Contains(actor.Window);
+                        HashSet<int> colors = new HashSet<int>(), opaqueColors = new HashSet<int>();
+                        foreach (Point point in OpaquePoints(actor, combatEffect))
                         {
-                            sourceOpaque++; int sx = actor.Bounds.X + point.X, sy = actor.Bounds.Y + point.Y;
+                            Color source = actor.Frame.GetPixel(point.X, point.Y), expected = source;
+                            if (source.A >= 245) sourceOpaque++; int sx = actor.Bounds.X + point.X, sy = actor.Bounds.Y + point.Y;
                             bool covered = actors.Any(a => a != actor && a.ZOrder < actor.ZOrder && a.Bounds.Contains(sx, sy) && a.Frame.GetPixel(sx - a.Bounds.X, sy - a.Bounds.Y).A >= 20);
-                            if (covered) { ownCovered++; continue; }
+                            if (covered) { if (source.A >= 245) ownCovered++; else coveredTranslucent++; continue; }
                             if (!area.Contains(sx, sy)) continue;
-                            samplesCount++; Color source = actor.Frame.GetPixel(point.X, point.Y), pixel = actual.GetPixel(sx - area.X, sy - area.Y);
-                            colors.Add((source.R >> 4) << 8 | (source.G >> 4) << 4 | (source.B >> 4));
-                            if (Math.Abs(source.R - pixel.R) + Math.Abs(source.G - pixel.G) + Math.Abs(source.B - pixel.B) <= 45) matches++;
+                            if (combatEffect && source.A < 245)
+                            {
+                                if (!OwnedComposite(actor, actors, sx, sy, source, out expected)) { unverifiableTranslucent++; continue; }
+                                compositedSamples++;
+                            }
+                            samplesCount++; Color pixel = actual.GetPixel(sx - area.X, sy - area.Y);
+                            colors.Add((expected.R >> 4) << 8 | (expected.G >> 4) << 4 | (expected.B >> 4));
+                            bool match = Math.Abs(expected.R - pixel.R) + Math.Abs(expected.G - pixel.G) + Math.Abs(expected.B - pixel.B) <= 45;
+                            if (match) matches++;
+                            if (source.A >= 245) { opaqueVisible++; if (match) opaqueMatches++; opaqueColors.Add((source.R >> 4) << 8 | (source.G >> 4) << 4 | (source.B >> 4)); }
                             if (RootAt(sx, sy) == actor.Window.Handle) rootMatches++;
                         }
                         double ratio = samplesCount == 0 ? 0 : matches / (double)samplesCount;
                         bool decoration = actor.Role == "decoration", passThrough = actor.Window.PassThrough;
                         string rootPolicy = decoration ? "pass-through-decoration: zero samples hit this window" : "interactive-actor: every visible sample hits this exact window";
                         bool rootPass = decoration ? passThrough && rootMatches == 0 : rootMatches == samplesCount;
-                        bool pass = sourceOpaque >= 100 && samplesCount >= 100 && colors.Count >= 8 && ratio >= .90 && rootPass;
+                        bool pass = (combatEffect || sourceOpaque >= 100) && samplesCount >= 100 && colors.Count >= 8 && ratio >= .90 && rootPass;
+                        bool strictOpaqueEffectProof = combatEffect && opaqueVisible >= 100 && opaqueColors.Count >= 8 && opaqueMatches >= opaqueVisible * .90 && rootPass;
+                        if (combatEffect && pass && strictOpaqueEffectProof) visibleEffectPixels = true;
                         string id = actor.Window == game.DesktopHeroWindow ? "hero" : game.DesktopEnemyWindows.FirstOrDefault(p => p.Value == actor.Window).Key;
                         entries.Add(new { id, role = actor.Role, handle = actor.Window.Handle.ToInt64(), title = actor.Window.Text, bounds = actor.Bounds.ToString(), actor.ZOrder,
                             sourceOpaqueSamples = sourceOpaque, ownCoveredSamples = ownCovered, ownCoverage = sourceOpaque == 0 ? 0 : ownCovered / (double)sourceOpaque,
-                            visibleSamples = samplesCount, matchingSamples = matches, rootMatches, rootPolicy, passThrough, distinctColors = colors.Count, matchRatio = ratio, passed = pass, rgbToleranceSum = 45, minimumRatio = .90 });
+                            visibleSamples = samplesCount, matchingSamples = matches, rootMatches, rootPolicy, passThrough, combatEffect, compositedSamples, unverifiableTranslucent, coveredTranslucent,
+                            opaqueVisible, opaqueMatches, opaqueDistinctColors = opaqueColors.Count, strictOpaqueEffectProof,
+                            comparisonMode = combatEffect ? "A>=245 source RGB; lower alpha only RGBA-composited over native-hit-verified owned A=255 actor; unknown desktop skipped" : "original A>=245 source RGB",
+                            distinctColors = colors.Count, matchRatio = ratio, passed = pass, rgbToleranceSum = 45, minimumRatio = .90 });
                         Check(pass, name + ": exact presented actor pixels/native root " + id + " samples=" + samplesCount + " matches=" + matches + " roots=" + rootMatches + "; " + rootPolicy + "; PassThrough=" + passThrough);
                     }
                 }
                 Check(actors.Count(a => a.Role == "enemy") == 7 && actors.Count(a => a.Role == "hero") == 1, name + ": all initial hero + six ordinary + last-appended Boss remain visibly present");
                 ArtDemoActorFrame hero = actors.FirstOrDefault(a => a.Window == game.DesktopHeroWindow);
+                foreach (ArtDemoActorFrame effect in effectFrames)
+                    Check(hero != null && effect.Window.PassThrough && hero.ZOrder < effect.ZOrder,
+                        name + ": exact real combat effect is pass-through and strictly below hero; effect=" + effect.Window.Handle + ", Z=" + effect.ZOrder + ", heroZ=" + (hero == null ? -1 : hero.ZOrder));
+                var effectProtection = new
+                {
+                    face = EffectCoverage(name + " face", hero, effectFrames, new Rectangle(0, 25, 220, 85)),
+                    topHint = EffectCoverage(name + " top hint", hero, effectFrames, new Rectangle(0, 0, 220, 32)),
+                    bottomHud = EffectCoverage(name + " bottom HUD", hero, effectFrames, new Rectangle(0, 200, 220, 40)),
+                    denominator = "All original hero alpha>=20 pixels inside each fixed local rectangle, step 1; never subtract covered pixels. Only effects in front by actual native Z can cover."
+                };
+                if (visibleEffectPixels) capturesWithVisibleEffect++;
                 KnightLayeredWindow bossWindow; game.DesktopEnemyWindows.TryGetValue(boss.Id, out bossWindow);
                 ArtDemoActorFrame bossFrame = actors.FirstOrDefault(a => a.Window == bossWindow);
                 ArtDemoActorFrame[] peers = actors.Where(a => a.Role == "enemy" && a != bossFrame).ToArray();
@@ -195,16 +229,37 @@ namespace NetBunny
                 double peerCover = peers.Length == 0 ? 1 : peers.Select(p => CoveredFraction(p, peers.Where(o => o != p).ToArray(), new Rectangle(Point.Empty, p.Frame.Size))).Max();
                 var coverage = new { heroHead = head, heroHud = hud, bossByOrdinary = bossCover, worstOrdinaryByOtherOrdinary = peerCover,
                     denominator = "Each region's full original alpha>=20 source samples, step 2; no surviving-visible denominator or Z-order exclusion" };
-                Check(head <= .05 && hud <= .05 && bossCover <= .10 && peerCover <= .20, name + ": unchanged spacing thresholds on original alpha; head=" + head.ToString("F3") + ", HUD=" + hud.ToString("F3") + ", Boss=" + bossCover.ToString("F3") + ", peers=" + peerCover.ToString("F3"));
+                if (requestedSeconds >= 8)
+                    Check(head <= .05 && hud <= .05 && bossCover <= .10 && peerCover <= .20, name + ": unchanged spacing thresholds on original alpha; head=" + head.ToString("F3") + ", HUD=" + hud.ToString("F3") + ", Boss=" + bossCover.ToString("F3") + ", peers=" + peerCover.ToString("F3"));
                 Check(!game.Battle.Progress.Dead && !boss.Defeated && !boss.VisualDefeated && game.Battle.Target == boss, name + ": natural battle remains living with the exact original Boss selected");
                 Check(GetForegroundWindow() == foreground, name + ": foreground remains unchanged without any activation call");
-                captures.Add(new { image = name + ".png", requestedSeconds, actualSeconds = at, bounds = area.ToString(), capture = "Unmodified native desktop BitBlt SRCCOPY|CAPTUREBLT; raw local only", actors = entries, coverage, state = State() });
+                captures.Add(new { image = name + ".png", requestedSeconds, actualSeconds = at, bounds = area.ToString(), capture = "Unmodified native desktop BitBlt SRCCOPY|CAPTUREBLT; raw local only", actors = entries, coverage, effectProtection,
+                    ordinarySpacingDeadlineApplied = requestedSeconds >= 8, actualCombatEffectCount = effectFrames.Length, visibleEffectPixels,
+                    effectObservation = name.StartsWith("00-", StringComparison.Ordinal) ? "First natural effect observed at/after 4s; no Fire or state/timer injection; ordinary convergence remains due at its original 8s deadline" : "Normal scheduled snapshot", state = State() });
             }
             finally
             {
                 foreach (ArtDemoActorFrame actor in actors) actor.Dispose();
                 self.Refresh(); captureCpuMs += self.TotalProcessorTime.TotalMilliseconds - captureCpuStart; captureWallSeconds += wall.Elapsed.TotalSeconds - at; WriteReport(false);
             }
+        }
+        object EffectCoverage(string label, ArtDemoActorFrame hero, ArtDemoActorFrame[] effects, Rectangle region)
+        {
+            int source = 0, covered = 0;
+            ArtDemoActorFrame[] front = hero == null ? effects : effects.Where(e => e.ZOrder < hero.ZOrder).ToArray();
+            if (hero != null)
+            {
+                region = Rectangle.Intersect(region, new Rectangle(Point.Empty, hero.Frame.Size));
+                for (int y = region.Top; y < region.Bottom; y++) for (int x = region.Left; x < region.Right; x++)
+                {
+                    if (hero.Frame.GetPixel(x, y).A < 20) continue;
+                    source++; int sx = hero.Bounds.X + x, sy = hero.Bounds.Y + y;
+                    foreach (ArtDemoActorFrame effect in front)
+                        if (effect.Bounds.Contains(sx, sy) && effect.Frame.GetPixel(sx - effect.Bounds.X, sy - effect.Bounds.Y).A >= 20) { covered++; break; }
+                }
+            }
+            Check(source > 0 && covered == 0, label + ": zero actual-Z foreground-effect coverage of full original alpha; covered=" + covered + "/" + source);
+            return new { fixedHeroLocalBounds = region.ToString(), originalAlphaPixels = source, coveredPixels = covered, fraction = source == 0 ? 1 : covered / (double)source, foregroundEffectCount = front.Length };
         }
         static double CoveredFraction(ArtDemoActorFrame victim, ArtDemoActorFrame[] others, Rectangle region)
         {
@@ -218,17 +273,36 @@ namespace NetBunny
             }
             return total == 0 ? 1 : covered / (double)total;
         }
-        static IEnumerable<Point> OpaquePoints(ArtDemoActorFrame actor)
+        static bool OwnedComposite(ArtDemoActorFrame actor, IList<ArtDemoActorFrame> actors, int x, int y, Color source, out Color expected)
+        {
+            expected = Color.Empty; IntPtr hit = IntPtr.Zero;
+            foreach (ArtDemoActorFrame lower in actors.Where(a => a.ZOrder > actor.ZOrder && a.Bounds.Contains(x, y)).OrderByDescending(a => a.ZOrder))
+            {
+                Color pixel = lower.Frame.GetPixel(x - lower.Bounds.X, y - lower.Bounds.Y);
+                if (pixel.A == 255 && (lower.Role == "hero" || lower.Role == "enemy")) expected = Color.FromArgb(pixel.R, pixel.G, pixel.B);
+                else if (!expected.IsEmpty) expected = Over(pixel, expected);
+                if (pixel.A >= 20 && !lower.Window.PassThrough) hit = lower.Window.Handle;
+            }
+            if (expected.IsEmpty || hit == IntPtr.Zero || RootAt(x, y) != hit) return false;
+            expected = Over(source, expected); return true;
+        }
+        static Color Over(Color a, Color b)
+        {
+            int inverse = 255 - a.A;
+            return Color.FromArgb((a.R * a.A + b.R * inverse + 127) / 255, (a.G * a.A + b.G * inverse + 127) / 255, (a.B * a.A + b.B * inverse + 127) / 255);
+        }
+        static IEnumerable<Point> OpaquePoints(ArtDemoActorFrame actor, bool includeTranslucent)
         {
             for (int y = 0; y < actor.Frame.Height; y += 2)
                 for (int x = 0; x < actor.Frame.Width; x += 2)
-                    if (actor.Frame.GetPixel(x, y).A >= 245) yield return new Point(x, y);
+                    if (actor.Frame.GetPixel(x, y).A >= (includeTranslucent ? 1 : 245)) yield return new Point(x, y);
         }
         void Finish(string error)
         {
             if (finished) return; finished = true; timer.Stop();
             if (error != null) errors.Add(error);
-            Check(captured8 && captured12 && captures.Count == 2, "Both actual 8s/12s native desktop observations were retained.");
+            Check(capturedNaturalEffect && captured8 && captured12 && captures.Count == 3, "Natural effect after 4s and actual 8s/12s native desktop observations were all retained.");
+            Check(capturesWithVisibleEffect >= 1, "At least one retained native screenshot contains an actual production effect with the unchanged pixel/root gates satisfied.");
             Check(GetForegroundWindow() == foreground, "Foreground before/after the complete observation is identical.");
             Check(game.DesktopAcceptanceMaintenanceOff() && game.DesktopRealWorkIdle && !owner.Visible, "All maintenance/scans remain off and the host remains hidden.");
             Sample(); report["finalState"] = State(); report["privateFiveSavesSucceeded"] = game.DesktopSaveNow();
@@ -243,6 +317,7 @@ namespace NetBunny
             report["foregroundAfter"] = GetForegroundWindow().ToInt64(); report["cpuObservationMs"] = self.TotalProcessorTime.TotalMilliseconds - cpuStart;
             report["averageLogicalCoreFraction"] = wall.Elapsed.TotalSeconds <= 0 ? 0 : (self.TotalProcessorTime.TotalMilliseconds - cpuStart) / wall.Elapsed.TotalMilliseconds;
             report["captureValidationCpuMs"] = captureCpuMs; report["captureValidationWallSeconds"] = captureWallSeconds;
+            report["capturesWithVisibleEffect"] = capturesWithVisibleEffect; report["expectedCaptures"] = 3;
             report["cpuScope"] = "Process CPU includes fixture capture/validation. The approximately one-second samples before each capture and explicit capture costs distinguish that work from production Tick/Move; no eight-hour or baseline performance claim.";
             report["resourcePeaks"] = new { cumulativeCpuMs = peakCpu, gdi = peakGdi, user = peakUser, handles = peakHandles, sampleInterval = "about one wall-clock second plus start/end; short observation only" };
             File.WriteAllText(Path.Combine(output, "crowding-native.json"), new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 }.Serialize(report));

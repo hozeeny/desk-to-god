@@ -1420,11 +1420,24 @@ namespace NetBunny
             StrikeTarget(target, clock.Elapsed.TotalSeconds);
         }
 
+        private PointF CombatEffectAnchor(double actorX, double actorY, Size size, PointF legacy)
+        {
+            if (!IsolatedDesktop && !artDemoRuntime) return legacy;
+            float scale = Math.Min(size.Width / 220f, size.Height / 220f);
+            // Same uniform canvas mapping as the new renderer. Melee effects
+            // meet at waist/leg height instead of travelling through the face.
+            return new PointF((float)actorX + size.Width / 2f, (float)actorY + (size.Height - 220 * scale) / 2 + 150 * scale);
+        }
         private void StrikeTarget(AdventureEnemy target, double now)
         {
             attackAnimation = 1;
             if (battle.Weapon.Id == "blackhole") { blackholeUntil = now + 1.1; blackholeX = target.X; blackholeY = target.Y; }
-            if ((!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing))) effects.Fire(new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale), new PointF((float)target.X + EnemySize(target).Width / 2f, (float)target.Y + EnemySize(target).Height * .47f), battle.Weapon.Id, displayScale);
+            if ((!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing)))
+            {
+                Size size = EnemySize(target);
+                effects.Fire(CombatEffectAnchor(x, y, HeroSize, new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale)),
+                    CombatEffectAnchor(target.X, target.Y, size, new PointF((float)target.X + size.Width / 2f, (float)target.Y + size.Height * .47f)), battle.Weapon.Id, displayScale);
+            }
             int inventoryBefore = battle.Progress.Inventory.Count;
             int targetHealthBefore = target.Health;
             List<AdventureEnemy> killed = battle.Strike(target);
@@ -1641,7 +1654,12 @@ namespace NetBunny
             battle.Damage(incoming);
             RecordDesktopIncomingHit(enemy, healthBefore, unblockedIncoming, blocked);
             if (battle.Progress.Dead) RecordDesktopEvent("气血耗尽 · 入定调息后自动恢复，历练保留");
-            if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled && (!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing))) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
+            if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled && (!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing)))
+            {
+                Size size = EnemySize(enemy);
+                effects.Fire(CombatEffectAnchor(enemy.X, enemy.Y, size, new PointF((float)enemy.X + size.Width / 2f, (float)enemy.Y + size.Height / 2f)),
+                    CombatEffectAnchor(x, y, HeroSize, new PointF((float)x + HeroSize.Width / 2f, (float)y + HeroSize.Height / 2f)), enemy.BossWeapon, displayScale);
+            }
         }
         private static void FaceEnemy(AdventureEnemy enemy, double dx)
         {
@@ -1792,7 +1810,9 @@ namespace NetBunny
                     AdventureEnemy focus = battle.Target, dragged = battle.Enemies.FirstOrDefault(e => e.Dragging);
                     if (focus != null) enemyWindows.TryGetValue(focus.Id, out selected);
                     if (dragged != null) enemyWindows.TryGetValue(dragged.Id, out held);
-                    KnightLayeredWindow.PrioritizeDesktopActors(new[] { held, heroWindow, selected }, new[] { heroWindow }.Concat(enemyWindows.Values).ToArray());
+                    KnightLayeredWindow[] effectWindows = effects.ActiveWindows;
+                    KnightLayeredWindow.PrioritizeDesktopActors(new[] { held, heroWindow }.Concat(effectWindows.Reverse()).Concat(new[] { selected }).ToArray(),
+                        new[] { heroWindow }.Concat(enemyWindows.Values).Concat(effectWindows).ToArray());
                 }
                 foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", HeroStage = ArtDemoHeroStage, Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }
                 if (probe) PerfProbe.End(SecRenderWindows);

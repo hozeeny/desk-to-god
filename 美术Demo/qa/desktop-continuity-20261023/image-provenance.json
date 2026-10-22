@@ -1,0 +1,33 @@
+[
+  {
+    "output": "native-return-task-client.png",
+    "source_local_name": "05-restored-handbook-return-task.png",
+    "source_sha256": "9dfd80a0243178c6c83175738cd246e7763d81b2db7c45017fafb4e29d1d7044",
+    "crop_xyxy": [
+      10,
+      33,
+      477,
+      727
+    ],
+    "output_sha256": "9b29a6837bd9307215766ae531473f6f5cc9464196e84806b2c0f585eb3267f1",
+    "method": "Native opaque owned client rectangle only; original pixels, no resize, redraw, replacement background or unrelated app pixels."
+  },
+  {
+    "output": "native-cave-client.png",
+    "source_local_name": "30-dongtian-panel-on-real-desktop.png",
+    "source_sha256": "5bfadadf532408a62f1aa571d4fe9504f531d7d5cad8e1523524c92f50c04705",
+    "crop_xyxy": [
+      856,
+      44,
+      1539,
+      550
+    ],
+    "output_sha256": "f78cc7a7e87c2a1e5906f59598dc9e5c9c14a7bd7218632b598002aa0803cfb8",
+    "method": "Native opaque owned client rectangle only; original pixels, no resize, redraw, replacement background or unrelated app pixels."
+  },
+  {
+    "output": "controlled-cave-390-hidden.png",
+    "source_sha256": "f005c38e32a6ef0df7fa7fce1eb2179d20a85c976a4c700a6eab903bf86cf686",
+    "method": "Unmodified hidden native-control renderer with controlled four-field ready state; NOT an actual Windows desktop screenshot or natural harvest."
+  }
+]

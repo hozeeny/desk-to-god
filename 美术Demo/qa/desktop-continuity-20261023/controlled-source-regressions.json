@@ -1,0 +1,29 @@
+{
+  "suites": [
+    {
+      "suite": "return-tasks",
+      "checks": 28,
+      "red_failures": 21,
+      "green_failures": 0,
+      "red_run": "red-20261023-053052-696",
+      "green_run": "green-20261023-053039-921"
+    },
+    {
+      "suite": "cave-slots",
+      "checks": 42,
+      "red_failures": 17,
+      "green_failures": 0,
+      "red_run": "red-20261023-052741-047",
+      "green_run": "green-20261023-052838-071"
+    },
+    {
+      "suite": "idle-target-badge",
+      "checks": 55,
+      "red_failures": 21,
+      "green_failures": 0,
+      "red_run": "red-20261023-053001-947",
+      "green_run": "green-20261023-053108-189"
+    }
+  ],
+  "scope": "Private controlled source fixtures: cave uses synthetic ready/UTC states; effects use offscreen controlled realm and Tick dt. No natural harvest, real-time maturity, physical DPI or complete desktop gameplay claim."
+}
