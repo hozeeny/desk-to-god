@@ -1,0 +1,26 @@
+{
+  "passed": false,
+  "running": false,
+  "classification": "early exit; final report writer failed; no eight-hour result",
+  "detected_utc": "2026-10-22T13:15:31.727723+00:00",
+  "original_pid": 58344,
+  "last_report_utc": "2026-10-22T12:52:53.9609822Z",
+  "last_csv_utc": "2026-10-22T12:53:09.9474342Z",
+  "recorded_samples": 232,
+  "recorded_seconds": 2428.4503562,
+  "last_layer": "9",
+  "last_qi": "1854",
+  "last_lifetime_qi": "6774",
+  "error_evidence": "2026-10-22T12:12:41.5048988Z START 正常×1自然延续既有炼气档；10秒采样，60秒保存；仅推进至首次自然筑基、首次灵谷播种及收获；破境未成按正式资格等待60秒后重试。\n2026-10-22T12:53:18.6747458Z FINALIZE System.NullReferenceException: 未将对象引用设置到对象的实例。\n   在 NetBunny.DesktopNaturalSoak.Checkpoint(Boolean final)\n   在 NetBunny.DesktopNaturalSoak.Finish(String error)\n",
+  "last_running_report_is_stale": true,
+  "original_evidence_copy": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\natural-soak-monitor\\r1-ended-evidence",
+  "original_files_sha256": {
+    "01-natural-qishi-start.png": "48d226b157a1eced253ab4d622f4132fe892ed147620d30f49d77f49575dfe06",
+    "desktop-playthrough.log": "72d694a6e9bea86eee7602631f728c306ead4e7f235a2fa04e72d284060e6c0e",
+    "natural-performance.csv": "3b98c37cc8b2a34600f62ada328f1f1ca3a959c721bc02712ea6f190d79d8991",
+    "natural-soak.json": "6a15818fb90016dd35933d7c44b590385ffbe8105e90fa7a3e0c80a1a112aa6d",
+    "natural-soak.log": "c118371076c4f10e5e90afc1653c2a6801fe9bf6512f099454aff5ade5cfa0fa"
+  },
+  "formal_archives_unchanged": true,
+  "original_exit_trigger": "not established; no claim of user action or crash cause"
+}

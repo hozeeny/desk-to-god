@@ -1,0 +1,66 @@
+PASS message-loop-exit: fresh private Virtual session has all maintenance disabled
+PASS message-loop-exit: fresh normal mortal state; no cultivation/time seed or injection
+PASS message-loop-exit: production Start writes running=true, passed=false checkpoint
+PASS message-loop-exit: real WinForms message-loop shutdown disposed session and cleared Game
+PASS message-loop-exit: real ApplicationExit callback does not throw
+PASS message-loop-exit: final report clears running even when Game is null
+PASS message-loop-exit: premature exit cannot claim eight-hour success
+PASS message-loop-exit: final failure explains premature exit/disposed session
+PASS message-loop-exit: final checkpoint replaces stale running snapshot
+PASS message-loop-exit: final report retains private-profile provenance
+PASS message-loop-exit: unavailable controller is not reported as verified Load
+PASS message-loop-exit: real archives and consent hashes unchanged
+message-loop-exit: 12 checks, 0 failures
+PASS message-loop-exit short lifecycle child completes with truthful final report
+PASS disposed-context-exit: fresh private Virtual session has all maintenance disabled
+PASS disposed-context-exit: fresh normal mortal state; no cultivation/time seed or injection
+PASS disposed-context-exit: production Start writes running=true, passed=false checkpoint
+PASS disposed-context-exit: explicit context Dispose cleared Game before soak exit handler
+PASS disposed-context-exit: exit handler tolerates already-disposed session
+PASS disposed-context-exit: final report clears running even when Game is null
+PASS disposed-context-exit: premature exit cannot claim eight-hour success
+PASS disposed-context-exit: final failure explains premature exit/disposed session
+PASS disposed-context-exit: final checkpoint replaces stale running snapshot
+PASS disposed-context-exit: final report retains private-profile provenance
+PASS disposed-context-exit: unavailable controller is not reported as verified Load
+PASS disposed-context-exit: real archives and consent hashes unchanged
+disposed-context-exit: 12 checks, 0 failures
+PASS disposed-context-exit short lifecycle child completes with truthful final report
+PASS locked-diagnostic-log: fresh private Virtual session has all maintenance disabled
+PASS locked-diagnostic-log: fresh normal mortal state; no cultivation/time seed or injection
+PASS locked-diagnostic-log: production Start writes running=true, passed=false checkpoint
+PASS locked-diagnostic-log: diagnostic log is exclusively locked while final JSON remains writable
+PASS locked-diagnostic-log: explicit context Dispose cleared Game before soak exit handler
+PASS locked-diagnostic-log: exit handler tolerates already-disposed session
+PASS locked-diagnostic-log: final report clears running even when Game is null
+PASS locked-diagnostic-log: premature exit cannot claim eight-hour success
+PASS locked-diagnostic-log: final failure explains premature exit/disposed session
+PASS locked-diagnostic-log: final checkpoint replaces stale running snapshot
+PASS locked-diagnostic-log: final report retains private-profile provenance
+PASS locked-diagnostic-log: unavailable controller is not reported as verified Load
+PASS locked-diagnostic-log: repeated OnExit and context Dispose do not throw
+PASS locked-diagnostic-log: repeated exit/dispose retain terminal failure while diagnostic/report lock remains held
+PASS locked-diagnostic-log: real archives and consent hashes unchanged
+locked-diagnostic-log: 15 checks, 0 failures
+PASS locked-diagnostic-log short lifecycle child completes with truthful final report
+PASS locked-canonical-report: fresh private Virtual session has all maintenance disabled
+PASS locked-canonical-report: fresh normal mortal state; no cultivation/time seed or injection
+PASS locked-canonical-report: production Start writes running=true, passed=false checkpoint
+PASS locked-canonical-report: canonical checkpoint is readable but replacement/delete sharing is denied
+PASS locked-canonical-report: explicit context Dispose cleared Game before soak exit handler
+PASS locked-canonical-report: exit handler tolerates already-disposed session
+PASS locked-canonical-report: final report clears running even when Game is null
+PASS locked-canonical-report: premature exit cannot claim eight-hour success
+PASS locked-canonical-report: final failure explains premature exit/disposed session
+PASS locked-canonical-report: final checkpoint replaces stale running snapshot
+PASS locked-canonical-report: final report retains private-profile provenance
+PASS locked-canonical-report: unavailable controller is not reported as verified Load
+PASS locked-canonical-report: independent terminal failure report is persisted when canonical replacement is blocked
+PASS locked-canonical-report: locked canonical report preserves the exact last successful checkpoint
+PASS locked-canonical-report: repeated OnExit and context Dispose do not throw
+PASS locked-canonical-report: repeated exit/dispose retain terminal failure while diagnostic/report lock remains held
+PASS locked-canonical-report: real archives and consent hashes unchanged
+locked-canonical-report: 17 checks, 0 failures
+PASS locked-canonical-report short lifecycle child completes with truthful final report
+PASS all short lifecycle regressions finish within 45 seconds (each child at most 12 seconds)
+Natural soak exit regression: 5 checks, 0 failures; E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\natural-soak-exit\green-all-20261022-212537\result

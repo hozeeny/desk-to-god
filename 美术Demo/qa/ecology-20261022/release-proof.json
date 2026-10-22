@@ -1,13 +1,13 @@
 {
-  "production_source_commit": "7f9fdb980343dee3faed5e86c7b9dbc3f78bca3a",
-  "executable_sha256": "dbe7b462ce4104273bc1933b684cff230451893201d509e368e0e823aa8dc28f",
+  "production_source_commit": "6717fc1257270a201888efeb25f3426a1fb02ba3",
+  "executable_sha256": "88141393041b5dc2dcb9111ccc2bd17b40e43bbbeb9d4fedffccf790d2df54b7",
   "same_exe_in_runtime_and_soak": true,
   "old_profile_files_preserved": 240,
   "legacy_assets_equal_stable_checkout": true,
   "old27_art_pngs_unchanged": true,
   "png_total": 31,
   "rollback": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\rollback-before-ecology-20261022",
-  "long_test_status": "running; not passed",
+  "long_test_status": "r1 failed early; r2 running with new eight-hour clock",
   "source_hashes": {
     "源代码\\AdventureArt.cs": "96fe564019d1bfcb74b210e2a95563604b36d81473e23fbd8dee2a2f8dd73e4d",
     "源代码\\AdventureController.cs": "88e00c858eb05ae3e271d976503300b8f3ffd83e34b65b53aaf414584a35cea4",
@@ -31,7 +31,7 @@
     "源代码\\DesktopFeatureStyle.cs": "db02dd7573285da92701affba4d0e538d1c4a10a2bce7c3793c61b62f7dbce32",
     "源代码\\DesktopFrameCapture.cs": "b2d73f8368d7ed911680702a813f1c30e7abf8f00753fd28825d8bfb7b2d55df",
     "源代码\\DesktopMaintenance.cs": "a5f496a64f93a7042820a69470ece7a90a98f8c3a3aa58d7224ddc7895a1a7f3",
-    "源代码\\DesktopNaturalSoak.cs": "25c1cafc521141f81abc07175a4a96df4ed51586e00adb10dee5bf1600384d2e",
+    "源代码\\DesktopNaturalSoak.cs": "1ee6bd7b9fb8749d59d05315acd15c1184b0b1e0103391b47886eef6bfe861ca",
     "源代码\\DesktopPlayerView.cs": "8929555bf4af51294a0ac76f4218792cdc7443da0b23b06eebed3434aa4e42d5",
     "源代码\\DesktopPracticePanel.cs": "18b0f31efe20e0d3ffc2d0dc30dc2c475d7ffef1e1fa5ee13d2fb42656a55a44",
     "源代码\\DesktopProcessActions.cs": "27e00063d8eba7e05e90fa57e8e5ca68f67e6cb9e96ea0694a6aea8ebd60fa7d",
@@ -64,5 +64,6 @@
     "源代码\\SpeedTest.cs": "e83b10d966e20ec95ca704cbb06e4cd73682877f00b6b562e15520ae14a9e4b4",
     "源代码\\TrafficDashboard.cs": "84fc6979aa2106d295f44fbecab569eeff50d56699d6a7c87892cf5083e00985",
     "源代码\\VersionInfo.cs": "82176167a46cb6d288f0c04c4d7483ced43b868a48a1d3ec797ca94750e4faf3"
-  }
+  },
+  "last_change_scope": "soak finalization diagnostics only; gameplay and visual assets unchanged"
 }

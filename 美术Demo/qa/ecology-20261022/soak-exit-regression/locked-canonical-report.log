@@ -1,0 +1,18 @@
+﻿PASS locked-canonical-report: fresh private Virtual session has all maintenance disabled
+PASS locked-canonical-report: fresh normal mortal state; no cultivation/time seed or injection
+PASS locked-canonical-report: production Start writes running=true, passed=false checkpoint
+PASS locked-canonical-report: canonical checkpoint is readable but replacement/delete sharing is denied
+PASS locked-canonical-report: explicit context Dispose cleared Game before soak exit handler
+PASS locked-canonical-report: exit handler tolerates already-disposed session
+PASS locked-canonical-report: final report clears running even when Game is null
+PASS locked-canonical-report: premature exit cannot claim eight-hour success
+PASS locked-canonical-report: final failure explains premature exit/disposed session
+PASS locked-canonical-report: final checkpoint replaces stale running snapshot
+PASS locked-canonical-report: final report retains private-profile provenance
+PASS locked-canonical-report: unavailable controller is not reported as verified Load
+PASS locked-canonical-report: independent terminal failure report is persisted when canonical replacement is blocked
+PASS locked-canonical-report: locked canonical report preserves the exact last successful checkpoint
+PASS locked-canonical-report: repeated OnExit and context Dispose do not throw
+PASS locked-canonical-report: repeated exit/dispose retain terminal failure while diagnostic/report lock remains held
+PASS locked-canonical-report: real archives and consent hashes unchanged
+locked-canonical-report: 17 checks, 0 failures

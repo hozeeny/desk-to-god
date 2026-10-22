@@ -1,0 +1,13 @@
+﻿PASS disposed-context-exit: fresh private Virtual session has all maintenance disabled
+PASS disposed-context-exit: fresh normal mortal state; no cultivation/time seed or injection
+PASS disposed-context-exit: production Start writes running=true, passed=false checkpoint
+PASS disposed-context-exit: explicit context Dispose cleared Game before soak exit handler
+PASS disposed-context-exit: exit handler tolerates already-disposed session
+PASS disposed-context-exit: final report clears running even when Game is null
+PASS disposed-context-exit: premature exit cannot claim eight-hour success
+PASS disposed-context-exit: final failure explains premature exit/disposed session
+PASS disposed-context-exit: final checkpoint replaces stale running snapshot
+PASS disposed-context-exit: final report retains private-profile provenance
+PASS disposed-context-exit: unavailable controller is not reported as verified Load
+PASS disposed-context-exit: real archives and consent hashes unchanged
+disposed-context-exit: 12 checks, 0 failures

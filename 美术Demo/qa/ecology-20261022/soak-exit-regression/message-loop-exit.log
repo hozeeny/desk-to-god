@@ -1,0 +1,13 @@
+﻿PASS message-loop-exit: fresh private Virtual session has all maintenance disabled
+PASS message-loop-exit: fresh normal mortal state; no cultivation/time seed or injection
+PASS message-loop-exit: production Start writes running=true, passed=false checkpoint
+PASS message-loop-exit: real WinForms message-loop shutdown disposed session and cleared Game
+PASS message-loop-exit: real ApplicationExit callback does not throw
+PASS message-loop-exit: final report clears running even when Game is null
+PASS message-loop-exit: premature exit cannot claim eight-hour success
+PASS message-loop-exit: final failure explains premature exit/disposed session
+PASS message-loop-exit: final checkpoint replaces stale running snapshot
+PASS message-loop-exit: final report retains private-profile provenance
+PASS message-loop-exit: unavailable controller is not reported as verified Load
+PASS message-loop-exit: real archives and consent hashes unchanged
+message-loop-exit: 12 checks, 0 failures

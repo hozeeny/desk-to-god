@@ -1,0 +1,16 @@
+﻿PASS locked-diagnostic-log: fresh private Virtual session has all maintenance disabled
+PASS locked-diagnostic-log: fresh normal mortal state; no cultivation/time seed or injection
+PASS locked-diagnostic-log: production Start writes running=true, passed=false checkpoint
+PASS locked-diagnostic-log: diagnostic log is exclusively locked while final JSON remains writable
+PASS locked-diagnostic-log: explicit context Dispose cleared Game before soak exit handler
+PASS locked-diagnostic-log: exit handler tolerates already-disposed session
+PASS locked-diagnostic-log: final report clears running even when Game is null
+PASS locked-diagnostic-log: premature exit cannot claim eight-hour success
+PASS locked-diagnostic-log: final failure explains premature exit/disposed session
+PASS locked-diagnostic-log: final checkpoint replaces stale running snapshot
+PASS locked-diagnostic-log: final report retains private-profile provenance
+PASS locked-diagnostic-log: unavailable controller is not reported as verified Load
+PASS locked-diagnostic-log: repeated OnExit and context Dispose do not throw
+PASS locked-diagnostic-log: repeated exit/dispose retain terminal failure while diagnostic/report lock remains held
+PASS locked-diagnostic-log: real archives and consent hashes unchanged
+locked-diagnostic-log: 15 checks, 0 failures
