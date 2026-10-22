@@ -1,0 +1,19 @@
+PASS qi layer 11 remains below the sequel cultivation gate
+PASS qi layer 12 unlocks the sequel after its prior story and first clear
+PASS zhuji layer 1 retains access after cultivation layers reset
+PASS jindan layer 1 exceeds the qi layer 12 gate
+PASS dujie layer 1 exceeds the qi layer 12 gate
+PASS the final realm retains access to the missed story
+PASS a higher realm cannot bypass the prior story
+PASS a higher realm cannot bypass the first-clear requirement
+PASS the original qi gate also keeps the prior-story requirement
+PASS the original qi gate also keeps the first-clear requirement
+PASS an already completed sequel never becomes replayable after breakthrough
+PASS returning to the atrium after zhuji presents prior-choice branch 0
+PASS the calm branch still grants one mirror-heart scroll and 60 qi after zhuji
+PASS the higher-realm sequel records its existing one-time reward ledger
+PASS returning to the atrium after zhuji presents prior-choice branch 1
+PASS the broken-mirror branch still grants two crystals and 45 qi after zhuji
+PASS the higher-realm sequel records its existing one-time reward ledger
+Lingyu: 74 checks passed (realm gating, idempotent settlement, archive fixture, mirage full run, interrupted fights, jiyuan chains).
+Lingyu realm gates: 17 checks, 0 failures. Pure logic only; no GUI, natural archives or natural-time advancement.

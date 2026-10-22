@@ -14,6 +14,10 @@ namespace NetBunny
         readonly DesktopDemoSession session;
         readonly Label objective = new Label(), stats = new Label(), hint = new Label(), notice = new Label();
         readonly Label attackState = new Label(), blockState = new Label(), cultivation = new Label(), weaponInfo = new Label(), techniqueInfo = new Label();
+        readonly Label weaponProgress = new Label();
+        readonly PictureBox weaponPreview = new PictureBox();
+        readonly FlowLayoutPanel weaponPreviewRow = new FlowLayoutPanel();
+        readonly Button equipWeapon = new Button();
         readonly Button strike = new Button(), block = new Button(), awaken = new Button(), automatic = new Button(), practice = new Button();
         readonly Button nextAction = new Button();
         readonly FlowLayoutPanel combatActions = new FlowLayoutPanel();
@@ -93,10 +97,14 @@ namespace NetBunny
             var privacy = TextLine("百业默认关闭；由你在道碑中选择是否开启。\n收起所有面板，修士仍会在桌面继续修炼。"); training.Controls.Add(privacy);
 
             FlowLayoutPanel bag = Column("行囊与设置");
-            Section(bag, "已有兵器"); weapons.DropDownStyle = ComboBoxStyle.DropDownList; weapons.AccessibleName = "已拥有兵器";
+            Section(bag, "已有兵器"); StyleLabel(weaponProgress); bag.Controls.Add(weaponProgress);
+            weapons.DropDownStyle = ComboBoxStyle.DropDownList; weapons.AccessibleName = "已拥有兵器";
             weapons.SelectedIndexChanged += delegate { UpdateWeaponDescription(); }; bag.Controls.Add(weapons);
-            StyleLabel(weaponInfo); bag.Controls.Add(weaponInfo);
-            Add(bag, "装备所选兵器", delegate { Choice choice = weapons.SelectedItem as Choice; if (choice != null) session.Game.ChooseWeapon(choice.Id); });
+            weaponPreviewRow.AutoSize = true; weaponPreviewRow.AutoSizeMode = AutoSizeMode.GrowAndShrink; weaponPreviewRow.WrapContents = false; weaponPreviewRow.Margin = Padding.Empty;
+            weaponPreview.Size = new Size(64, 64); weaponPreview.SizeMode = PictureBoxSizeMode.Zoom; weaponPreview.Margin = new Padding(0, 0, 10, 6); weaponPreview.AccessibleName = "所选兵器原画";
+            StyleLabel(weaponInfo); weaponPreviewRow.Controls.Add(weaponPreview); weaponPreviewRow.Controls.Add(weaponInfo); bag.Controls.Add(weaponPreviewRow);
+            Configure(equipWeapon, "装备所选兵器", delegate { Choice choice = weapons.SelectedItem as Choice; if (choice != null) session.Game.ChooseWeapon(choice.Id); });
+            equipWeapon.Name = "equip-weapon"; bag.Controls.Add(equipWeapon);
             Section(bag, "材料与洞天储物");
             materials.AutoSize = true; materials.FlowDirection = FlowDirection.TopDown; materials.WrapContents = false; bag.Controls.Add(materials);
             Section(bag, "桌面位置");
@@ -160,11 +168,15 @@ namespace NetBunny
             string key = String.Join("|", p.Inventory.ToArray()) + ":" + p.WeaponId;
             if (key != inventoryKey)
             {
+                Choice selected = weapons.SelectedItem as Choice;
+                string previewId = selected != null && p.Inventory.Contains(selected.Id) ? selected.Id : p.WeaponId;
                 inventoryKey = key; weapons.Items.Clear();
                 foreach (string id in p.Inventory) weapons.Items.Add(new Choice { Id = id, Text = WeaponName(id) + (id == p.WeaponId ? " · 已装备" : "") });
-                for (int i = 0; i < weapons.Items.Count; i++) if (((Choice)weapons.Items[i]).Id == p.WeaponId) weapons.SelectedIndex = i;
+                for (int i = 0; i < weapons.Items.Count; i++) if (((Choice)weapons.Items[i]).Id == previewId) weapons.SelectedIndex = i;
                 if (weapons.SelectedIndex < 0 && weapons.Items.Count > 0) weapons.SelectedIndex = 0;
             }
+            weaponProgress.Text = DesktopWeaponCatalog.ProgressText(p);
+            UpdateWeaponDescription();
             UpdateMaterials(); ResizeColumns();
         }
 
@@ -190,10 +202,16 @@ namespace NetBunny
         }
         void UpdateWeaponDescription()
         {
-            Choice choice = weapons.SelectedItem as Choice; if (choice == null) return;
+            Choice choice = weapons.SelectedItem as Choice;
+            if (choice == null) { equipWeapon.Enabled = false; weaponInfo.Text = ""; weaponPreview.Image = null; return; }
             AdventureWeapon w = AdventureWeapon.Find(choice.Id);
-            weaponInfo.Text = "基础威力 " + w.Damage + " · 出招间隔 " + w.Cooldown.ToString("0.00") + "秒\n"
-                + (w.Range <= 160 ? "近身剑招" : "远程御剑") + (w.Area ? " · 伤及已选中的多个目标" : " · 单体出招") + "\n实际伤害受境界与敌人状态影响；武器外观采用三阶共用剑形。";
+            DesktopWeaponInfo info = DesktopWeaponCatalog.Find(choice.Id);
+            bool equipped = session.Game.Battle.Progress.WeaponId == choice.Id;
+            weaponInfo.Text = info.Name + (equipped ? " · 已装备" : " · 预览") + "\n基础威力 " + w.Damage + " · 出招间隔 " + w.Cooldown.ToString("0.00") + "秒\n"
+                + info.Role + (w.Area ? " · 群攻战斗队列中的妖物" : " · 单体出招") + "\n实际伤害另计境界、历练和器物增益。";
+            weaponPreview.Image = Thumbnail(info.ImageFile);
+            equipWeapon.Text = equipped ? "已装备「" + info.Name + "」" : "装备「" + info.Name + "」";
+            equipWeapon.Enabled = !equipped && session.Game.Battle.Progress.Inventory.Contains(choice.Id);
         }
         void UpdateTechniqueDescription()
         { Choice choice = techniques.SelectedItem as Choice; if (choice != null) techniqueInfo.Text = CultivationTechnique.Find(choice.Id).Description; }
@@ -211,15 +229,22 @@ namespace NetBunny
         void MaterialRow(string name, int count, string image)
         {
             var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 5) };
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ArtDemoAssets", image);
-            if (File.Exists(path))
+            Image thumbnail = Thumbnail(image);
+            if (thumbnail != null)
             {
-                // UI thumbnails own their bitmap; no file lock or per-refresh allocation.
-                Image thumbnail = ownedImages.FirstOrDefault(i => (string)i.Tag == image);
-                if (thumbnail == null) { using (Image source = Image.FromFile(path)) thumbnail = new Bitmap(source); thumbnail.Tag = image; ownedImages.Add(thumbnail); }
                 row.Controls.Add(new PictureBox { Image = thumbnail, SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(30, 30), Margin = new Padding(0, 0, 10, 0) });
             }
             var label = TextLine(name + " × " + count); label.Margin = new Padding(0, 4, 0, 0); row.Controls.Add(label); materials.Controls.Add(row);
+        }
+        Image Thumbnail(string image)
+        {
+            Image thumbnail = ownedImages.FirstOrDefault(i => (string)i.Tag == image);
+            if (thumbnail != null) return thumbnail;
+            string root = Environment.GetEnvironmentVariable(ArtDemoPack.EnvironmentVariable);
+            if (String.IsNullOrEmpty(root)) root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ArtDemoAssets");
+            string path = Path.Combine(root, image); if (!File.Exists(path)) return null;
+            using (Image source = Image.FromFile(path)) thumbnail = new Bitmap(source);
+            thumbnail.Tag = image; ownedImages.Add(thumbnail); return thumbnail;
         }
         FlowLayoutPanel Column(string title)
         {
@@ -238,6 +263,7 @@ namespace NetBunny
                 strike.Width = Math.Max(115, (width - 8) / 2); block.Width = strike.Width;
                 strike.Margin = new Padding(0, 0, 6, 6);
                 foreach (Control control in targets.Controls) control.Width = Math.Max(220, width - SystemInformation.VerticalScrollBarWidth - 4);
+                weaponInfo.MaximumSize = new Size(Math.Max(150, width - weaponPreview.Width - weaponPreview.Margin.Horizontal - weaponInfo.Margin.Horizontal - 2), 0);
             }
         }
         static void StyleLabel(Label label) { label.AutoSize = true; label.Margin = new Padding(0, 0, 0, 8); label.MaximumSize = new Size(400, 0); }
@@ -247,7 +273,7 @@ namespace NetBunny
         void Configure(Button button, string text, Action action) { button.Text = text; button.Height = 35; button.Margin = new Padding(0, 0, 0, 6); StyleButton(button); button.Click += delegate { action(); UpdateState(); }; }
         static void StyleButton(Button button) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderColor = Color.FromArgb(154, 166, 142); button.BackColor = Color.FromArgb(251, 248, 239); button.ForeColor = Ink; button.Cursor = Cursors.Hand; }
         internal static string WeaponName(string id)
-        { switch (id) { case "spear": return "灵铁短剑"; case "greatsword": return "青钢重剑"; case "wave": return "破空剑气"; case "laser": return "流光飞剑"; case "boomerang": return "月轮飞刃"; case "blackhole": return "归墟剑阵"; case "automaton": return "御剑符"; default: return "行囊兵器"; } }
+        { return DesktopWeaponCatalog.Find(id).Name; }
         sealed class Choice { internal string Id, Text; public override string ToString() { return Text; } }
         protected override void Dispose(bool disposing)
         { if (disposing) { refresh.Stop(); refresh.Dispose(); foreach (Image image in ownedImages) image.Dispose(); ownedImages.Clear(); } base.Dispose(disposing); }

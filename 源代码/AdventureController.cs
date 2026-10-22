@@ -1551,14 +1551,17 @@ namespace NetBunny
         private void AttackHero(AdventureEnemy enemy, bool canFight, double dt)
         {
             if (!canFight || DesktopMortalUnengaged(enemy) || enemy.Dragging || enemy.Cleaning || enemy.VisualDefeated || enemy.Defeated || enemy.Failed || enemy.IsDiskWarning) { enemy.AttackTime = 0; return; }
-            double cooldown = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2.4 + AdventureWeapon.Find(enemy.BossWeapon).Cooldown : enemy.IsBoss ? 1.8 : AdventureMonster.Find(enemy.MonsterKind).AttackCooldown;
-            if (EnemyHeroDistance(enemy) > (!String.IsNullOrEmpty(enemy.EvilTheme) ? Math.Min(300,AdventureWeapon.Find(enemy.BossWeapon).Range*.65) : enemy.IsBoss ? 105 : 86) * displayScale) { enemy.AttackTime = 0; return; }
+            double cooldown = EnemyAttackCooldown(enemy);
+            if (EnemyHeroDistance(enemy) > EnemyAttackReach(enemy) * displayScale) { enemy.AttackTime = 0; return; }
             enemy.AttackTime += dt;
             if (enemy.AttackTime < cooldown) return;
             enemy.AttackTime = 0; enemy.VisualDirty = true; enemy.AttackFlash = 1;
             int incoming = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2 + enemy.SpawnLevel / 12 : enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage;
-            if (clock.Elapsed.TotalSeconds < blockUntil) { incoming = Math.Max(1, incoming / 5); battle.LastReward = "格挡成功：来势被卸去大半（伤害 " + incoming + "）"; }
+            int healthBefore = battle.Progress.Health, unblockedIncoming = incoming;
+            bool blocked = clock.Elapsed.TotalSeconds < blockUntil;
+            if (blocked) { incoming = Math.Max(1, incoming / 5); if (!IsolatedDesktop) battle.LastReward = "格挡成功：来势被卸去大半（伤害 " + incoming + "）"; }
             battle.Damage(incoming);
+            RecordDesktopIncomingHit(enemy, healthBefore, unblockedIncoming, blocked);
             if (battle.Progress.Dead) RecordDesktopEvent("气血耗尽 · 入定调息后自动恢复，历练保留");
             if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled && (!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing))) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
         }
@@ -1712,10 +1715,11 @@ namespace NetBunny
         }
         private void ShowLoot(string weaponId, double px, double py)
         {
+            if (IsolatedDesktop) RecordDesktopEvent("获得「" + DesktopWeaponCatalog.Find(weaponId).Name + "」 · 已入行囊，可在行囊与设置中装备");
             if (IsolatedDesktop && (!desktopActorsVisible || desktopTestAdvancing)) return;
             while (lootViews.Count >= 2) { lootViews[0].Window.Dispose(); lootViews.RemoveAt(0); }
             KnightLayeredWindow window = NewWindow("装备掉落 · 已放入背包"); window.PassThrough = true;
-            lootViews.Add(new LootView { Window = window, WeaponId = weaponId, Label = "获得 " + AdventureWeapon.Find(weaponId).Name, X = Math.Min(area.Right - 165, Math.Max(area.Left + 5, px)), Y = Math.Min(area.Bottom - 160, Math.Max(area.Top + 70, py)) });
+            lootViews.Add(new LootView { Window = window, WeaponId = weaponId, Label = "获得 " + (IsolatedDesktop ? DesktopWeaponCatalog.Find(weaponId).Name : AdventureWeapon.Find(weaponId).Name), X = Math.Min(area.Right - 165, Math.Max(area.Left + 5, px)), Y = Math.Min(area.Bottom - 160, Math.Max(area.Top + 70, py)) });
         }
         private void ClearLoot() { foreach (LootView loot in lootViews) loot.Window.Dispose(); lootViews.Clear(); }
         private void RemoveUnusedWindows(HashSet<string> visible)
@@ -1805,7 +1809,12 @@ namespace NetBunny
         internal bool IsScanning { get { return scanBusy; } }
         internal void ChooseTheme(string code) { if (demonstrationOnly || IsolatedDesktop) { demoTheme = code; RenderWorld(true); return; } if (IsDemo) return; battle.Progress.ThemeMode = code; region.SelectMode(code); battle.Progress.LastThemeCode = region.CurrentCode; region.RefreshAsync(); Save(); RenderWorld(true); }
         internal void RefreshRegion() { if (!demonstrationOnly && !IsolatedDesktop && !IsDemo) region.RequestRefresh(); }
-        internal void ChooseWeapon(string id) { if (IsDemo || !battle.Progress.Inventory.Contains(id)) return; battle.Progress.WeaponId = id; Save(); }
+        internal void ChooseWeapon(string id)
+        {
+            if (IsDemo || !battle.Progress.Inventory.Contains(id) || battle.Progress.WeaponId == id) return;
+            battle.Progress.WeaponId = id; Save();
+            if (IsolatedDesktop) { RecordDesktopEvent("装备「" + DesktopWeaponCatalog.Find(id).Name + "」 · " + DesktopWeaponCatalog.Find(id).Role); RenderWorld(true); }
+        }
         internal void SetAutomatic(bool value) { SetAutoPlan(value); }
         public void SetAutoPlan(bool value)
         {

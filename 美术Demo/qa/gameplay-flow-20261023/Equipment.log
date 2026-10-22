@@ -1,0 +1,19 @@
+PASS previewing another owned weapon does not equip it
+PASS a real manual strike and level reward earn the next weapon in the hidden fixture
+PASS earning another weapon preserves the player's in-progress preview
+PASS a hidden-actor weapon reward remains discoverable in handbook history with its canonical name
+PASS a later transient battle message cannot erase the equipment discovery event
+PASS weapon preview identifies the actual illustrated weapon instead of an obsolete shared-sword claim
+PASS owned count and real current equipment remain visible while previewing something else
+PASS preview uses the same controlled heavy-sword illustration as the actor renderer
+PASS equip action explicitly names the still-selected preview
+PASS the previewed weapon actually becomes the battle weapon after a concurrent drop
+PASS equipped preview cannot misleadingly offer another equip action
+PASS equipment change records the real selected identity
+PASS actual equipment change persists to the private production archive
+PASS ordinary panel refreshes preserve a new preview independently of current equipment
+PASS stable preview refreshes reuse their owned image instead of allocating each tick
+PASS the existing ownership gate rejects unowned equipment
+PASS equipment tests keep all windows hidden and all real maintenance workers absent
+PASS controller reconstruction retains both the earned weapon and the player's actual equipment choice
+Desktop equipment flow: 18 checks, 0 failures; hidden/private fixtures only.

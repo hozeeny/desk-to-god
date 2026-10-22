@@ -47,5 +47,14 @@
     "public_native_crop": "07-natural-plant-native.png",
     "true_new_process_natural_restore": "pending after soak completion",
     "status": "cancelled_by_user"
+  },
+  "latest_gameplay_update": {
+    "report": "../gameplay-flow-20261023/summary.json",
+    "source_files": 58,
+    "all_baseline_results": 28,
+    "nonpassing": 0,
+    "scope": "equipment, real combat feedback and story realm gates; bounded Demo progress, not full acceptance",
+    "long_test": "PAUSED by user; no restart",
+    "executable_sha256": "fccbc858b88cca56cad762ffccf3b6999f91f1af236f842f9d5b4d88ea316ef2"
   }
 }

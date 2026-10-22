@@ -1,0 +1,87 @@
+{
+  "scope": "bounded equipment, combat-feedback and story-progression update; not complete product acceptance",
+  "executable_sha256": "fccbc858b88cca56cad762ffccf3b6999f91f1af236f842f9d5b4d88ea316ef2",
+  "archive_sha256": "653d34b9120f2ce35679803ab7de9908be82d3442da849e97275f2ae48f3844a",
+  "source_file_count": 58,
+  "all_baseline": {
+    "results": 28,
+    "nonpassing": 0
+  },
+  "equipment": {
+    "checks": 18,
+    "failures": 0,
+    "scope": "hidden private real strike/drop/UI/save and controller reconstruction fixtures; not natural acquisition"
+  },
+  "combat": {
+    "checks": 22,
+    "failures": 0,
+    "scope": "actual attack/guard logic with in-memory timing/HP fixtures; no natural progression"
+  },
+  "realm_gate": {
+    "checks": 17,
+    "legacy_lingyu_checks": 74,
+    "failures": 0,
+    "scope": "pure story gate logic, not native exploration"
+  },
+  "art": {
+    "checks": 2754,
+    "failures": 0
+  },
+  "handbook_layout": {
+    "checks": 28,
+    "failures": 0,
+    "scope": "hidden/offscreen layout only"
+  },
+  "native_equipment_x1": {
+    "passed": true,
+    "elapsed_seconds": 21.929513,
+    "clicks": 8,
+    "assertions": 37,
+    "captures": 11,
+    "real_archives_unchanged": true,
+    "source_report_sha256": "f0bcf386b496a60120018972153e8a5387fa920fbe49d1dc91f7f375b1eb8cd2",
+    "description_glyphs": "1187/1187",
+    "illustration_pixels": "366/371",
+    "scope": "exact official desktop-only EXE; pre-owned greatsword/wave plus qishi-full private fixture; scripted ComboBox selection, native equip button; real breakthrough, cave planting, mirror battle, five saves/same-process production Load; not natural growth or new-process restore",
+    "all_eleven_captures_visually_reviewed": true
+  },
+  "native_combat_x1": {
+    "passed": true,
+    "elapsed_seconds": 8.211946,
+    "clicks": 2,
+    "health_before": 100,
+    "health_after": 99,
+    "guarded_damage": 5,
+    "actual_damage": 1,
+    "notice_glyphs": "470/470",
+    "source_report_sha256": "39eebc4e41ff419011fc9a0115a4fe22827d9245683eb1088b395e486b1bf7e3",
+    "all_three_captures_visually_reviewed": true,
+    "scope": "separate runner built from gameplay source; fresh private mortal real x1 native selection/guard and attack HP loss; not a ten-kill run, not exact delivered EXE"
+  },
+  "rejected_evidence": [
+    "first equipment screenshot had new native button but stale PictureBox/blank managed Label; rejected and capture split into separate phase with native pixel verification",
+    "native combat r1 handbook children unpainted; original machine-success report preserved with explicit visual-review rejection; r2 requires actual notice glyphs",
+    "official final native r1 failed hero pixel threshold .814 because AMD system update notification covered legs; original failed report retained, no other application closed",
+    "first layout invocation lacked fourth argument and failed before test; retained; cached older tool27 check run superseded by compiling current28 check tool"
+  ],
+  "isolation": {
+    "runtime_private_files_preserved": 240,
+    "original_assets_identical_files": 22,
+    "package_files": 63,
+    "png_files": 31,
+    "raw_other_app_captures_published": false
+  },
+  "long_test": {
+    "status": "deferred_by_user",
+    "automation": "PAUSED",
+    "eight_hours_passed": false,
+    "first_natural_harvest_verified": false
+  },
+  "remaining": [
+    "natural pacing/first harvest/long duration verification paused",
+    "mixed DPI and lock/resume not tested",
+    "current full x1 new-mortal ten-kill loop not rerun; existing earlier version evidence retained",
+    "some collected mirror materials remain collection-only; no new uses claimed",
+    "full game and product acceptance remains open"
+  ]
+}

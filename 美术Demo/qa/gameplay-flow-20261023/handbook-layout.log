@@ -1,0 +1,29 @@
+PASS fresh mortal cannot use cultivation, technique, awakening, or automatic battle early
+PASS weapon options match the real owned inventory
+PASS summary offers the actual earned awakening action
+PASS {Width=470, Height=700} tab 0 no horizontal child overflow
+PASS {Width=470, Height=700} tab 0 does not need horizontal scrolling
+PASS {Width=470, Height=700} tab 0 save-exit footer is always reachable
+PASS {Width=470, Height=700} awakening button is fully reachable by vertical scrolling
+PASS {Width=470, Height=700} tab 1 no horizontal child overflow
+PASS {Width=470, Height=700} tab 1 does not need horizontal scrolling
+PASS {Width=470, Height=700} tab 1 save-exit footer is always reachable
+PASS {Width=470, Height=700} tab 2 no horizontal child overflow
+PASS {Width=470, Height=700} tab 2 does not need horizontal scrolling
+PASS {Width=470, Height=700} tab 2 save-exit footer is always reachable
+PASS {Width=390, Height=490} tab 0 no horizontal child overflow
+PASS {Width=390, Height=490} tab 0 does not need horizontal scrolling
+PASS {Width=390, Height=490} tab 0 save-exit footer is always reachable
+PASS {Width=390, Height=490} awakening button is fully reachable by vertical scrolling
+PASS {Width=390, Height=490} tab 1 no horizontal child overflow
+PASS {Width=390, Height=490} tab 1 does not need horizontal scrolling
+PASS {Width=390, Height=490} tab 1 save-exit footer is always reachable
+PASS {Width=390, Height=490} tab 2 no horizontal child overflow
+PASS {Width=390, Height=490} tab 2 does not need horizontal scrolling
+PASS {Width=390, Height=490} tab 2 save-exit footer is always reachable
+PASS real ten-kill condition enables the awakening control
+PASS explicit UI fixture uses the real awakening transition in its private archive
+PASS actual awakening enables cultivation, techniques and automation while retiring the awakening button
+PASS constructing and inspecting all tabs never enables Baiye recognition or acknowledges privacy
+PASS layout fixture never shows any form on the desktop
+Desktop panel layout: 28 checks, 0 failures. Exports are offscreen previews only.

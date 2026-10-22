@@ -325,7 +325,7 @@ namespace NetBunny
             new JiyuanDef
             {
                 Id = "jing-wen-2", Name = "镜中问道·下", NodeId = "atrium",
-                RequiresPriorEncounter = "jing-wen-1", RequiresLayer = 12, RequiresVisits = 1,
+                RequiresPriorEncounter = "jing-wen-1", RequiresRealmIndex = 0, RequiresLayer = 12, RequiresVisits = 1,
                 Prompt = "蜃楼中庭的万镜齐鸣，映照出当日回声壁前的抉择。",
                 Choices = new[]
                 {
@@ -369,8 +369,10 @@ namespace NetBunny
                 if (def.NodeId != "*" && def.NodeId != nodeId) continue;
                 if (ctx.Lingyu.JiyuanChoices.ContainsKey(def.Id)) continue;
                 if (!String.IsNullOrEmpty(def.RequiresRoot) && ctx.SpiritRoot != def.RequiresRoot) continue;
-                if (def.RequiresRealmIndex >= 0 && ctx.RealmIndex < def.RequiresRealmIndex) continue;
-                if (def.RequiresLayer >= 0 && ctx.Layer < def.RequiresLayer) continue;
+                // 层数在破境后会重置；门槛按（大境界、层数）比较，高境界始终满足低境界门槛。
+                int requiredRealm = Math.Max(0, def.RequiresRealmIndex);
+                if (ctx.RealmIndex < requiredRealm ||
+                    (ctx.RealmIndex == requiredRealm && def.RequiresLayer >= 0 && ctx.Layer < def.RequiresLayer)) continue;
                 if (!String.IsNullOrEmpty(def.RequiresBaiyePath) &&
                     (ctx.Baiye == null || ctx.Baiye.LevelOf(def.RequiresBaiyePath) < def.RequiresBaiyeLevel)) continue;
                 if (!String.IsNullOrEmpty(def.RequiresPriorEncounter))

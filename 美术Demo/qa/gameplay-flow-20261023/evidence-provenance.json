@@ -1,0 +1,41 @@
+[
+  {
+    "output": "01-equipment-native-client.png",
+    "source": "qa/desktop-accept-gameplay-final-x1-20261023-r2/12-inventory-owned-preview.png",
+    "source_sha256": "14ff5675464f95324d3fc4327b93ed90c0324e9ec4114bc2824c6988cf8fef36",
+    "output_sha256": "46d1e2b772e18eb75581e95bb2861542883f765c21f7dfeffcd52d3ea29a2588",
+    "crop_box": [
+      8,
+      32,
+      478,
+      732
+    ],
+    "operation": "pixel-preserving crop inside own opaque panel; no compositing, native source with other applications retained locally"
+  },
+  {
+    "output": "02-guard-result-native-client.png",
+    "source": "qa/desktop-accept-combat-feedback-20261023-r2/03-guard-history-handbook.png",
+    "source_sha256": "e3bdf0b958a7a0738525aa45d8442bdde5a42d4f94625f892d574c830b8e1c66",
+    "output_sha256": "70660fc21db2c02b20d7460c6334c07b1b4e323686ef7ef2667be63159cf0065",
+    "crop_box": [
+      8,
+      32,
+      478,
+      732
+    ],
+    "operation": "pixel-preserving crop inside own opaque panel; no compositing, native source with other applications retained locally"
+  },
+  {
+    "output": "03-cave-native-client.png",
+    "source": "qa/desktop-accept-gameplay-final-x1-20261023-r2/30-dongtian-panel-on-real-desktop.png",
+    "source_sha256": "fd8aa78cfc1b00ebda9e74b0f0afa66ef84195eeaeba187453b193cc88b1ea09",
+    "output_sha256": "f7bd5ce1e1327c2680579941433f9cb7ec59d29bade0d20fa0dabb46b8a0dce0",
+    "crop_box": [
+      40,
+      60,
+      690,
+      540
+    ],
+    "operation": "pixel-preserving crop inside own opaque panel; no compositing, native source with other applications retained locally"
+  }
+]

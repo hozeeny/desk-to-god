@@ -37,6 +37,8 @@ namespace NetBunny
         private double nextAction, autoStarted, normalStarted = -1, startEnemyWaitSince = -1, nextPerformance, previousCpu, previousSample, movieUntil, nextMovie;
         private long scoreBeforeAuto, qiBeforeAuto;
         private string targetId, movieName, switchOtherId;
+        private string equipmentTargetId;
+        private double equipmentPreviewSince;
         private AdventureController Game { get { return session.Game; } }
         internal DesktopDemoAcceptance(DesktopDemoSession session, string output, bool normalSpeed = false)
         { this.session = session; this.output = output; this.normalSpeed = normalSpeed; }
@@ -295,13 +297,68 @@ namespace NetBunny
                     Assert(stele != null && Game.Baiye.Mode == 0 && !Game.BaiyeExplained, "手札真实按钮打开百业道碑，未开启识别或代替玩家确认隐私");
                     CapturePanel(stele, "11-baiye-from-handbook");
                     session.ClosePanels();
-                    if (Game.Cultivation.RealmIndex == 0) { session.OpenPanel("breakthrough"); phase = 20; }
-                    else { OpenCave(); phase = 30; }
-                    nextAction = now + .8;
+                    session.OpenPanel("inventory"); phase = 92; nextAction = now + .6;
+                }
+                else if (phase == 92)
+                {
+                    DesktopPracticePanel handbook = VisiblePanel<DesktopPracticePanel>();
+                    Assert(handbook != null, "行囊按需展开，已有兵器可查看独立原画与真实属性");
+                    equipmentTargetId = Game.Battle.Progress.Inventory.FirstOrDefault(id => id != Game.Battle.Progress.WeaponId);
+                    if (equipmentTargetId == null)
+                    {
+                        CapturePanel(handbook, "12-inventory-owned-weapon");
+                        Log("EQUIPMENT only one owned weapon; no equipment grant or selection injected by acceptance.");
+                        ContinueAfterEquipment(now); return;
+                    }
+                    // Selection is explicit UI setup using an already-owned ID;
+                    // the following equip action itself uses native mouse input.
+                    ComboBox choices = (ComboBox)typeof(DesktopPracticePanel).GetField("weapons", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handbook);
+                    for (int i = 0; i < choices.Items.Count; i++)
+                        if ((string)choices.Items[i].GetType().GetField("Id", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(choices.Items[i]) == equipmentTargetId) choices.SelectedIndex = i;
+                    handbook.UpdateState();
+                    Button equip = handbook.Controls.Find("equip-weapon", true).OfType<Button>().Single();
+                    Assert(equip.Enabled && equip.Text.Contains(DesktopWeaponCatalog.Find(equipmentTargetId).Name), "装备按钮指向已拥有且正在预览的同一兵器");
+                    // Managed Label/PictureBox paint is queued. Give the message
+                    // loop a turn, then verify the actual desktop pixels below.
+                    equipmentPreviewSince = now; phase = 94; nextAction = now + .1;
+                }
+                else if (phase == 94)
+                {
+                    DesktopPracticePanel handbook = VisiblePanel<DesktopPracticePanel>();
+                    if (handbook == null) throw new InvalidOperationException("兵器预览手札已关闭。");
+                    var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                    Label description = (Label)typeof(DesktopPracticePanel).GetField("weaponInfo", flags).GetValue(handbook);
+                    PictureBox picture = (PictureBox)typeof(DesktopPracticePanel).GetField("weaponPreview", flags).GetValue(handbook);
+                    bool correctState = description.Text.Contains(DesktopWeaponCatalog.Find(equipmentTargetId).Name)
+                        && picture.Image != null && (string)picture.Image.Tag == DesktopWeaponCatalog.Find(equipmentTargetId).ImageFile;
+                    if (!correctState || !NativePreviewContentMatches(description, true) || !NativePreviewContentMatches(picture, false))
+                    {
+                        if (now - equipmentPreviewSince > 5) throw new InvalidOperationException("兵器预览图文未在真实桌面完成绘制，拒绝使用旧图或空白说明验收。");
+                        return;
+                    }
+                    Assert(true, "所选兵器说明字形和独立原画均与真实桌面像素匹配，拒绝旧图及空白预览");
+                    CapturePanel(handbook, "12-inventory-owned-preview");
+                    Button equip = handbook.Controls.Find("equip-weapon", true).OfType<Button>().Single();
+                    if (ClickControl(equip)) { phase = 93; nextAction = now + .6; }
+                }
+                else if (phase == 93)
+                {
+                    Assert(Game.Battle.Progress.WeaponId == equipmentTargetId && Game.Battle.Weapon.Id == equipmentTargetId, "原生点击装备后实际战斗使用所选兵器");
+                    Assert(Game.ReadDesktopPlayerView().RecentEvents.Any(s => s.Contains("装备") && s.Contains(DesktopWeaponCatalog.Find(equipmentTargetId).Name)), "换装结果进入修行记事，不依赖短暂掉落浮窗");
+                    session.ClosePanels();
+                    Capture("13-equipped-weapon-on-real-desktop", false);
+                    ContinueAfterEquipment(now);
                 }
             }
             catch (Exception error) { Finish(false, error.ToString()); }
             finally { busy = false; }
+        }
+        private void ContinueAfterEquipment(double now)
+        {
+            session.ClosePanels();
+            if (Game.Cultivation.RealmIndex == 0) { session.OpenPanel("breakthrough"); phase = 20; }
+            else { OpenCave(); phase = 30; }
+            nextAction = now + .8;
         }
         private void MortalCombat(double now)
         {
@@ -596,6 +653,27 @@ namespace NetBunny
                 bitmap.Save(Path.Combine(output, name + ".png"), ImageFormat.Png);
             captures.Add(new Dictionary<string, object> { { "image", name + ".png" }, { "bounds", panel.Bounds.ToString() }, { "purpose", "on-demand panel reached through native input; no actor-visibility claim for this panel capture" }, { "capture", "native Windows desktop pixels" } });
             Log("CAPTURE real on-demand panel " + name);
+        }
+        private bool NativePreviewContentMatches(Control control, bool textOnly)
+        {
+            control.Refresh();
+            int samples = 0, matches = 0;
+            using (Bitmap expected = new Bitmap(control.Width, control.Height))
+            using (Bitmap actual = DesktopFrameCapture.CaptureRegion(new Rectangle(control.PointToScreen(Point.Empty), control.Size), true))
+            {
+                control.DrawToBitmap(expected, new Rectangle(Point.Empty, control.Size));
+                for (int y = 0; y < expected.Height; y++) for (int x = 0; x < expected.Width; x++)
+                {
+                    Color source = expected.GetPixel(x, y), key = textOnly ? control.ForeColor : control.BackColor;
+                    int keyDifference = Math.Abs(source.R - key.R) + Math.Abs(source.G - key.G) + Math.Abs(source.B - key.B);
+                    if (textOnly ? keyDifference > 25 : keyDifference < 80) continue;
+                    Color pixel = actual.GetPixel(x, y); samples++;
+                    if (Math.Abs(pixel.R - source.R) + Math.Abs(pixel.G - source.G) + Math.Abs(pixel.B - source.B) < 80) matches++;
+                }
+            }
+            bool presented = samples >= 60 && matches >= samples * .8;
+            if (presented) Log("PRESENTED equipment " + (textOnly ? "description glyphs" : "illustration") + " " + matches + "/" + samples);
+            return presented;
         }
         private Rectangle CaptureBounds(IList<ArtDemoActorFrame> actors, bool includePanels)
         {

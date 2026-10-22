@@ -1,0 +1,23 @@
+PASS ordinary hits retain their original six damage and attack reset
+PASS an actual incoming hit appears in both the notice and recent events
+PASS guard keeps its original one-point incoming hit
+PASS successful guard reports five prevented and one actually lost health
+PASS feedback preserves the one-second guard window and ten-second cooldown
+PASS guard feedback uses actual realm defense rounding instead of raw incoming damage
+PASS prevented health loss is capped by the health the hero really had
+PASS a lethal guarded hit never invents a successful guard or zero damage
+PASS no lost health and no prevented loss produce no fabricated hit result
+PASS an attack farther than the 0.6-second warning window stays quiet
+PASS the in-range enemy announces its attack at the 0.6-second boundary
+PASS the imminent warning and guard action fit the existing eighteen-character hero HUD
+PASS reading an attack warning cannot advance combat or damage the hero
+PASS an out-of-range enemy cannot warn using a stale attack timer
+PASS a dragged enemy cannot announce an attack that the engine suppresses
+PASS an unselected mortal opponent cannot announce a forbidden attack
+PASS a disabled game cannot announce an attack that will not advance
+PASS a defeated hero sees recovery instead of an incoming attack warning
+PASS the warning does not move the original attack threshold earlier
+PASS the original due hit clears its warning after the attack timer resets
+PASS boss warnings use their original 1.8-second cadence
+PASS armed boss warnings include the original weapon cooldown
+Desktop combat feedback: 22 checks, 0 failures. No forms, probes, saves, actors or natural-time advancement.

@@ -40,6 +40,8 @@ namespace NetBunny
                     int remaining = Math.Max(0, (int)Math.Ceiling(CultivationBalance.ReviveRestSeconds * CultivationCombatPower.ReviveFactor(cultivation) * DongtianReviveFactor() - battle.DeathTime));
                     return "调息 " + remaining + "秒 · 自动恢复";
                 }
+                string incoming = DesktopIncomingAttackHint();
+                if (incoming.Length > 0) return "即将受击" + (clock.Elapsed.TotalSeconds < blockUntil ? " · 格挡生效" : clock.Elapsed.TotalSeconds >= blockCooldownUntil ? " · 点修士格挡" : " · 格挡冷却");
                 if (cultivation.CanAwaken) return "历练10/10 · 右键觉醒";
                 if (battle.Automatic) return "自动作战 · 右键修行";
                 AdventureEnemy target = battle.Target;
@@ -137,6 +139,8 @@ namespace NetBunny
             bool blockReady = !dead && now >= blockCooldownUntil;
             string block = dead ? "调息中" : now < blockUntil ? "格挡生效中 · 卸去本次来袭大半伤害"
                 : blockReady ? "格挡就绪 · 点击修士，持续1秒" : "格挡冷却 " + Math.Max(1, (int)Math.Ceiling(blockCooldownUntil - now)) + "秒";
+            string incomingAttack = DesktopIncomingAttackHint();
+            if (incomingAttack.Length > 0) block = incomingAttack + "\n" + block;
             string notice = failure ?? (!desktopLastSaveSucceeded ? scanStatus : dead
                 ? "力竭调息中 · 约" + rest + "秒后自动恢复，历练与修为保留"
                 : cultivation.CanAwaken ? "十次有效击杀已达成 · 打开修行面板，点击灵根觉醒"
