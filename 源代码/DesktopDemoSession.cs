@@ -102,9 +102,19 @@ namespace NetBunny
                 {
                     string text = "请求「" + target.Name + "」正常退出？\nPID " + target.Id + "\n" + target.ExecutablePath
                         + "\n\n程序可能显示保存提示。取消或超时不会强制结束；本次确认只针对这个进程。";
-                    Form host = ecology != null && ecology.Visible ? (Form)ecology : panel != null && panel.Visible ? panel : null;
-                    return (host == null ? MessageBox.Show(text,"确认本次程序退出",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)
-                        : MessageBox.Show(host,text,"确认本次程序退出",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)) == DialogResult.Yes;
+                    // Layered actors intentionally never activate. A native modal
+                    // without a visible owner can disappear before presentation.
+                    // This explicit, manual action opens its own detail panel.
+                    OpenPanel("ecology");
+                    bool previousTopMost = ecology.TopMost;
+                    try
+                    {
+                        // Keep animated topmost actors below this one explicit
+                        // system-action confirmation; restore the panel afterward.
+                        ecology.TopMost = true; ecology.BringToFront(); ecology.Activate();
+                        return MessageBox.Show(ecology,text,"确认本次程序退出",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+                    }
+                    finally { if (!ecology.IsDisposed) ecology.TopMost = previousTopMost; }
                 };
                 tray = new NotifyIcon { Icon = SystemIcons.Application, Text = "桌面修仙传 · 透明桌面隔离版", Visible = true };
                 ContextMenuStrip menu = new ContextMenuStrip();
@@ -151,7 +161,8 @@ namespace NetBunny
             if (id == "ecology")
             {
                 if (ecology == null || ecology.IsDisposed) ecology = new DesktopEcologyPanel(Game);
-                ecology.UpdateState();ecology.Show();PlaceFeaturePanel(ecology);ecology.BringToFront();ecology.Activate();return;
+                ecology.UpdateState();if(ecology.WindowState==FormWindowState.Minimized)ecology.WindowState=FormWindowState.Normal;
+                ecology.Show();PlaceFeaturePanel(ecology);ecology.BringToFront();ecology.Activate();return;
             }
             if (id == "baiye") { Game.OpenBaiyeStele(); PlaceFeaturePanel(Application.OpenForms.OfType<BaiyeSteleForm>().FirstOrDefault(f => f.Visible)); return; }
             if (id == "dongtian") { Game.OpenDongtian(); PlaceFeaturePanel(Application.OpenForms.OfType<DongtianForm>().FirstOrDefault(f => f.Visible)); return; }
