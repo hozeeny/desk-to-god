@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -194,7 +194,7 @@ namespace NetBunny
             heroWindow.ContextRequested = OpenEquipment;
             Point heroPressedAt = Point.Empty; bool heroDragged = false;
             heroWindow.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { heroPressedAt = Cursor.Position; heroDragged = false; } };
-            heroWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !heroDragged && !IsDemo) { TryBlock(); RenderWorld(true); } };
+            heroWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !heroDragged && !IsDemo) { if (IsolatedDesktop && battle.Progress.Dead) OpenEquipment(); else TryBlock(); RenderWorld(true); } };
             heroWindow.DragChanged = delegate(bool active) { dragging = active; if (!active) { if (!artDemoRuntime) area = Screen.FromPoint(heroWindow.Location).WorkingArea; pauseMotionUntil = clock.Elapsed.TotalSeconds + 2; ClampHero(); PickTarget(); PositionLandmark(); } };
             heroWindow.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(heroPressedAt.X, heroPressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) heroDragged = true; if (IsolatedDesktop) area = Screen.FromPoint(new Point(p.X + HeroSize.Width / 2, p.Y + HeroSize.Height - 1)).WorkingArea; x = p.X; y = p.Y; if (IsolatedDesktop) ClampHero(); else heroWindow.Location = p; };
             landmarkWindow.ContextRequested = OpenEquipment;
@@ -415,6 +415,7 @@ namespace NetBunny
             bool awakened = cultivation.Awaken(random);
             // 觉醒即解锁并默认开启自动作战（核心已置 AutoBattle=true），力竭中待恢复后自行接续。
             if (awakened && cultivation.AutoBattle && !battle.Progress.Dead) battle.SetAutomatic(true);
+            if (awakened) RecordDesktopEvent("灵根觉醒 · " + cultivation.RootName + " · " + cultivation.DaoTitle + " · 自动战斗与吐纳已开启");
             Save();
             if (awakened && enabled) RenderWorld(true);
             return awakened;
@@ -465,6 +466,7 @@ namespace NetBunny
                 }
             }
             bool success = cultivation.TryBreakthrough(random, materialUsed);
+            RecordDesktopEvent(cultivation.LastNotice);
             Save();
             if (success && enabled) RenderWorld(true);
             return success;
@@ -936,6 +938,8 @@ namespace NetBunny
                 else if (cultivation.CanAwaken)
                     battle.LastReward = "灵明已足 · 打开修炼面板，觉醒灵根";
             }
+            RecordDesktopEvent("击败" + (IsolatedDesktop ? DesktopEnemyName(enemy) : AdventureMonster.Find(enemy.MonsterKind).Name)
+                + " · 修为+" + qi + (cultivation.Mortal ? " · 历练 " + cultivation.MortalKills + "/10" : ""));
             if (pendingLingyuEnemyId != null && enemy.Id == pendingLingyuEnemyId)
             {
                 pendingLingyuEnemyId = null;
@@ -1220,6 +1224,7 @@ namespace NetBunny
                 // 凡人力竭后照常自行调息恢复，但恢复后保持手动待机，等待玩家主动出手。
                 if (cultivation.AutoBattle && cultivation.AutoBattleUnlocked) battle.SetAutomatic(true);
                 battle.LastReward = cultivation.AutoBattleUnlocked ? "修士调息完毕，伤势尽复，继续自主修行" : "凡躯调息完毕，伤势尽复；点击妖物继续历练";
+                RecordDesktopEvent(battle.LastReward);
                 Save();
             }
             ScaleOrdinaryEnemies(); foreach (LootView loot in lootViews.ToArray()) { loot.Life -= dt; if (loot.Life <= 0) { loot.Window.Dispose(); lootViews.Remove(loot); } } renderTime += dt; attackAnimation = Math.Max(0, attackAnimation - dt * 3);
@@ -1257,7 +1262,7 @@ namespace NetBunny
                     }
                     }
                 }
-                else if (canFight && roaming && networkState.Phase == KnightPhase.Run)
+                else if (canFight && roaming && (!IsolatedDesktop || !cultivation.Mortal) && networkState.Phase == KnightPhase.Run)
                 { if (AdventureBattle.Distance(x, y, targetX, targetY) < 18) PickTarget(); MoveToward(targetX, targetY, networkState.PixelsPerSecond, dt); }
             }
             actualMoveSpeed = dragging || dt <= 0 ? 0 : AdventureBattle.Distance(moveStartX, moveStartY, x, y) / dt;
@@ -1328,6 +1333,7 @@ namespace NetBunny
             if (now < blockCooldownUntil) { battle.LastReward = "格挡调息中（约 " + Math.Max(1, (int)Math.Ceiling(blockCooldownUntil - now)) + " 秒后再用）"; return false; }
             blockUntil = now + 1.0; blockCooldownUntil = now + 10;
             battle.LastReward = "格挡！凝住气血，接下一瞬的来势将被卸去大半";
+            RecordDesktopEvent("格挡 · 保护持续1秒，10秒后可再次使用");
             return true;
         }
 
@@ -1347,7 +1353,10 @@ namespace NetBunny
             if (battle.Weapon.Id == "blackhole") { blackholeUntil = now + 1.1; blackholeX = target.X; blackholeY = target.Y; }
             if ((!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing))) effects.Fire(new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale), new PointF((float)target.X + EnemySize(target).Width / 2f, (float)target.Y + EnemySize(target).Height * .47f), battle.Weapon.Id, displayScale);
             int inventoryBefore = battle.Progress.Inventory.Count;
+            int targetHealthBefore = target.Health;
             List<AdventureEnemy> killed = battle.Strike(target);
+            if (IsolatedDesktop && cultivation.Mortal && target.Health < targetHealthBefore)
+                RecordDesktopEvent("出招命中" + DesktopEnemyName(target) + " · 伤害 " + (targetHealthBefore - target.Health) + " · 剩余气血 " + target.Health + "/" + target.MaxHealth);
             foreach (AdventureEnemy defeated in killed) BeginCleanup(defeated);
             if (battle.Progress.Inventory.Count > inventoryBefore) ShowLoot(battle.Progress.Inventory.Last(), target.X, target.Y);
             if (killed.Count > 0) Save();
@@ -1499,6 +1508,7 @@ namespace NetBunny
         private void AdvanceEnemyPatrol(AdventureEnemy enemy, bool canFight, double dt)
         {
             if (enemy.Dragging || enemy.Cleaning || enemy.VisualDefeated || enemy.Defeated || enemy.Failed || enemy.IsDiskWarning) return;
+            if (DesktopMortalUnengaged(enemy)) canFight = false;
             double heroDistance = EnemyHeroDistance(enemy);
             if (canFight)
             {
@@ -1534,7 +1544,7 @@ namespace NetBunny
         }
         private void AttackHero(AdventureEnemy enemy, bool canFight, double dt)
         {
-            if (!canFight || enemy.Dragging || enemy.Cleaning || enemy.VisualDefeated || enemy.Defeated || enemy.Failed || enemy.IsDiskWarning) { enemy.AttackTime = 0; return; }
+            if (!canFight || DesktopMortalUnengaged(enemy) || enemy.Dragging || enemy.Cleaning || enemy.VisualDefeated || enemy.Defeated || enemy.Failed || enemy.IsDiskWarning) { enemy.AttackTime = 0; return; }
             double cooldown = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2.4 + AdventureWeapon.Find(enemy.BossWeapon).Cooldown : enemy.IsBoss ? 1.8 : AdventureMonster.Find(enemy.MonsterKind).AttackCooldown;
             if (EnemyHeroDistance(enemy) > (!String.IsNullOrEmpty(enemy.EvilTheme) ? Math.Min(300,AdventureWeapon.Find(enemy.BossWeapon).Range*.65) : enemy.IsBoss ? 105 : 86) * displayScale) { enemy.AttackTime = 0; return; }
             enemy.AttackTime += dt;
@@ -1543,6 +1553,7 @@ namespace NetBunny
             int incoming = !String.IsNullOrEmpty(enemy.EvilTheme) ? 2 + enemy.SpawnLevel / 12 : enemy.IsBoss ? 12 : AdventureMonster.Find(enemy.MonsterKind).Damage;
             if (clock.Elapsed.TotalSeconds < blockUntil) { incoming = Math.Max(1, incoming / 5); battle.LastReward = "格挡成功：来势被卸去大半（伤害 " + incoming + "）"; }
             battle.Damage(incoming);
+            if (battle.Progress.Dead) RecordDesktopEvent("气血耗尽 · 入定调息后自动恢复，历练保留");
             if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled && (!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing))) effects.Fire(new PointF((float)enemy.X+EnemySize(enemy).Width/2f,(float)enemy.Y+EnemySize(enemy).Height/2f),new PointF((float)x+HeroSize.Width/2f,(float)y+HeroSize.Height/2f),enemy.BossWeapon,displayScale);
         }
         private static void FaceEnemy(AdventureEnemy enemy, double dx)
@@ -1584,7 +1595,7 @@ namespace NetBunny
             int q = attackAnimation > 0 || now < blackholeUntil || s.MoveSpeed > 1 ? 24 : 12;
             if (IsolatedDesktop)
                 return s.Phase + "|" + s.WeaponId + "|" + s.HeroStage + "|" + region.CurrentCode + "|" + s.Size.Width + "x" + s.Size.Height
-                    + "|" + (long)(now * q) + "|" + (s.FacingRight ? 1 : 0) + "|" + s.Level + "|" + (int)(s.HealthRatio * 40) + "|" + s.Label;
+                    + "|" + (long)(now * q) + "|" + (s.FacingRight ? 1 : 0) + "|" + s.Level + "|" + (int)(s.HealthRatio * 40) + "|" + s.Label + "|" + s.ActionHint;
             double cycleFrac = s.Cycle - Math.Floor(s.Cycle);
             return s.Phase + "|" + s.WeaponId + "|" + s.HeroStage + "|" + (demonstrationOnly ? demoTheme : region.CurrentCode) + "|" + s.Size.Width
                 + "|" + (int)(s.Time * q) + "|" + (int)(cycleFrac * (s.MoveSpeed > 1 ? 12 : 24)) + "|" + (int)(s.MoveSpeed / 25)
@@ -1615,7 +1626,7 @@ namespace NetBunny
             else if (attackAnimation > 0) phase = "attack";
             else if (actualMoveSpeed > 1 && phase != "grave" && phase != "dying" && phase != "revive") phase = "run";
             else if (phase == "run") phase = "idle";
-            return new AdventureRenderState { Kind = "Hero", HeroStage = ArtDemoHeroStage, Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : (artDemoRuntime || IsolatedDesktop) && cultivation.Mortal ? "凡人 · 红尘历练" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
+            return new AdventureRenderState { Kind = "Hero", HeroStage = ArtDemoHeroStage, Size = HeroSize, ThemeCode = demonstrationOnly ? demoTheme : region.CurrentCode, Phase = phase, WeaponId = battle.Weapon.Id, Time = now, Cycle = runCycle, MoveSpeed = actualMoveSpeed / displayScale, FacingRight = heroFacing, Level = battle.Progress.Level, HealthRatio = (double)battle.Progress.Health / battle.Progress.MaxHealth, ActionHint = IsolatedDesktop ? DesktopHudHint : null, Label = battle.Progress.Dead ? "入定调息 · 稍后自行恢复" : (artDemoRuntime || IsolatedDesktop) && cultivation.Mortal ? "凡人 · 红尘历练" : cultivation.RealmName + " · 第" + cultivation.Layer + "层", GlowProgress = battle.LevelGlow > 0 ? 1 - battle.LevelGlow / 4.5 : -1, AttackProgress = attackAnimation, Opacity = 1, PhaseTime = battle.Progress.Dead ? battle.DeathTime : networkState.PhaseTime };
         }
         private static readonly int SecRenderHero = PerfProbe.Register("render.hero");
         private static readonly int SecRenderEnemies = PerfProbe.Register("render.enemies");
@@ -1661,7 +1672,7 @@ namespace NetBunny
                         Point pressedAt = Point.Empty; bool dragged = false;
                         if (artDemoRuntime || IsolatedDesktop) window.Text = enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
-                        window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
+                        window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else if (IsolatedDesktop) DesktopChooseEnemy(captured.Id, true); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
                         window.ContextRequested = OpenEquipment;
                         window.DragChanged = delegate(bool active) { captured.Dragging = active; };
                         window.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(pressedAt.X, pressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) dragged = true; captured.X = p.X; captured.Y = p.Y; BoundEnemy(captured); };

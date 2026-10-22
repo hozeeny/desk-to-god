@@ -26,4 +26,4 @@ foreach ($name in @('Assets', 'ArtDemoAssets')) {
     Get-ChildItem -LiteralPath $from -Force | Copy-Item -Destination $to -Recurse -Force
 }
 Write-Host ('隔离 Demo 编译完成：' + $demoExe)
-Write-Host '使用 launch-demo.ps1 启动；默认直接进入透明桌面；仅写入 runtime-desktop/profiles 私有隔离档，不连接网络或系统维护。'
+Write-Host '使用 launch-demo.ps1 启动；默认直接进入透明桌面；仅写入 EXE 同目录 profiles 私有隔离档，不连接网络或系统维护。'

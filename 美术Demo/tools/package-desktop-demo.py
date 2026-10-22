@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import json
 import zipfile
+from datetime import date
 
 demo = Path(__file__).resolve().parents[1]
 runtime = demo / "runtime-desktop"
@@ -27,7 +28,7 @@ with zipfile.ZipFile(archive) as pack:
     for path, name in entries:
         assert hashlib.sha256(pack.read(name)).hexdigest() == sha(path), name
 record = {
-    "date": "2026-10-18", "entry": "transparent desktop, no scene window",
+    "date": date.today().isoformat(), "entry": "transparent desktop, no scene window",
     "branch": "feature/v6-art-foundation", "archive": archive.name,
     "archive_bytes": archive.stat().st_size, "archive_sha256": sha(archive),
     "executable": exe.name, "executable_sha256": sha(exe),

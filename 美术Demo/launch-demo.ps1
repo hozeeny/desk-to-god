@@ -1,5 +1,6 @@
-﻿param([string]$Profile = 'player', [ValidateSet('qishi-full','zhuji')][string]$Seed, [string]$AcceptOutputDirectory, [switch]$SkipBuild)
+﻿param([string]$Profile = 'player', [ValidateSet('qishi-full','zhuji')][string]$Seed, [string]$AcceptOutputDirectory, [switch]$SkipBuild, [switch]$NormalSpeed)
 $ErrorActionPreference = 'Stop'
+if ($NormalSpeed -and -not $AcceptOutputDirectory) { throw '-NormalSpeed 仅用于显式桌面验收；正常游玩始终为正常速率。' }
 if (-not $SkipBuild) { & (Join-Path $PSScriptRoot 'build-desktop-demo.ps1') }
 $runtimeRoot = Join-Path $PSScriptRoot 'runtime-desktop'
 $demoExe = Join-Path $runtimeRoot '桌面修仙-透明桌面Demo.exe'
@@ -9,6 +10,7 @@ if ($AcceptOutputDirectory) {
     $acceptArgs = @('--desktop-demo-accept', ('"' + $outputPath + '"'))
     if ($PSBoundParameters.ContainsKey('Profile')) { $acceptArgs += @('--profile', $Profile) }
     if ($Seed) { $acceptArgs += @('--seed', $Seed) }
+    if ($NormalSpeed) { $acceptArgs += '--normal-speed' }
     $process = Start-Process -FilePath $demoExe -ArgumentList $acceptArgs -WorkingDirectory $runtimeRoot -WindowStyle Normal -PassThru -Wait
     if ($process.ExitCode -ne 0) { throw ('透明桌面验收未通过，请查看 ' + $outputPath + ' 与 runtime-desktop/desktop-demo-error.log') }
 } else {

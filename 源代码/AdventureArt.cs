@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace NetBunny
 {
@@ -13,6 +15,7 @@ namespace NetBunny
     {
         internal string Kind = "Hero", ThemeCode = "OTHER", Phase = "run", WeaponId = "spear", Label = "", MonsterKind = "skeleton";
         internal string HeroStage = "mortal";
+        internal string ActionHint = "";
         internal double Time, PhaseTime, MoveSpeed = 100, HealthRatio = 1, GlowProgress = -1, AttackProgress, Opacity = 1, Cycle = Double.NaN, DeathProgress, HitFlash;
         internal bool FacingRight = true;
         internal int Level = 1, QueueNumber;
@@ -116,7 +119,7 @@ namespace NetBunny
         }
         private void DrawHero(Graphics g, AdventureRenderState s)
         {
-            if (artDemo != null) { artDemo.DrawHero(g, s); DrawHeroStatus(g, s); return; }
+            if (artDemo != null) { artDemo.DrawHero(g, s); DrawHeroStatus(g, s); DrawActionHint(g, s.ActionHint); return; }
             string phase = (s.Phase ?? "run").ToLowerInvariant();
             double cycle = Double.IsNaN(s.Cycle) ? s.Time * (.65 + Math.Min(2.6, Math.Abs(s.MoveSpeed) / 90)) : s.Cycle;
             double a = cycle * Math.PI * 2, wave = Math.Sin(a), opposite = Math.Sin(a + Math.PI);
@@ -390,6 +393,42 @@ namespace NetBunny
             if (s.HealthRatio < .999 || s.QueueNumber > 0) HealthBar(g, 78, 193, 66, 5, s.HealthRatio, Color.FromArgb(103, 230, 172));
             if (!String.IsNullOrEmpty(s.Label)) DrawLabel(g, s.Label, 110, 202, Color.White, caption);
         }
+        private void DrawActionHint(Graphics g, string hint)
+        {
+            if (String.IsNullOrWhiteSpace(hint)) return;
+            // Keep one short line above the hair. Bound text elements before
+            // measuring so unexpected messages cannot expand the actor window.
+            StringBuilder text = new StringBuilder();
+            TextElementEnumerator elements = StringInfo.GetTextElementEnumerator(hint.Trim());
+            int count = 0; bool truncated = false, space = false;
+            while (elements.MoveNext())
+            {
+                string element = elements.GetTextElement();
+                if (Char.IsWhiteSpace(element, 0) || Char.IsControl(element, 0)) { space = text.Length > 0; continue; }
+                if (space && count < 18) { text.Append(' '); count++; } space = false;
+                if (count >= 18) { truncated = true; break; }
+                text.Append(element); count++;
+            }
+            string label = text.ToString().TrimEnd();
+            if (label.Length == 0) return;
+            if (truncated) label = RemoveLastTextElement(label).TrimEnd() + "…";
+            while (g.MeasureString(label, caption).Width > 184 && StringInfo.ParseCombiningCharacters(label).Length > 1)
+                label = RemoveLastTextElement(label.TrimEnd('…')).TrimEnd() + "…";
+            float width = Math.Max(72, Math.Min(200, g.MeasureString(label, caption).Width + 14));
+            RectangleF box = new RectangleF(110 - width / 2, 0, width, 18);
+            GraphicsState saved = g.Save(); g.SetClip(box, CombineMode.Intersect);
+            using (GraphicsPath path = KnightBrand.Rounded(box.X, box.Y, box.Width, box.Height, 5))
+            using (Brush background = new SolidBrush(Color.FromArgb(228, 34, 60, 53)))
+            using (Pen edge = new Pen(Color.FromArgb(205, 170, 140, 88), .8f))
+            { g.FillPath(background, path); g.DrawPath(edge, path); }
+            DrawTextCenter(g, label, new RectangleF(box.X + 6, box.Y, box.Width - 12, box.Height), Color.FromArgb(247, 241, 218), caption);
+            g.Restore(saved);
+        }
+        private static string RemoveLastTextElement(string text)
+        {
+            int[] starts = StringInfo.ParseCombiningCharacters(text);
+            return starts.Length == 0 ? "" : text.Substring(0, starts[starts.Length - 1]);
+        }
         private void DrawGrave(Graphics g, AdventureRenderState s, double fade)
         {
             if (raster.DrawGrave(g, s, fade)) { DrawLabel(g, String.IsNullOrEmpty(s.Label) ? "右键 · 复活" : s.Label, 110, 205, Color.FromArgb(235, 239, 249), caption); return; }
@@ -458,7 +497,17 @@ namespace NetBunny
                 {
                     MonsterHealth(g, s, boss, 26);
                     if (!String.IsNullOrEmpty(s.Label)) DrawLabel(g, s.Label, 110, 13, Color.FromArgb(255, 235, 186), caption);
-                    if (s.QueueNumber > 0) { Ellipse(g, 176, 43, 24, 24, Color.FromArgb(244, 219, 153), Ink, 1.5f); DrawTextCenter(g, s.QueueNumber.ToString(), new RectangleF(176, 43, 24, 24), Ink, caption); }
+                    if (s.QueueNumber == 1)
+                    {
+                        using (GraphicsPath badge = KnightBrand.Rounded(161, 43, 47, 24, 7))
+                        using (Brush background = new SolidBrush(Color.FromArgb(241, 222, 168)))
+                        using (Pen edge = new Pen(Color.FromArgb(70, 97, 77), 1.2f))
+                        { g.FillPath(background, badge); g.DrawPath(edge, badge); }
+                        // Ordinary actors are 130px wide: compensate for their
+                        // logical-canvas scale with the existing larger font.
+                        DrawTextCenter(g, "目标", new RectangleF(163, 43, 43, 24), Color.FromArgb(37, 66, 57), s.Size.Width > 0 && s.Size.Width < 180 ? big : caption);
+                    }
+                    else if (s.QueueNumber > 1) { Ellipse(g, 176, 43, 24, 24, Color.FromArgb(244, 219, 153), Ink, 1.5f); DrawTextCenter(g, s.QueueNumber.ToString(), new RectangleF(176, 43, 24, 24), Ink, caption); }
                 }
                 return;
             }

@@ -1,0 +1,59 @@
+﻿2026-10-22 09:46:31.485 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY1","primary":false,"bounds":"{X=1920,Y=0,Width=1920,Height=1080}","workingArea":"{X=1920,Y=0,Width=1920,Height=1080}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-22 09:46:31.487 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY2","primary":true,"bounds":"{X=0,Y=0,Width=1920,Height=1080}","workingArea":"{X=0,Y=0,Width=1920,Height=1040}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-22 09:46:31.488 +08:00 DISPLAY heroWindowDpi=96; queryOnly=true; system settings unchanged
+2026-10-22 09:46:31.489 +08:00 PASS 业务控制器使用独立持久化存档
+2026-10-22 09:46:31.490 +08:00 PASS 清理、内存、无人值守维护授权及服务全部关闭
+2026-10-22 09:46:31.490 +08:00 PASS 正式入口不存在传统场景演示窗口
+2026-10-22 09:46:31.491 +08:00 NORMAL 全流程×1正常速率，主战斗循环出招尝试间隔至少0.75秒；初始输入/切敌探针另计，无数值或时间快进。
+2026-10-22 09:46:31.807 +08:00 PASS 每个角色/妖物均为小尺寸独立透明窗，无整屏覆盖层
+2026-10-22 09:46:31.949 +08:00 CAPTURE verified real desktop hero+enemy 01-transparent-desktop-start
+2026-10-22 09:46:32.090 +08:00 INPUT probe setup visible=True; nativeVisible=True; style=0x8010088; underlay=4916874; underlayBounds={X=1568,Y=726,Width=220,Height=240}; underlayZ=42; hero=1901568; heroBounds={X=1568,Y=726,Width=220,Height=240}; heroZ=39; cursor={X=230,Y=569}; capture=0
+2026-10-22 09:46:32.092 +08:00 INPUT probe sample local={X=5,Y=5}; alpha=0; screen={X=1573,Y=731}; root=4916874
+2026-10-22 09:46:32.092 +08:00 INPUT probe sample local={X=214,Y=5}; alpha=0; screen={X=1782,Y=731}; root=4916874
+2026-10-22 09:46:32.093 +08:00 INPUT probe sample local={X=5,Y=234}; alpha=0; screen={X=1573,Y=960}; root=4916874
+2026-10-22 09:46:32.093 +08:00 INPUT probe sample local={X=214,Y=234}; alpha=0; screen={X=1782,Y=960}; root=4916874
+2026-10-22 09:46:32.094 +08:00 INPUT probe sample local={X=110,Y=120}; alpha=252; screen={X=1678,Y=846}; root=1901568
+2026-10-22 09:46:32.094 +08:00 PASS 局部测试底窗置于角色下方，原生Z序及220×240边界一致
+2026-10-22 09:46:32.095 +08:00 PASS 透明角色与测试底窗显示时不抢占前台焦点
+2026-10-22 09:46:32.291 +08:00 PASS 零alpha透明区域的真实Windows命中穿透角色
+2026-10-22 09:46:32.293 +08:00 INPUT transparent-probe requested={X=1653,Y=857}; actual={X=1653,Y=857}; actualRoot=4916874; expectedRoot=4916874
+2026-10-22 09:46:32.408 +08:00 INPUT transparent-probe requested={X=1653,Y=857}; actual={X=1653,Y=857}; actualRoot=4916874; expectedUnderlay=4916874; underlayBounds={X=1568,Y=726,Width=220,Height=240}; heroBounds={X=1568,Y=726,Width=220,Height=240}; underlayClicks=0→1
+2026-10-22 09:46:32.408 +08:00 PASS 透明区域的真实鼠标点击到达下方窗口
+2026-10-22 09:46:32.437 +08:00 PASS 角色可见区域正确接受真实鼠标命中
+2026-10-22 09:46:32.709 +08:00 PASS 真实鼠标拖动角色可以改变桌面位置
+2026-10-22 09:46:32.709 +08:00 PASS 拖动结束不会误触格挡或点击动作
+2026-10-22 09:46:32.835 +08:00 PASS 可见角色真实点击触发格挡及冷却
+2026-10-22 09:46:32.835 +08:00 PASS 选择和拖动透明角色不抢占其他应用焦点
+2026-10-22 09:46:33.025 +08:00 PASS 透明坐标WM_NCHITTEST返回HTTRANSPARENT（含负屏幕坐标编码）
+2026-10-22 09:46:33.025 +08:00 PASS 角色WM_MOUSEACTIVATE明确返回MA_NOACTIVATE
+2026-10-22 09:46:33.121 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-22 09:46:33.370 +08:00 MULTISCREEN native drag from=\\.\DISPLAY2 {X=1600,Y=701,Width=220,Height=240}; target=\\.\DISPLAY1 {X=1920,Y=0,Width=1920,Height=1080}; actual={X=2770,Y=420,Width=220,Height=240}; windowDpi=96
+2026-10-22 09:46:33.370 +08:00 PASS 真实鼠标跨屏拖动后角色完整位于目标显示器工作区
+2026-10-22 09:46:33.370 +08:00 PASS 跨屏拖动不会触发格挡或点击动作
+2026-10-22 09:46:33.449 +08:00 CAPTURE verified real desktop hero 00-multi-monitor-secondary
+2026-10-22 09:46:33.544 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-22 09:46:33.798 +08:00 MULTISCREEN native drag back to=\\.\DISPLAY2; requested={X=1600,Y=701,Width=220,Height=240}; actual={X=1600,Y=701,Width=220,Height=240}; windowDpi=96
+2026-10-22 09:46:33.798 +08:00 PASS 真实鼠标可拖回原显示器且角色完整落在有效工作区
+2026-10-22 09:46:33.798 +08:00 PASS 跨屏往返不抢前台焦点、不误触格挡
+2026-10-22 09:46:33.801 +08:00 PASS 纯透明画面负例会被截图像素校验拒绝
+2026-10-22 09:46:34.374 +08:00 PASS 修行手札可打开功法与成长目标页
+2026-10-22 09:46:34.410 +08:00 CAPTURE real on-demand panel 10-training-handbook
+2026-10-22 09:46:34.985 +08:00 PASS 手札真实按钮打开百业道碑，未开启识别或代替玩家确认隐私
+2026-10-22 09:46:35.029 +08:00 CAPTURE real on-demand panel 11-baiye-from-handbook
+2026-10-22 09:46:36.011 +08:00 CAPTURE verified real desktop hero 20-qishi-full-breakthrough-panel
+2026-10-22 09:46:36.335 +08:00 DIALOG readiness {"dialog":3147434,"class":"#32770","text":"破境仪式","visible":true,"idOk":9046936,"idOkReady":true,"uniqueConfirmationCount":1,"selectedConfirmation":9046936,"selectedControlId":1,"confirmationReady":true,"children":[{"handle":9046936,"class":"Button","text":"确定","controlId":1,"visible":true,"enabled":true,"rect":"{X=901,Y=620,Width=88,Height=28}"},{"handle":527272,"class":"Button","text":"取消","controlId":2,"visible":true,"enabled":true,"rect":"{X=999,Y=620,Width=88,Height=28}"},{"handle":2426744,"class":"Static","text":"","controlId":20,"visible":true,"enabled":true,"rect":"{X=845,Y=484,Width=32,Height=32}"},{"handle":1313594,"class":"Static","text":"当前境界：炼气 · 第12层（圆满）\n目标境界：筑基\n本次破境成功率：100%（保底必成）\n失败不损失已积累的修为与根基。\n\n现在发起破境吗？","controlId":65535,"visible":true,"enabled":true,"rect":"{X=885,Y=484,Width=184,Height=98}"}]}
+2026-10-22 09:46:36.728 +08:00 DIALOG readiness {"dialog":3212970,"class":"#32770","text":"破境成功","visible":true,"idOk":0,"idOkReady":false,"uniqueConfirmationCount":1,"selectedConfirmation":1379130,"selectedControlId":2,"confirmationReady":true,"children":[{"handle":1379130,"class":"Button","text":"确定","controlId":2,"visible":true,"enabled":true,"rect":"{X=962,Y=588,Width=88,Height=28}"},{"handle":2492280,"class":"Static","text":"","controlId":20,"visible":true,"enabled":true,"rect":"{X=880,Y=516,Width=32,Height=32}"},{"handle":592808,"class":"Static","text":"破境成功，踏入筑基！","controlId":65535,"visible":true,"enabled":true,"rect":"{X=920,Y=524,Width=112,Height=18}"}]}
+2026-10-22 09:46:37.498 +08:00 PASS 炼气圆满经正式确认破境为筑基，外观由修仙状态真实切换
+2026-10-22 09:46:37.647 +08:00 CAPTURE verified real desktop hero 21-zhuji-after-real-breakthrough
+2026-10-22 09:46:38.371 +08:00 PASS 筑基洞天按需面板可打开
+2026-10-22 09:46:38.519 +08:00 CAPTURE verified real desktop hero 30-dongtian-panel-on-real-desktop
+2026-10-22 09:46:43.082 +08:00 PASS 洞天收起后修士仍在桌面持续修行
+2026-10-22 09:46:44.291 +08:00 LINGYU 正式选择：入左舷镜廊
+2026-10-22 09:46:44.840 +08:00 LINGYU 正式选择：继续深入
+2026-10-22 09:46:45.383 +08:00 PASS 灵域探索真实生成桌面独立可交互镜妖
+2026-10-22 09:46:45.510 +08:00 CAPTURE verified real desktop hero+enemy 41-lingyu-mirror-on-desktop
+2026-10-22 09:46:50.324 +08:00 PASS 灵域镜妖经正式战斗胜利结算，探索继续
+2026-10-22 09:46:50.434 +08:00 CAPTURE verified real desktop hero 42-lingyu-combat-settled
+2026-10-22 09:46:50.448 +08:00 PASS 五份隔离业务存档安全落盘
+2026-10-22 09:46:50.451 +08:00 PASS 独立存档重新Load后身份、境界、灵域及洞天一致
+2026-10-22 09:46:50.452 +08:00 PASS 真实用户五档及维护授权文件哈希保持不变

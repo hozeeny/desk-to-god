@@ -1,0 +1,251 @@
+[
+  {
+    "image": "01-first-steps.png",
+    "source": "qa\\desktop-accept-playability-x1-20261022-r5\\00-first-visible-welcome.png",
+    "source_sha256": "21353e9856d57127986ffe303374d067a4134e69f00c438dad1ffad5f409ff03",
+    "crop_box": [
+      8,
+      0,
+      478,
+      731
+    ],
+    "operation": "crop only, native Windows pixels unchanged"
+  },
+  {
+    "image": "02-mortal-desktop.png",
+    "source": "qa\\desktop-accept-playability-x1-20261022-r5\\00-multi-monitor-secondary.png",
+    "source_sha256": "816840d713fe455c5503845c6e5761d81a369f0bee14e1d2691876493c41af34",
+    "crop_box": [
+      0,
+      0,
+      276,
+      296
+    ],
+    "operation": "crop only, native Windows pixels unchanged"
+  },
+  {
+    "image": "03-training-handbook.png",
+    "source": "qa\\desktop-accept-playability-qishi-20261022-r6\\10-training-handbook.png",
+    "source_sha256": "87ba4edaddaec18a9aac8d75f9c5505aaf0afb3a612715f47e80a3d5c1d77594",
+    "crop_box": [
+      8,
+      0,
+      478,
+      731
+    ],
+    "operation": "crop only, native Windows pixels unchanged"
+  },
+  {
+    "image": "04-baiye-entry.png",
+    "source": "qa\\desktop-accept-playability-qishi-20261022-r6\\11-baiye-from-handbook.png",
+    "source_sha256": "a6ca4952ed70e5448f99af3ef9b74683ebb291303c8d8df77d57063bffdfda8a",
+    "crop_box": [
+      8,
+      0,
+      712,
+      872
+    ],
+    "operation": "crop only, native Windows pixels unchanged"
+  },
+  {
+    "image": "05-mirror-battle.png",
+    "source": "qa\\desktop-accept-playability-qishi-20261022-r6\\41-lingyu-mirror-on-desktop.png",
+    "source_sha256": "69d18a649bff165cd19691cb73b12cbcf7216a3cd0efbecc639347a18a864570",
+    "crop_box": [
+      0,
+      0,
+      1256,
+      593
+    ],
+    "operation": "crop only, native Windows pixels unchanged"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-026.png",
+    "elapsed_seconds": 203.6587102,
+    "outside_matte_offset": [
+      26,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-027.png",
+    "elapsed_seconds": 204.0855172,
+    "outside_matte_offset": [
+      23,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-028.png",
+    "elapsed_seconds": 204.5234983,
+    "outside_matte_offset": [
+      34,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-029.png",
+    "elapsed_seconds": 204.96243629999998,
+    "outside_matte_offset": [
+      27,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-030.png",
+    "elapsed_seconds": 205.3957075,
+    "outside_matte_offset": [
+      26,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-031.png",
+    "elapsed_seconds": 205.831563,
+    "outside_matte_offset": [
+      30,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-032.png",
+    "elapsed_seconds": 206.2671665,
+    "outside_matte_offset": [
+      33,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-033.png",
+    "elapsed_seconds": 206.7085931,
+    "outside_matte_offset": [
+      30,
+      32
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-034.png",
+    "elapsed_seconds": 207.05505449999998,
+    "outside_matte_offset": [
+      0,
+      2
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-035.png",
+    "elapsed_seconds": 207.4710843,
+    "outside_matte_offset": [
+      6,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-036.png",
+    "elapsed_seconds": 207.8026362,
+    "outside_matte_offset": [
+      20,
+      35
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-037.png",
+    "elapsed_seconds": 208.1358931,
+    "outside_matte_offset": [
+      20,
+      12
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-038.png",
+    "elapsed_seconds": 208.472524,
+    "outside_matte_offset": [
+      28,
+      15
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-039.png",
+    "elapsed_seconds": 208.889635,
+    "outside_matte_offset": [
+      34,
+      5
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-040.png",
+    "elapsed_seconds": 209.2220305,
+    "outside_matte_offset": [
+      24,
+      7
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-041.png",
+    "elapsed_seconds": 209.5565962,
+    "outside_matte_offset": [
+      33,
+      8
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-042.png",
+    "elapsed_seconds": 209.88879269999998,
+    "outside_matte_offset": [
+      24,
+      4
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-043.png",
+    "elapsed_seconds": 210.3189281,
+    "outside_matte_offset": [
+      29,
+      13
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-044.png",
+    "elapsed_seconds": 210.6510602,
+    "outside_matte_offset": [
+      33,
+      0
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-045.png",
+    "elapsed_seconds": 211.0797839,
+    "outside_matte_offset": [
+      26,
+      0
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  },
+  {
+    "animation_source": "qa\\desktop-accept-playability-x1-20261022-r5\\native-frames\\qishi-automatic-combat-046.png",
+    "elapsed_seconds": 211.4139729,
+    "outside_matte_offset": [
+      31,
+      15
+    ],
+    "operation": "complete native crop unchanged, matte outside frame only"
+  }
+]

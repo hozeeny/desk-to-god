@@ -1,0 +1,27 @@
+﻿{
+  "evidenceType": "offscreen-layout-preview",
+  "executable": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\playability-build\\桌面修仙-透明桌面Demo.exe",
+  "executableSha256": "7917C012BC5DF5B9CC7B78A261FFCD43D826F2702E7762FE399D5CD153A780CD",
+  "sizes": [
+    "470x700 client",
+    "390x490 client"
+  ],
+  "generatedImages": [
+    "390x490-tab0-offscreen.png",
+    "390x490-tab1-offscreen.png",
+    "390x490-tab2-offscreen.png",
+    "470x700-tab0-offscreen.png",
+    "470x700-tab1-offscreen.png",
+    "470x700-tab2-offscreen.png"
+  ],
+  "checks": 27,
+  "failures": 0,
+  "noFormsShown": true,
+  "liveDesktopInputUsed": false,
+  "notes": [
+    "Hidden native ComboBox controls may omit selected-item text in DrawToBitmap; real selected indices and inventory state were inspected separately.",
+    "390x490 battle preview shows the column scrolled to the awakening control.",
+    "Exports are client-area crops of full offscreen DrawToBitmap output; they are not real desktop screenshots.",
+    "Only an explicit private UI fixture sets ten mortal kills before calling the real awakening transition; it is not gameplay progression evidence."
+  ]
+}

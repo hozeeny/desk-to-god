@@ -24,7 +24,7 @@ namespace NetBunny
         internal KnightLayeredWindow DesktopHeroWindow { get { return heroWindow; } }
         internal Dictionary<string, KnightLayeredWindow> DesktopEnemyWindows { get { return new Dictionary<string, KnightLayeredWindow>(enemyWindows); } }
         internal bool DesktopActorsVisible { get { return desktopActorsVisible; } }
-        internal string DesktopNotice { get { return (desktopAcceptanceSpeed == 6 ? "验收快进×6 · " : "") + (failure ?? (desktopLastSaveSucceeded ? battle.LastReward : scanStatus)); } }
+        internal string DesktopNotice { get { return (desktopAcceptanceSpeed == 6 ? "验收快进×6 · " : "") + (IsolatedDesktop ? ReadDesktopPlayerView().Notice : failure ?? (desktopLastSaveSucceeded ? battle.LastReward : scanStatus)); } }
         internal string[] DesktopArchivePaths { get { return new[] { progressPath, CultivationWritePath, BaiyeWritePath, LingyuWritePath, DongtianWritePath }; } }
         internal bool DesktopRealWorkIdle { get { return connectivity == null && tempWatcher == null && cleanupTask == null && memoryReclaimTask == null && !scanBusy && !diskBusy && !memoryBusy; } }
         internal void DesktopSetAcceptanceSpeed(int speed)

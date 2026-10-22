@@ -20,6 +20,8 @@ namespace NetBunny
     {
         private readonly DesktopDemoSession session;
         private readonly string output;
+        private readonly bool normalSpeed;
+        private bool observedFirstSteps;
         private readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         private readonly Stopwatch wall = new Stopwatch();
         private readonly List<object> assertions = new List<object>(), captures = new List<object>(), performance = new List<object>(), movieFrames = new List<object>();
@@ -34,10 +36,10 @@ namespace NetBunny
         private int phase, clicks, lastKills, firstClickHealth, movieIndex, exploreSteps;
         private double nextAction, autoStarted, normalStarted = -1, startEnemyWaitSince = -1, nextPerformance, previousCpu, previousSample, movieUntil, nextMovie;
         private long scoreBeforeAuto, qiBeforeAuto;
-        private string targetId, movieName;
+        private string targetId, movieName, switchOtherId;
         private AdventureController Game { get { return session.Game; } }
-        internal DesktopDemoAcceptance(DesktopDemoSession session, string output)
-        { this.session = session; this.output = output; }
+        internal DesktopDemoAcceptance(DesktopDemoSession session, string output, bool normalSpeed = false)
+        { this.session = session; this.output = output; this.normalSpeed = normalSpeed; }
         internal void Start()
         {
             if (Directory.Exists(output) && Directory.EnumerateFileSystemEntries(output).Any())
@@ -60,8 +62,8 @@ namespace NetBunny
                     Assert(true, "新进程恢复同一身份、境界、自动作战、历练及灵域进度");
                     restart = true;
                 }
-                Game.DesktopSetAcceptanceSpeed(6);
-                Log("ACCEL 验收快进 ×6：相同真实节拍，未修改伤害、冷却、十杀、HP或奖励；所有战斗操作使用本机鼠标输入。");
+                Game.DesktopSetAcceptanceSpeed(normalSpeed ? 1 : 6);
+                Log(normalSpeed ? "NORMAL 全流程×1正常速率，主战斗循环出招尝试间隔至少0.75秒；初始输入/切敌探针另计，无数值或时间快进。" : "ACCEL 验收快进 ×6：相同真实节拍，未修改伤害、冷却、十杀、HP或奖励；所有战斗操作使用本机鼠标输入。");
                 timer.Interval = 100; timer.Tick += Tick; timer.Start(); nextAction = Game.Cultivation.Mortal ? 1.4 : .25;
                 Application.ApplicationExit += OnApplicationExit;
             }
@@ -81,6 +83,22 @@ namespace NetBunny
                 if (now < nextAction) return;
                 if (phase == 0)
                 {
+                    if (normalSpeed && !restart && Game.Cultivation.Mortal && !observedFirstSteps)
+                    {
+                        DesktopPracticePanel welcome = Application.OpenForms.OfType<DesktopPracticePanel>().FirstOrDefault(f => f.Visible);
+                        Assert(welcome != null, "首次零击杀进入即显示可收起的修行手札，操作入口可发现");
+                        for (int localY = 40; localY < welcome.ClientSize.Height - 20; localY += 90)
+                            Assert(RootAt(welcome.PointToScreen(new Point(6, localY))) == welcome.Handle, "首次手札在真实桌面可见，未被其他应用遮住（" + localY + "）");
+                        using (Bitmap firstPanel = DesktopFrameCapture.CaptureRegion(welcome.Bounds, true))
+                            firstPanel.Save(Path.Combine(output, "00-first-visible-welcome.png"), ImageFormat.Png);
+                        observedFirstSteps = true; nextAction = now + 20;
+                        Log("READING 留出20秒阅读首次操作，无任何战斗输入。"); return;
+                    }
+                    if (normalSpeed && !restart && Game.Cultivation.Mortal)
+                    {
+                        Assert(!Game.Battle.Progress.Dead && Game.Battle.Progress.Health == Game.Battle.Progress.MaxHealth, "首次阅读20秒未选敌，普通妖物不会主动围攻伤人");
+                        session.ClosePanels();
+                    }
                     if (!Game.DesktopAcceptanceHasLiveEnemy)
                     {
                         if (startEnemyWaitSince < 0) { startEnemyWaitSince = now; Log("WAIT initial capture needs naturally living visible enemy: " + Game.DesktopAcceptanceEnemySummary()); }
@@ -99,8 +117,17 @@ namespace NetBunny
                         AdventureEnemy target = Game.DesktopAcceptanceTarget(null);
                         if (target == null) throw new InvalidOperationException("桌面没有可交互虚拟妖物。");
                         targetId = target.Id; firstClickHealth = target.Health;
+                        if (normalSpeed)
+                        {
+                            AdventureEnemy other = Game.Battle.Enemies.FirstOrDefault(e => e != target && e.IsVirtual && !e.Defeated && !e.VisualDefeated);
+                            if (other == null) throw new InvalidOperationException("缺少第二个真实目标，不能验证手动切换。");
+                            switchOtherId = other.Id;
+                            phase = 11; nextAction = now; return;
+                        }
                         phase = 10; nextAction = now;
                     }
+                    else if (normalSpeed && (Game.Cultivation.RealmIndex >= 1 || Game.Cultivation.RealmComplete))
+                    { session.OpenPanel("training"); phase = 90; nextAction = now + .5; }
                     else if (Game.Cultivation.RealmIndex == 0 && Game.Cultivation.RealmComplete)
                     { session.OpenPanel("breakthrough"); phase = 20; nextAction = now + .7; }
                     else if (Game.Cultivation.RealmIndex >= 1)
@@ -111,6 +138,28 @@ namespace NetBunny
                 {
                     AdventureEnemy target = Game.DesktopAcceptanceTarget(targetId);
                     if (target != null && ClickEnemy(target)) { phase = 1; nextAction = now + .3; }
+                }
+                else if (phase == 11)
+                {
+                    AdventureEnemy target = Game.DesktopAcceptanceTarget(targetId);
+                    if (target != null && ClickEnemy(target)) { phase = 12; nextAction = now + .3; }
+                }
+                else if (phase == 12)
+                {
+                    Assert(Game.Battle.Target != null && Game.Battle.Target.Id == targetId, "真实点击首个妖物完成选中");
+                    AdventureEnemy other = Game.DesktopAcceptanceTarget(switchOtherId);
+                    if (other != null && ClickEnemy(other)) { phase = 13; nextAction = now + .3; }
+                }
+                else if (phase == 13)
+                {
+                    Assert(Game.Battle.Target != null && Game.Battle.Target.Id == switchOtherId, "真实点击第二只妖物立即切换当前目标，不再仅排队");
+                    AdventureEnemy target = Game.DesktopAcceptanceTarget(targetId);
+                    if (target != null && ClickEnemy(target)) { phase = 14; nextAction = now + .3; }
+                }
+                else if (phase == 14)
+                {
+                    Assert(Game.Battle.Target != null && Game.Battle.Target.Id == targetId, "真实点击可切回第一只妖物");
+                    phase = 1; nextAction = now;
                 }
                 else if (phase == 1)
                 {
@@ -161,7 +210,7 @@ namespace NetBunny
                         Assert(true, "功能面板收起后零战斗点击仍自动击杀并持续修炼");
                         Assert(sawRest && recovered, "本轮真实桌面战斗经过力竭与调息恢复");
                         Game.DesktopSetAcceptanceSpeed(1); normalStarted = now; phase = 9;
-                        Log("PERF 结束验收快进，切为正常 ×1；保持功能面板关闭、零输入观察 120 秒，记录常驻性能。");
+                        Log(normalSpeed ? "PERF 继续保持正常×1；功能面板关闭、零输入观察120秒。" : "PERF 结束验收快进，切为正常 ×1；保持功能面板关闭、零输入观察 120 秒，记录常驻性能。");
                     }
                     else if (now - autoStarted > 180) throw new TimeoutException("炼气关闭面板后未在 180 秒内观察到自动击杀及修为增长。");
                 }
@@ -231,6 +280,25 @@ namespace NetBunny
                     Assert(Game.DesktopAcceptanceMaintenanceOff(), "重启后维护授权仍关闭");
                     Capture("80-restored-profile-on-real-desktop", false); Finish(true, null);
                 }
+                else if (phase == 90)
+                {
+                    DesktopPracticePanel handbook = VisiblePanel<DesktopPracticePanel>();
+                    Assert(handbook != null, "修行手札可打开功法与成长目标页");
+                    CapturePanel(handbook, "10-training-handbook");
+                    Button baiye = FindButton("百业道碑");
+                    if (baiye == null) throw new InvalidOperationException("修行页缺少百业入口。");
+                    if (ClickControl(baiye)) { phase = 91; nextAction = now + .6; }
+                }
+                else if (phase == 91)
+                {
+                    BaiyeSteleForm stele = VisiblePanel<BaiyeSteleForm>();
+                    Assert(stele != null && Game.Baiye.Mode == 0 && !Game.BaiyeExplained, "手札真实按钮打开百业道碑，未开启识别或代替玩家确认隐私");
+                    CapturePanel(stele, "11-baiye-from-handbook");
+                    session.ClosePanels();
+                    if (Game.Cultivation.RealmIndex == 0) { session.OpenPanel("breakthrough"); phase = 20; }
+                    else { OpenCave(); phase = 30; }
+                    nextAction = now + .8;
+                }
             }
             catch (Exception error) { Finish(false, error.ToString()); }
             finally { busy = false; }
@@ -259,7 +327,7 @@ namespace NetBunny
             }
             if (Game.DesktopAcceptanceCanBlock)
             { ClickActor(Game.DesktopHeroWindow); nextAction = now + .1; return; }
-            ClickEnemy(target); nextAction = now + .14;
+            ClickEnemy(target); nextAction = now + (normalSpeed ? .75 : .14);
         }
         private void OpenCave() { session.ClosePanels(); session.OpenPanel("dongtian"); }
         private void Explore(double now)
@@ -522,6 +590,13 @@ namespace NetBunny
                 if (actors != null) foreach (ArtDemoActorFrame actor in actors) actor.Dispose(); Game.ResumeArtDemoCapture(running);
             }
         }
+        private void CapturePanel(Form panel, string name)
+        {
+            using (Bitmap bitmap = DesktopFrameCapture.CaptureRegion(panel.Bounds, true))
+                bitmap.Save(Path.Combine(output, name + ".png"), ImageFormat.Png);
+            captures.Add(new Dictionary<string, object> { { "image", name + ".png" }, { "bounds", panel.Bounds.ToString() }, { "purpose", "on-demand panel reached through native input; no actor-visibility claim for this panel capture" }, { "capture", "native Windows desktop pixels" } });
+            Log("CAPTURE real on-demand panel " + name);
+        }
         private Rectangle CaptureBounds(IList<ArtDemoActorFrame> actors, bool includePanels)
         {
             Rectangle bounds = actors.Select(a => a.Bounds).Aggregate(Rectangle.Union);
@@ -607,7 +682,7 @@ namespace NetBunny
                 File.WriteAllText(Path.Combine(output, "desktop-acceptance.json"), json.Serialize(new Dictionary<string, object> {
                     { "passed", passed }, { "error", error }, { "processId", Process.GetCurrentProcess().Id }, { "restartVerification", restart },
                     { "profile", session.ProfileRoot }, { "elapsedSeconds", wall.Elapsed.TotalSeconds }, { "nativeMouseClicks", clicks },
-                    { "clockAcceleration", "x6 explicit acceptance only; same combat/state/save rules, no HP or kill injection; mortal flow returns to normal x1 for final 120 seconds" },
+                    { "clockAcceleration", normalSpeed ? "x1 throughout; main combat-loop strike attempts at least 0.75 seconds apart; setup/input/switch probes may use quicker clicks; 20-second no-input onboarding observation" : "x6 explicit acceptance only; same combat/state/save rules, no HP or kill injection; mortal flow returns to normal x1 for final 120 seconds" },
                     { "normalSpeedObservationStartedAt", normalStarted }, { "normalSpeedObservationSeconds", normalStarted < 0 ? 0 : wall.Elapsed.TotalSeconds - normalStarted },
                     { "displays", displays.ToArray() }, { "displayConfigurationChanged", false },
                     { "assertions", assertions.ToArray() }, { "captures", captures.ToArray() }, { "nativeMovieFrames", movieFrames.ToArray() },

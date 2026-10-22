@@ -26,6 +26,9 @@ Thumbs.db
 /美术Demo/qa/gui-accept-*/
 # Raw desktop captures may include unrelated apps; selected cropped evidence is separate
 /美术Demo/qa/desktop-accept-*/
+# These native desktop crops include other open applications; retain locally.
+/美术Demo/qa/playability-20261022/normal-speed-auto.gif
+/美术Demo/qa/playability-20261022/05-mirror-battle.png
 
 # Local credentials and environment configuration
 .env
