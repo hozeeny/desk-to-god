@@ -8,7 +8,7 @@
   },
   "build_and_logic": "20 results PASS; latest source snapshot in tested-sources.json",
   "art": "2754 assertions PASS; verify-art-pack-final.log",
-  "release_state": "preview; r1 failed after ~40min; finalization fixed with 56 child checks and 5 parent checks; r2 running from same profile, fresh eight-hour clock",
+  "release_state": "preview; r2 natural same-profile foundation establishment and first planting visually verified; first harvest and eight-hour completion still pending; r1 remains failed",
   "capture_review": "native actor and panel screenshots inspected; default process confirmation/body/buttons verified at 100% and visually checked",
   "unverified": [
     "mixed DPI displays",
@@ -36,5 +36,15 @@
     "child_assertions": 56,
     "parent_checks": 5,
     "scope": "short lifecycle and IO faults only, not eight-hour proof"
+  },
+  "natural_r2_milestone": {
+    "natural_zhuji": true,
+    "first_harvest": false,
+    "passed": false,
+    "breakthrough_attempts": 4,
+    "speed": 1,
+    "seed": null,
+    "public_native_crop": "07-natural-plant-native.png",
+    "true_new_process_natural_restore": "pending after soak completion"
   }
 }

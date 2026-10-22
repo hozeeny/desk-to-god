@@ -20,29 +20,96 @@
     "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\qa\\desktop-accept-natural-soak-20261022-r2",
     "8"
   ],
-  "acceptance": "Pending. Eight new effective x1 hours plus natural zhuji, first harvest, save/Load/hash and inspected native evidence required.",
+  "acceptance": "Pending. Natural first zhuji and planting verified; eight effective hours, first real harvest, five archives final Save/Load and true new-process natural-profile restore remain required.",
   "pid": 27112,
   "supervisor_pid": 34568,
   "process_witness": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\natural-soak-monitor\\r2-process-witness.json",
-  "last_report_utc": "2026-10-22T13:29:52.8560872Z",
+  "checked_utc": "2026-10-22T14:45:56.272603+00:00",
+  "last_report_utc": "2026-10-22T14:45:10.7956635Z",
   "last_observed_sample": {
-    "utc": "2026-10-22T13:29:49.8376611Z",
-    "elapsedSeconds": "117.0170938",
-    "cpuOneCorePercent": "36.9698250054517",
-    "cpuMachinePercent": "3.08081875045431",
-    "privateMiB": "113.62109375",
-    "workingSetMiB": "142.98046875",
-    "handles": "352",
-    "gdi": "55",
-    "user": "48",
-    "realmIndex": "0",
-    "layer": "9",
-    "qi": "2181",
-    "lifetimeQi": "7101",
-    "score": "6730",
-    "phase": "0"
+    "utc": "2026-10-22T14:45:55.7961593Z",
+    "elapsedSeconds": "4682.9762768",
+    "cpuOneCorePercent": "45.6936383885608",
+    "cpuMachinePercent": "3.80780319904673",
+    "privateMiB": "119.7890625",
+    "workingSetMiB": "74.234375",
+    "handles": "379",
+    "gdi": "82",
+    "user": "111",
+    "realmIndex": "1",
+    "layer": "1",
+    "qi": "4852",
+    "lifetimeQi": "20411",
+    "score": "20355",
+    "phase": "6"
   },
-  "verified_native_captures": 1,
-  "effective_sampled_seconds_at_check": 117.0170938,
-  "maximum_gap_seconds_at_check": 11.007551799999998
+  "verified_native_captures": 3,
+  "effective_sampled_seconds_at_check": 4630.9610035,
+  "maximum_gap_seconds_at_check": 11.038160099999914,
+  "csv_rows_at_check": 447,
+  "latest_sample_age_seconds": 0.476444,
+  "current": {
+    "mortal": false,
+    "realmIndex": 1,
+    "layer": 1,
+    "qi": 4689,
+    "lifetimeQi": 20248,
+    "fractionalQi": 0.3005939286237613,
+    "root": "earth",
+    "daoTitle": "听潮散人",
+    "daoPath": "body",
+    "technique": "bodyforge",
+    "autoBattle": true,
+    "insight": 0,
+    "attempts": 4,
+    "realmComplete": false,
+    "canAttemptBreakthrough": false
+  },
+  "natural_zhuji": true,
+  "first_harvest": false,
+  "natural_zhuji_utc": "2026-10-22T14:21:18.5077277Z",
+  "planted_utc": "2026-10-22T14:21:19.5215657Z",
+  "ready_utc": "2026-10-22T16:21:19.5215657Z",
+  "first_breakthrough_failed_attempts": 3,
+  "breakthrough_attempts": 4,
+  "original_real_archives_independently_checked_unchanged": true,
+  "report_sha256_at_check": "d9141723f40c935a4b4bccd4631f9c91d5533f0ef6fa09b93b5159473a284a20",
+  "csv_sha256_at_check": "f0be041ce13d1df7d9fb5c609d81ab8df8d7c72779702c3a34e34bd63b6a08a2",
+  "resource_scope": "CPU is this game process TotalProcessorTime normalized by logical processor count; not total host CPU usage",
+  "last_60_sample_summary": {
+    "cpuMachinePercent": {
+      "minimum": 2.61516096904676,
+      "maximum": 4.4665368624043,
+      "mean": 3.595653948491578
+    },
+    "privateMiB": {
+      "minimum": 118.5546875,
+      "maximum": 120.3046875,
+      "mean": 119.64615885416667
+    },
+    "workingSetMiB": {
+      "minimum": 72.81640625,
+      "maximum": 74.96484375,
+      "mean": 74.17682291666667
+    },
+    "handles": {
+      "minimum": 378.0,
+      "maximum": 379.0,
+      "mean": 378.31666666666666
+    },
+    "gdi": {
+      "minimum": 76.0,
+      "maximum": 88.0,
+      "mean": 80.7
+    },
+    "user": {
+      "minimum": 106.0,
+      "maximum": 115.0,
+      "mean": 109.68333333333334
+    }
+  },
+  "visual_review": {
+    "02-natural-zhuji.png": "Inspected actual native pixels: same hero in foundation-stage clothing and real desktop monsters; raw remains private due to other apps",
+    "03-natural-plant.png": "Inspected actual native pixels: first linggu growing, 2.0 hours remaining; public crop contains only owned cave window"
+  }
 }

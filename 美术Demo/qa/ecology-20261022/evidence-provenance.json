@@ -74,5 +74,18 @@
       320
     ],
     "operation": "native screen pixels unchanged; exact hero window region; unrelated application excluded"
+  },
+  {
+    "image": "07-natural-plant-native.png",
+    "source": "qa\\desktop-accept-natural-soak-20261022-r2\\03-natural-plant.png",
+    "source_sha256": "b101243d3bd613721b2d1a2a59a791d8660ecdf4e4b480cf5352bdc191238ec0",
+    "crop_box": [
+      597,
+      12,
+      1300,
+      565
+    ],
+    "operation": "native Windows pixels unchanged; crop only within owned opaque cave window; unrelated applications excluded",
+    "scope": "natural same-profile first planting; not first harvest or eight-hour completion"
   }
 ]
