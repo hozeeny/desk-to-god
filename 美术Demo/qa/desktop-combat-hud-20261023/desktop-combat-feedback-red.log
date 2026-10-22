@@ -1,0 +1,46 @@
+PASS ordinary hits retain their original six damage and attack reset
+PASS an actual incoming hit appears in both the notice and recent events
+PASS guard keeps its original one-point incoming hit
+PASS successful guard reports five prevented and one actually lost health
+PASS feedback preserves the one-second guard window and ten-second cooldown
+PASS guard feedback uses actual realm defense rounding instead of raw incoming damage
+PASS prevented health loss is capped by the health the hero really had
+PASS a lethal guarded hit never invents a successful guard or zero damage
+PASS no lost health and no prevented loss produce no fabricated hit result
+PASS an attack farther than the 0.6-second warning window stays quiet
+PASS the in-range enemy announces its attack at the 0.6-second boundary
+PASS the imminent warning and guard action fit the existing eighteen-character hero HUD
+PASS reading an attack warning cannot advance combat or damage the hero
+PASS an out-of-range enemy cannot warn using a stale attack timer
+PASS a dragged enemy cannot announce an attack that the engine suppresses
+PASS an unselected mortal opponent cannot announce a forbidden attack
+PASS a disabled game cannot announce an attack that will not advance
+PASS a defeated hero sees recovery instead of an incoming attack warning
+PASS the warning does not move the original attack threshold earlier
+PASS the original due hit clears its warning after the attack timer resets
+PASS boss warnings use their original 1.8-second cadence
+PASS armed boss warnings include the original weapon cooldown
+FAIL actual AttackHero loss appears briefly in the original HUD within eighteen text elements
+FAIL the short result has a bounded actual Stopwatch expiry rather than game-tick duration
+FAIL automatic operation text cannot hide a fresh actual injury
+FAIL a following automatic strike cannot overwrite a still-visible injury
+FAIL suppressed hits cannot keep an injury notification alive forever by extending its expiry
+PASS imminent incoming warning outranks a previous combat result
+PASS available awakening outranks a previous combat result
+PASS death recovery remains above awakening and the short result
+PASS expired result restores the original operation hint without changing the game clock
+FAIL actual guard result shows five prevented and one lost HP in the same compact HUD
+FAIL post-strike recorder exists as the private partial-controller integration seam
+FAIL subsequent automatic hits do not drown out successful guard feedback
+PASS automatic strike results do not fill the six-entry manual history
+FAIL an actual strike becomes visible once the protected guard result expires
+FAIL ordinary hit feedback can refresh to the newest real amount
+PASS zero-damage and missing targets do not manufacture a new hit result
+PASS reading the short result has no damage, growth, timer or history side effect
+PASS disabled desktop does not display a remembered combat result
+PASS legacy nonisolated mode does not display the new desktop-only result
+FAIL mortal strike recorder preserves the original full manual hit history text
+PASS a zero-loss attempted strike cannot revive an expired hit notification
+PASS real zero-loss incoming path creates no short injury or guard notification
+FAIL the real shared Battle.Strike HP delta, rather than a nominal weapon value, feeds the compact hit result
+Desktop combat feedback: 45 checks, 12 failures. No forms, probes, saves, actors or natural-time advancement.

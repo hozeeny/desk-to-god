@@ -1441,8 +1441,7 @@ namespace NetBunny
             int inventoryBefore = battle.Progress.Inventory.Count;
             int targetHealthBefore = target.Health;
             List<AdventureEnemy> killed = battle.Strike(target);
-            if (IsolatedDesktop && cultivation.Mortal && target.Health < targetHealthBefore)
-                RecordDesktopEvent("出招命中" + DesktopEnemyName(target) + " · 伤害 " + (targetHealthBefore - target.Health) + " · 剩余气血 " + target.Health + "/" + target.MaxHealth);
+            RecordDesktopStrikeResult(target, targetHealthBefore);
             foreach (AdventureEnemy defeated in killed) BeginCleanup(defeated);
             if (battle.Progress.Inventory.Count > inventoryBefore) ShowLoot(battle.Progress.Inventory.Last(), target.X, target.Y);
             if (killed.Count > 0) Save();

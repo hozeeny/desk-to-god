@@ -68,7 +68,11 @@ namespace NetBunny
                 game.Battle.Enemies.Add(boss); game.Battle.Authorize(boss); Render(game);
                 KnightLayeredWindow hero = game.DesktopHeroWindow, target = game.DesktopEnemyWindows[boss.Id];
                 AdventureEffects effects = Field<AdventureEffects>(game, "effects");
+                int beforeStrikeHealth = boss.Health;
                 typeof(AdventureController).GetMethod("StrikeTarget", Hidden).Invoke(game, new object[] { boss, 0d });
+                string strikeHint = (string)typeof(AdventureController).GetProperty("DesktopHudHint", Hidden).GetValue(game, null);
+                Check(boss.Health < beforeStrikeHealth && strikeHint.Contains("命中") && strikeHint.Contains((beforeStrikeHealth - boss.Health).ToString()),
+                    "actual StrikeTarget reports its real health delta on the closed-panel desktop hint at scale " + scale);
                 object shot = FirstShot(effects); KnightLayeredWindow window = Field<KnightLayeredWindow>(shot, "Window");
                 Check(Near(Field<PointF>(shot, "From"), LowerAnchor(hero)) && Near(Field<PointF>(shot, "To"), LowerAnchor(target)), "player strike uses the actual rendered lower-body anchors at scale " + scale);
                 Check(window.Width == (int)(144 * scale) && window.Height == (int)(144 * scale), "new illustrated projectile has the bounded 144-unit footprint at scale " + scale);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -16,6 +17,15 @@ namespace NetBunny
         static void Set(object instance, string field, object value) { instance.GetType().GetField(field, Private).SetValue(instance, value); }
         static object Call(object instance, string method, params object[] args) { return instance.GetType().GetMethod(method, Private).Invoke(instance, args); }
         static void Check(bool okay, string message) { checks++; Console.WriteLine((okay ? "PASS " : "FAIL ") + message); if (!okay) failures++; }
+        static string Hud(AdventureController game) { return (string)typeof(AdventureController).GetProperty("DesktopHudHint", Private).GetValue(game, null); }
+        static bool StrikeResult(AdventureController game, AdventureEnemy enemy, int before)
+        {
+            MethodInfo method = typeof(AdventureController).GetMethod("RecordDesktopStrikeResult", Private);
+            if (method == null) return false;
+            method.Invoke(game, new object[] { enemy, before }); return true;
+        }
+        static void ExpireFeedback(AdventureController game)
+        { FieldInfo field = typeof(AdventureController).GetField("feedbackExpiry", Private); if (field != null) field.SetValue(game, -1.0); }
 
         static AdventureController Controller()
         {
@@ -114,9 +124,72 @@ namespace NetBunny
             Check(game.ReadDesktopPlayerView().BlockText.Contains("即将出手"), "armed boss warnings include the original weapon cooldown");
         }
 
+        static void ShortHudChecks()
+        {
+            AdventureController game = Controller(); AdventureEnemy enemy = Enemy(game);
+            string operation = Hud(game);
+            Call(game, "AttackHero", enemy, true, 2.6);
+            Check(Hud(game).Contains("受伤6") && new StringInfo(Hud(game)).LengthInTextElements <= 18,
+                "actual AttackHero loss appears briefly in the original HUD within eighteen text elements");
+            FieldInfo expiryField = typeof(AdventureController).GetField("feedbackExpiry", Private);
+            double expiry = expiryField == null ? -1 : (double)expiryField.GetValue(game);
+            double wallNow = ((Stopwatch)typeof(AdventureController).GetField("clock", Private).GetValue(game)).Elapsed.TotalSeconds;
+            Check(expiry > wallNow && expiry <= wallNow + 2, "the short result has a bounded actual Stopwatch expiry rather than game-tick duration");
+            game.Battle.SetAutomatic(true);
+            Check(Hud(game).Contains("受伤6"), "automatic operation text cannot hide a fresh actual injury");
+            enemy.Health -= 7; StrikeResult(game, enemy, enemy.Health + 7);
+            Check(Hud(game).Contains("受伤6") && !Hud(game).Contains("命中"), "a following automatic strike cannot overwrite a still-visible injury");
+            Check(expiryField != null && (double)expiryField.GetValue(game) == expiry, "suppressed hits cannot keep an injury notification alive forever by extending its expiry");
+            enemy.AttackTime = 2.0;
+            Check(Hud(game).Contains("即将受击") && !Hud(game).Contains("受伤6"), "imminent incoming warning outranks a previous combat result");
+            enemy.AttackTime = 0; game.Cultivation.MortalKills = 10;
+            Check(Hud(game).Contains("觉醒"), "available awakening outranks a previous combat result");
+            game.Battle.Progress.Dead = true;
+            Check(Hud(game).Contains("调息") && !Hud(game).Contains("受伤6"), "death recovery remains above awakening and the short result");
+            game.Battle.Progress.Dead = false; game.Cultivation.MortalKills = 0; game.Battle.SetAutomatic(false); ExpireFeedback(game);
+            Check(Hud(game) == operation, "expired result restores the original operation hint without changing the game clock");
+
+            game = Controller(); enemy = Enemy(game); game.TryBlock(); Call(game, "AttackHero", enemy, true, 2.6);
+            string blocked = Hud(game);
+            Check(blocked.Contains("挡下5") && blocked.Contains("受伤1") && new StringInfo(blocked).LengthInTextElements <= 18,
+                "actual guard result shows five prevented and one lost HP in the same compact HUD");
+            game.Cultivation.Mortal = false; game.Battle.SetAutomatic(true); int history = game.ReadDesktopPlayerView().RecentEvents.Length;
+            enemy.Health -= 3; bool methodExists = StrikeResult(game, enemy, enemy.Health + 3);
+            Check(methodExists, "post-strike recorder exists as the private partial-controller integration seam");
+            Check(Hud(game) == blocked, "subsequent automatic hits do not drown out successful guard feedback");
+            Check(game.ReadDesktopPlayerView().RecentEvents.Length == history, "automatic strike results do not fill the six-entry manual history");
+            ExpireFeedback(game); enemy.Health -= 4; StrikeResult(game, enemy, enemy.Health + 4);
+            Check(Hud(game).Contains("命中4"), "an actual strike becomes visible once the protected guard result expires");
+            enemy.Health -= 2; StrikeResult(game, enemy, enemy.Health + 2);
+            Check(Hud(game).Contains("命中2"), "ordinary hit feedback can refresh to the newest real amount");
+            string beforeZero = Hud(game); StrikeResult(game, enemy, enemy.Health); StrikeResult(game, null, 10);
+            Check(Hud(game) == beforeZero, "zero-damage and missing targets do not manufacture a new hit result");
+            int hp = game.Battle.Progress.Health, enemyHp = enemy.Health, qi = (int)game.Cultivation.Qi; double attack = enemy.AttackTime;
+            int events = game.ReadDesktopPlayerView().RecentEvents.Length;
+            for (int i = 0; i < 20; i++) Hud(game);
+            Check(game.Battle.Progress.Health == hp && enemy.Health == enemyHp && game.Cultivation.Qi == qi && enemy.AttackTime == attack
+                && game.ReadDesktopPlayerView().RecentEvents.Length == events, "reading the short result has no damage, growth, timer or history side effect");
+            Set(game, "enabled", false);
+            Check(!Hud(game).Contains("命中2"), "disabled desktop does not display a remembered combat result");
+            Set(game, "enabled", true); Set(game, "isolatedProfileRoot", null);
+            Check(!Hud(game).Contains("命中2"), "legacy nonisolated mode does not display the new desktop-only result");
+
+            game = Controller(); enemy = Enemy(game); enemy.Health = 137; StrikeResult(game, enemy, 144);
+            Check(game.ReadDesktopPlayerView().RecentEvents.Any(e => e == "出招命中木芽小妖 · 伤害 7 · 剩余气血 137/144"),
+                "mortal strike recorder preserves the original full manual hit history text");
+            ExpireFeedback(game); StrikeResult(game, enemy, enemy.Health);
+            Check(!Hud(game).Contains("命中"), "a zero-loss attempted strike cannot revive an expired hit notification");
+            game = Controller(); enemy = Enemy(game); game.Battle.CultivationDefenseFactor = 0; Call(game, "AttackHero", enemy, true, 2.6);
+            Check(!Hud(game).Contains("受伤") && !Hud(game).Contains("挡下"), "real zero-loss incoming path creates no short injury or guard notification");
+            game = Controller(); enemy = Enemy(game); int before = enemy.Health;
+            game.Battle.Strike(enemy); StrikeResult(game, enemy, before);
+            Check(before > enemy.Health && Hud(game).Contains("命中" + (before - enemy.Health).ToString(CultureInfo.InvariantCulture)),
+                "the real shared Battle.Strike HP delta, rather than a nominal weapon value, feeds the compact hit result");
+        }
+
         static int Main()
         {
-            try { HitChecks(); WarningChecks(); Console.WriteLine("Desktop combat feedback: " + checks + " checks, " + failures + " failures. No forms, probes, saves, actors or natural-time advancement."); return failures == 0 ? 0 : 1; }
+            try { HitChecks(); WarningChecks(); ShortHudChecks(); Console.WriteLine("Desktop combat feedback: " + checks + " checks, " + failures + " failures. No forms, probes, saves, actors or natural-time advancement."); return failures == 0 ? 0 : 1; }
             catch (Exception error) { Console.Error.WriteLine(error); return 2; }
         }
     }

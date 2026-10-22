@@ -1,0 +1,13 @@
+{
+  "output": "native-guard-history-client.png",
+  "source_local_name": "03-guard-history-handbook.png",
+  "source_sha256": "420eb2c96592577ce52c9e501349878586b21ccb9229a00ea3aa63ddadc98822",
+  "crop_xyxy": [
+    10,
+    33,
+    477,
+    727
+  ],
+  "output_sha256": "d68c943dc6c8c5ee96852c63b7e2e253fcf82142cde4b550594e10737b1e7151",
+  "method": "Original native opaque owned client pixels only; no resizing, redrawing or background replacement. All other-app actor captures stay local."
+}

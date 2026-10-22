@@ -1,0 +1,20 @@
+{
+  "short_hud": {
+    "checks": 45,
+    "red_failures": 12,
+    "green_failures": 0,
+    "original_checks_retained": 22
+  },
+  "real_strike_integration": {
+    "checks": 58,
+    "red_failures": 3,
+    "green_failures": 0,
+    "scales": [
+      0.8,
+      1,
+      1.2
+    ]
+  },
+  "ttl_seconds": 1.8,
+  "scope": "Controlled in-memory/offscreen source fixtures. Expiry test adjusts only the feedback expiry field, not game clock. Existing attack damage, range, cooldown, authorizations, saved progress and maintenance are unchanged."
+}

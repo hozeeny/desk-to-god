@@ -48,6 +48,8 @@ namespace NetBunny
                 string incoming = DesktopIncomingAttackHint();
                 if (incoming.Length > 0) return "即将受击" + (clock.Elapsed.TotalSeconds < blockUntil ? " · 格挡生效" : clock.Elapsed.TotalSeconds >= blockCooldownUntil ? " · 点修士格挡" : " · 格挡冷却");
                 if (cultivation.CanAwaken) return "历练10/10 · 右键觉醒";
+                string result = DesktopCombatResultHint();
+                if (result.Length > 0) return result;
                 if (battle.Automatic) return "自动作战 · 右键修行";
                 AdventureEnemy target = battle.Target;
                 if (target == null) return cultivation.Mortal ? "历练" + cultivation.MortalKills + "/10 · 点妖物选敌" : "点妖物历练 · 右键修行";

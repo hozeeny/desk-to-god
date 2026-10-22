@@ -1,0 +1,31 @@
+{
+  "scope": "short normal x1 native manual selection, real enemy windup, real guard click and actual health change; no progression injection or real maintenance",
+  "warning": "赤伞菇妖即将出手 · 约0.6秒\n格挡就绪 · 点击修士，持续1秒",
+  "hud": "即将受击 · 点修士格挡",
+  "warningSeconds": 4.9628917999999995,
+  "healthBeforeGuard": 100,
+  "healthAfterGuard": 99,
+  "result": "格挡成功 · 赤伞菇妖 · 挡下4点 · 实受1点伤害 · 气血 99/100",
+  "closedPanelHud": {
+    "text": "挡下4·受伤1",
+    "samples": 137,
+    "matches": 137,
+    "minimumSamples": 60,
+    "minimumRatio": 0.8,
+    "rgbToleranceSum": 45,
+    "image": "02a-closed-panel-guard-hud.png",
+    "bounds": "{X=1157,Y=620,Width=220,Height=240}",
+    "handbookClosed": true,
+    "capture": "Unmodified native desktop pixels matched to exact result glyphs; no actor hide, timer pause or game-state injection"
+  },
+  "nativeNoticeGlyphSamples": 489,
+  "nativeNoticeGlyphMatches": 489,
+  "nativeClicks": 2,
+  "passed": true,
+  "elapsedSeconds": 6.1418517999999995,
+  "fiveSavesSucceeded": true,
+  "scope_detail": "Production-source standalone runner, fresh private Virtual mortal profile, normal x1, actual native selection and guard. Not the delivered EXE or a full ten-kill awakening run.",
+  "real_archives_unchanged": true,
+  "native_images_reviewed": 4,
+  "original_report_sha256": "0a53882b3cb896dac133cc6d456721b4d28c33a448e573c22b7de28c4bfe9083"
+}

@@ -28,6 +28,40 @@ namespace NetBunny
         bool busy, finished;
         internal int ExitCode { get; private set; }
         object Call(string name, params object[] args) { return typeof(DesktopDemoAcceptance).GetMethod(name, Hidden).Invoke(native, args); }
+        void CaptureClosedPanelResult(AdventureController game)
+        {
+            string text = (string)typeof(AdventureController).GetProperty("DesktopHudHint", Hidden).GetValue(game, null);
+            if (!text.Contains("挡下") || Application.OpenForms.OfType<DesktopPracticePanel>().Any(f => f.Visible))
+                throw new InvalidOperationException("Real guard result must be on the desktop with handbook closed.");
+            KnightLayeredWindow hero = game.DesktopHeroWindow;
+            int samples = 0, matches = 0;
+            using (Bitmap expected = new Bitmap(hero.Width, hero.Height))
+            using (Bitmap actual = DesktopFrameCapture.CaptureRegion(hero.Bounds))
+            {
+                using (Graphics g = Graphics.FromImage(expected))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                    float scale = Math.Min(hero.Width / 220f, hero.Height / 220f);
+                    g.TranslateTransform((hero.Width - 220 * scale) / 2, (hero.Height - 220 * scale) / 2); g.ScaleTransform(scale, scale);
+                    object renderer = typeof(AdventureController).GetField("renderer", Hidden).GetValue(game);
+                    typeof(AdventureRenderer).GetMethod("DrawActionHint", Hidden).Invoke(renderer, new object[] { g, text });
+                }
+                Color ink = Color.FromArgb(247, 241, 218);
+                for (int y = 0; y < expected.Height; y++) for (int x = 0; x < expected.Width; x++)
+                {
+                    Color p = expected.GetPixel(x, y);
+                    if (p.A < 245 || Math.Abs(p.R - ink.R) + Math.Abs(p.G - ink.G) + Math.Abs(p.B - ink.B) > 25) continue;
+                    Color pixel = actual.GetPixel(x, y); samples++;
+                    if (Math.Abs(pixel.R - p.R) + Math.Abs(pixel.G - p.G) + Math.Abs(pixel.B - p.B) <= 45) matches++;
+                }
+                actual.Save(Path.Combine(output, "02a-closed-panel-guard-hud.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
+            report["closedPanelHud"] = new { text, samples, matches, minimumSamples = 60, minimumRatio = .8, rgbToleranceSum = 45,
+                image = "02a-closed-panel-guard-hud.png", bounds = hero.Bounds.ToString(), handbookClosed = true,
+                capture = "Unmodified native desktop pixels matched to exact result glyphs; no actor hide, timer pause or game-state injection" };
+            if (samples < 60 || matches < samples * .8) throw new InvalidOperationException("Closed-panel guard HUD glyphs were not actually readable.");
+        }
         void VerifyIdleWindowsClear(AdventureController game, string moment)
         {
             var windows=game.DesktopEnemyWindows;int idle=0,overlap=0;
@@ -128,6 +162,7 @@ namespace NetBunny
                 if (game.Battle.Progress.Health >= healthBefore || game.Battle.Progress.Dead) throw new InvalidOperationException("Expected original positive post-guard damage, not an injected no-hit result.");
                 report["result"] = result; report["healthAfterGuard"] = game.Battle.Progress.Health;
                 VerifyIdleWindowsClear(game,"guardResult");
+                CaptureClosedPanelResult(game);
                 Call("Capture", "02-real-guard-result", true, false, false);
                 session.OpenPanel("practice");
                 phase = 3;
