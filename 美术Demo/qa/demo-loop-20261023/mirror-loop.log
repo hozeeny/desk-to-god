@@ -1,33 +1,33 @@
-Private fixture root: E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\dongtian-mirage-loop\green-20261023-000714-049\private-fixtures
-PASS repeatable mirror material has a production recipe
-PASS one mirror material cannot pay the two-material recipe or lose a partial payment
-PASS two materials produce exactly one mirror pill batch
-PASS a duplicate start cannot create a second batch in the occupied furnace
-PASS the saved mirror recipe matures after thirty minutes and can be collected offline
-PASS mirror alchemy supplies eight percent damage for twelve hours after collection
-PASS the original lingsui recipe still consumes one rare material and brews for thirty minutes
-PASS rare and repeatable recipes share one non-stacking damage buff
-PASS collecting an earlier-ending alternative cannot shorten or multiply the existing buff
-PASS imported mirror material keeps its player-facing name
-PASS the first formal lord reward supplies two mirror materials and one rare lingsui
-PASS the available import explains the two-material mirror pill purpose before a click
-PASS the mirror recipe is discoverable and disabled until its real bag payment exists
-PASS the import button transfers one actual reward unit rather than copying it
-PASS inventory changes reuse the existing import control while stock remains
-PASS an exhausted reward inventory cannot be imported again
-PASS both original ledgers record exactly the two successful reward transfers
-PASS the second formal lord reward replenishes mirror material without duplicating rare lingsui
-PASS a cave archive failure keeps the exact accepted reward transfer pending
-PASS pending mirror import visibly disables further production operations
-PASS a queued click during pending persistence cannot transfer another unit
-PASS the original retry durably commits the second-clear transfer to both archives
-PASS repeated lord rewards enable the real mirror recipe
-PASS unchanged mirror inventory and recipe states preserve all action controls
-PASS the same controller turns second-clear stock into a persisted mirror batch
-PASS formal collection consumes the ready batch and activates its existing damage buff
-PASS a duplicate collection cannot issue another effect
-PASS the collected mirror pill feeds the production battle damage factor
-PASS the complete reward loop saves only private archives with actors hidden and no real workers
-PASS controller reconstruction reconciles the two clears without copying spent or imported materials
-PASS the real persisted pill effect survives reconstruction without reopening exhausted imports
-Dongtian mirage loop: 31 checks, 0 failures. Logical/private fixtures only; no natural-growth or desktop acceptance claim.
+Private fixture root: E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\dongtian-mirage-loop\green-20261023-000714-049\private-fixtures
+PASS repeatable mirror material has a production recipe
+PASS one mirror material cannot pay the two-material recipe or lose a partial payment
+PASS two materials produce exactly one mirror pill batch
+PASS a duplicate start cannot create a second batch in the occupied furnace
+PASS the saved mirror recipe matures after thirty minutes and can be collected offline
+PASS mirror alchemy supplies eight percent damage for twelve hours after collection
+PASS the original lingsui recipe still consumes one rare material and brews for thirty minutes
+PASS rare and repeatable recipes share one non-stacking damage buff
+PASS collecting an earlier-ending alternative cannot shorten or multiply the existing buff
+PASS imported mirror material keeps its player-facing name
+PASS the first formal lord reward supplies two mirror materials and one rare lingsui
+PASS the available import explains the two-material mirror pill purpose before a click
+PASS the mirror recipe is discoverable and disabled until its real bag payment exists
+PASS the import button transfers one actual reward unit rather than copying it
+PASS inventory changes reuse the existing import control while stock remains
+PASS an exhausted reward inventory cannot be imported again
+PASS both original ledgers record exactly the two successful reward transfers
+PASS the second formal lord reward replenishes mirror material without duplicating rare lingsui
+PASS a cave archive failure keeps the exact accepted reward transfer pending
+PASS pending mirror import visibly disables further production operations
+PASS a queued click during pending persistence cannot transfer another unit
+PASS the original retry durably commits the second-clear transfer to both archives
+PASS repeated lord rewards enable the real mirror recipe
+PASS unchanged mirror inventory and recipe states preserve all action controls
+PASS the same controller turns second-clear stock into a persisted mirror batch
+PASS formal collection consumes the ready batch and activates its existing damage buff
+PASS a duplicate collection cannot issue another effect
+PASS the collected mirror pill feeds the production battle damage factor
+PASS the complete reward loop saves only private archives with actors hidden and no real workers
+PASS controller reconstruction reconciles the two clears without copying spent or imported materials
+PASS the real persisted pill effect survives reconstruction without reopening exhausted imports
+Dongtian mirage loop: 31 checks, 0 failures. Logical/private fixtures only; no natural-growth or desktop acceptance claim.

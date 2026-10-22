@@ -1,43 +1,43 @@
-STATE phase=0 foreground=132304 panel=none modal=0
-WELCOME managed=False native=True
-PASS initial welcome remains visible and natively topmost
-PASS initial welcome does not activate itself
-STATE phase=1 foreground=92539068 panel=92539068/top=False/native=True modal=0
-PASS manually opened own handbook is foreground
-SPAWN present hwnd=5900550 fg=92539068
-SPAWN show hwnd=5900550 fg=92539068
-PASS new actor is already behind foreground panel when Show returns
-STATE phase=2 foreground=92539068 panel=92539068/top=False/native=True modal=0
-PASS foreground panel remains clickable under a newly spawned opaque actor
-PASS actor reordering never activates an actor or another form
-PASS actor remains visible and natively topmost
-PASS test actually overlaps the visible panel with an opaque actor
-SPAWN present hwnd=88672058 fg=92539068
-SPAWN show hwnd=88672058 fg=92539068
-PASS later actor creation needs no timer grace period to protect buttons
-STATE phase=3 foreground=92539068 panel=92539068/top=False/native=True modal=0
-PASS later actors cannot cover a panel that is already open
-MODAL after show foreground=32769882 rootOwner=32769882 nativeOwner=92539068 managedOwner=92539068
-STATE phase=4 foreground=32769882 panel=92539068/top=False/native=True modal=32769882
-PASS owned dialog retains actual foreground
-PASS owned dialog stays above layered actors and its owner
-PASS modal fixture leaves an owner area exposed under another opaque actor
-PASS owned dialog protection also keeps exposed owner buttons above actors
-UNRELATED hwnd=32835418 after show foreground=32835418
-STATE phase=5 foreground=32835418 panel=92539068/top=False/native=False modal=0
-PASS coordinator does not reclaim focus from unregistered windows
-PASS inactive feature panel gives up native topmost status
-PASS leaving a panel does not hide or demote desktop actors
-STATE phase=6 foreground=92539068 panel=92539068/top=False/native=True modal=0
-PASS reopening the panel restores active panel protection
-STATE phase=7 foreground=132304 panel=92539068/top=False/native=False modal=0
-PASS minimized panels do not stay natively topmost
-STATE phase=8 foreground=92539068 panel=92539068/top=False/native=True modal=0
-PASS manual reopen restores a minimized feature panel
-STATE phase=9 foreground=132304 panel=92539068/top=False/native=False modal=0
-PASS closing all panels retires their native z-order protection
-PASS panel closure leaves hero and independent actors alive
-PASS coordinator never captures pointer input
-STATE phase=10 foreground=132304 panel=disposed modal=0
-PASS disposed panels are not reopened by coordinator ticks
-Panel layering: 24 checks, 0 failures; 4.15 seconds; private fixture only.
+STATE phase=0 foreground=132304 panel=none modal=0
+WELCOME managed=False native=True
+PASS initial welcome remains visible and natively topmost
+PASS initial welcome does not activate itself
+STATE phase=1 foreground=92539068 panel=92539068/top=False/native=True modal=0
+PASS manually opened own handbook is foreground
+SPAWN present hwnd=5900550 fg=92539068
+SPAWN show hwnd=5900550 fg=92539068
+PASS new actor is already behind foreground panel when Show returns
+STATE phase=2 foreground=92539068 panel=92539068/top=False/native=True modal=0
+PASS foreground panel remains clickable under a newly spawned opaque actor
+PASS actor reordering never activates an actor or another form
+PASS actor remains visible and natively topmost
+PASS test actually overlaps the visible panel with an opaque actor
+SPAWN present hwnd=88672058 fg=92539068
+SPAWN show hwnd=88672058 fg=92539068
+PASS later actor creation needs no timer grace period to protect buttons
+STATE phase=3 foreground=92539068 panel=92539068/top=False/native=True modal=0
+PASS later actors cannot cover a panel that is already open
+MODAL after show foreground=32769882 rootOwner=32769882 nativeOwner=92539068 managedOwner=92539068
+STATE phase=4 foreground=32769882 panel=92539068/top=False/native=True modal=32769882
+PASS owned dialog retains actual foreground
+PASS owned dialog stays above layered actors and its owner
+PASS modal fixture leaves an owner area exposed under another opaque actor
+PASS owned dialog protection also keeps exposed owner buttons above actors
+UNRELATED hwnd=32835418 after show foreground=32835418
+STATE phase=5 foreground=32835418 panel=92539068/top=False/native=False modal=0
+PASS coordinator does not reclaim focus from unregistered windows
+PASS inactive feature panel gives up native topmost status
+PASS leaving a panel does not hide or demote desktop actors
+STATE phase=6 foreground=92539068 panel=92539068/top=False/native=True modal=0
+PASS reopening the panel restores active panel protection
+STATE phase=7 foreground=132304 panel=92539068/top=False/native=False modal=0
+PASS minimized panels do not stay natively topmost
+STATE phase=8 foreground=92539068 panel=92539068/top=False/native=True modal=0
+PASS manual reopen restores a minimized feature panel
+STATE phase=9 foreground=132304 panel=92539068/top=False/native=False modal=0
+PASS closing all panels retires their native z-order protection
+PASS panel closure leaves hero and independent actors alive
+PASS coordinator never captures pointer input
+STATE phase=10 foreground=132304 panel=disposed modal=0
+PASS disposed panels are not reopened by coordinator ticks
+Panel layering: 24 checks, 0 failures; 4.15 seconds; private fixture only.
