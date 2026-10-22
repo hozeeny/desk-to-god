@@ -1,0 +1,78 @@
+{
+  "scope": "211.75-second source fixture, includes native capture, read-only census, combat, one natural death/recovery, VERIFY and panels. Descriptive measurements only; not idle performance, leak diagnosis or long-test acceptance.",
+  "logical_processors": 12,
+  "sample_count": 255,
+  "maximum_sample_gap_seconds": 0.8809552000000025,
+  "game": {
+    "sample_count": 255,
+    "sampled_seconds": 208.548923,
+    "mean_cpu_core_equivalents": 1.5598857827714603,
+    "mean_percent_of_logical_machine_cpu": 12.999048189762169,
+    "workingSetBytes": {
+      "first": 134844416,
+      "minimum": 134844416,
+      "maximum": 174628864,
+      "last": 174628864
+    },
+    "privateBytes": {
+      "first": 117858304,
+      "minimum": 117858304,
+      "maximum": 144842752,
+      "last": 143134720
+    },
+    "handles": {
+      "first": 409,
+      "minimum": 409,
+      "maximum": 478,
+      "last": 475
+    },
+    "gdiObjects": {
+      "first": 38,
+      "minimum": 38,
+      "maximum": 101,
+      "last": 98
+    },
+    "userObjects": {
+      "first": 32,
+      "minimum": 32,
+      "maximum": 101,
+      "last": 101
+    }
+  },
+  "ownedChild": {
+    "sample_count": 255,
+    "sampled_seconds": 208.548923,
+    "mean_cpu_core_equivalents": 0.0011238370192877955,
+    "mean_percent_of_logical_machine_cpu": 0.009365308494064962,
+    "workingSetBytes": {
+      "first": 125722624,
+      "minimum": 0,
+      "maximum": 125771776,
+      "last": 102440960
+    },
+    "privateBytes": {
+      "first": 122834944,
+      "minimum": 122556416,
+      "maximum": 122834944,
+      "last": 122556416
+    },
+    "handles": {
+      "first": 292,
+      "minimum": 281,
+      "maximum": 292,
+      "last": 281
+    },
+    "gdiObjects": {
+      "first": 0,
+      "minimum": 0,
+      "maximum": 0,
+      "last": 0
+    },
+    "userObjects": {
+      "first": 2,
+      "minimum": 2,
+      "maximum": 2,
+      "last": 2
+    }
+  }
+}

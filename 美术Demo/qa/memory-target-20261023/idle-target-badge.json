@@ -1,0 +1,10 @@
+{
+  "scope": "Real offscreen production RenderWorld frames, stopped private Virtual hosts. No native input, real maintenance, archive injection or time advance.",
+  "checks": 11,
+  "red_failures": 3,
+  "green_failures": 0,
+  "red_log_sha256": "8d20c5e6d7bd55b7258566ef310a8fec39923b1068aa7c7bd58aebe001cbcdfe",
+  "green_log_sha256": "6912863278bb48b221415c3d3df128f4983dfacf3cb4ea5806436ab1eeb6596d",
+  "unchanged_idle_bitmaps_reused": true,
+  "foreground_unchanged": true
+}

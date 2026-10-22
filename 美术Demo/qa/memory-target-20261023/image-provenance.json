@@ -1,0 +1,42 @@
+[
+  {
+    "source_image": "05-actual-owned-memory-worker-result.png",
+    "source_sha256": "cacb524f82c82515ffc9b223922bddf35fa4fa60a73300ddd778512bd06776ae",
+    "crop_box": [
+      8,
+      31,
+      510,
+      700
+    ],
+    "output": "native-actual-memory-result.png",
+    "output_sha256": "344a26141930e03ec4857e096e8d2e3506bafef2080d41ebd1586fc4df8609b0",
+    "scope": "Native opaque game client pixels only; no rescale, redraw or other-app background."
+  },
+  {
+    "source_image": "07-memory-scope-revoked.png",
+    "source_sha256": "cd65ef345ef93a273bec5d75bf3e775eed7a4bbe083108eccbaa3f23146869b0",
+    "crop_box": [
+      8,
+      31,
+      510,
+      700
+    ],
+    "output": "native-memory-revoked.png",
+    "output_sha256": "e6744c3a2653fbdeb9e27b27534374a719ef85409bbbf8e45fc025b634eff6d4",
+    "scope": "Native opaque game client pixels only; no rescale, redraw or other-app background."
+  },
+  {
+    "source_image": "01-idle-unselected-frame.png",
+    "source_sha256": "fd5a0d3d0957eb174eed25bf1721419aa40211466bd9fa40400868334035f7f8",
+    "output": "idle-before-selection.png",
+    "output_sha256": "fd5a0d3d0957eb174eed25bf1721419aa40211466bd9fa40400868334035f7f8",
+    "scope": "Actual offscreen renderer frame copied byte-for-byte, not a native desktop screenshot."
+  },
+  {
+    "source_image": "02-idle-selected-frame.png",
+    "source_sha256": "139b07d2c9958ab1add62df72f90ba2b1d32acf4e718cb4edf7d1754be2e01be",
+    "output": "idle-after-selection.png",
+    "output_sha256": "139b07d2c9958ab1add62df72f90ba2b1d32acf4e718cb4edf7d1754be2e01be",
+    "scope": "Actual offscreen renderer frame copied byte-for-byte, not a native desktop screenshot."
+  }
+]

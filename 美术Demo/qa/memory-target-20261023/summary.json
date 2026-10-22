@@ -1,0 +1,23 @@
+{
+  "scope": "Continued playable transparent desktop Demo, no long-test restart and no all-product acceptance claim.",
+  "executable_sha256": "0e136f0cfe38db87954de4aecddb4009310a95482f60230085719df5b22d9594",
+  "archive_sha256": "d5b4a15626e926c6bfc6b1605f144f51e8daa30ff30b23a09ac97e8ec0692142",
+  "all_results": 46,
+  "nonpassing": 0,
+  "supplemental_baseline_results": 2,
+  "idle_badge_checks": 11,
+  "red_failures": 3,
+  "green_failures": 0,
+  "memory_seconds": 211.7505143,
+  "memory_native_calls": 1,
+  "source_and_real_archives_unchanged": true,
+  "runtime_profile_files": 240,
+  "runtime_profile_hashes_unchanged": true,
+  "legacy_assets_same_as_main": true,
+  "long_test": "PAUSED",
+  "remaining": [
+    "Dense actor/effect overlap",
+    "Physical mixed-DPI/hot-plug/lock-resume not tested",
+    "Natural first harvest and long stability deferred by user"
+  ]
+}

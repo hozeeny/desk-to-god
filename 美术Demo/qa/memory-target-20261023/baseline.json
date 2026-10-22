@@ -1,0 +1,16 @@
+{
+  "scope": "Supplemental exact All Baseline.exe selftest and adventure-smoke; All had been invoked with an unused IncludeBaseline argument, so its 46 results contain no baseline runs. Original All summary preserved.",
+  "real_archives_unchanged": true,
+  "results": [
+    {
+      "name": "SelfTest",
+      "exit_code": 0,
+      "detail": "V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership."
+    },
+    {
+      "name": "AdventureSmoke",
+      "exit_code": 0,
+      "detail": "Growth integration: 81 checks passed (mortal tempering, awakening, breakthrough loop, combat linkage)."
+    }
+  ]
+}

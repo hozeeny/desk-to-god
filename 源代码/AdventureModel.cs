@@ -315,7 +315,15 @@ namespace NetBunny
             }
             Renumber();
         }
-        private void Renumber() { int index = 0; foreach (AdventureEnemy e in queue) e.QueueNumber = e.Defeated || e.Failed ? 0 : ++index; }
+        private void Renumber()
+        {
+            int index = 0;
+            foreach (AdventureEnemy e in queue)
+            {
+                int number = e.Defeated || e.Failed ? 0 : ++index;
+                if (e.QueueNumber != number) { e.QueueNumber = number; e.VisualDirty = true; }
+            }
+        }
         internal List<AdventureEnemy> Strike(AdventureEnemy primary)
         {
             List<AdventureEnemy> defeated = new List<AdventureEnemy>();
