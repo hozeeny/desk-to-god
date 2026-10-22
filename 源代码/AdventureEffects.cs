@@ -22,6 +22,33 @@ namespace NetBunny
         readonly ArtDemoPack artDemo = ArtDemoPack.LoadFromEnvironment();
         double repaint;
         bool disposed;
+        Rectangle protectedHero, previousHero;
+        // Repaint protection after movement without advancing projectile time.
+        // Legacy effects have no foreground-art policy and retain their output.
+        internal void UpdateHeroProtection(Rectangle bounds)
+        {
+            if (disposed || artDemo == null || protectedHero == bounds) return;
+            previousHero = protectedHero; protectedHero = bounds;
+            foreach (Shot shot in shots) Paint(shot);
+        }
+        // The caller moves its HWND between prepare and commit. Both positions
+        // stay protected until then; multiple layered HWNDs are not atomic.
+        internal void CommitHeroProtection()
+        {
+            if (disposed || previousHero.IsEmpty) return;
+            previousHero = Rectangle.Empty;
+            foreach (Shot shot in shots) Paint(shot);
+        }
+        private void ClipHero(Graphics g, Rectangle bounds, Point location)
+        {
+            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+            float heroScale = Math.Min(bounds.Width / 220f, bounds.Height / 220f);
+            float letterbox = (bounds.Height - 220 * heroScale) / 2;
+            int left = bounds.Left - location.X - 1, top = bounds.Top - location.Y;
+            g.ExcludeClip(new Rectangle(left, top - 1, bounds.Width + 2, (int)Math.Ceiling(letterbox + 115 * heroScale) + 2));
+            int footer = (int)Math.Floor(letterbox + 190 * heroScale) - 1;
+            g.ExcludeClip(new Rectangle(left, top + footer, bounds.Width + 2, bounds.Height - footer + 1));
+        }
         internal int ActiveCount { get { return shots.Count; } }
         internal KnightLayeredWindow[] ActiveWindows
         {
@@ -88,8 +115,23 @@ namespace NetBunny
             if(s.Weapon=="blackhole")t=1;
             float x=(float)(s.From.X+(s.To.X-s.From.X)*t),y=(float)(s.From.Y+(s.To.Y-s.From.Y)*t);
             int size=(int)((artDemo == null ? 192 : 144)*s.Scale);Bitmap frame=new Bitmap(size,size,PixelFormat.Format32bppPArgb);
+            Point location = new Point((int)x-size/2, (int)y-size/2);
             using(Graphics g=Graphics.FromImage(frame))
             {
+                if (artDemo != null)
+                {
+                    // Conservative whole-width masks keep face, hints, health
+                    // and realm labels clear at fractional scale/negative X.
+                    if (!previousHero.IsEmpty)
+                    {
+                        // Until the actor move/new-size Present is committed,
+                        // old pixels can still occupy either world position.
+                        Size extent = new Size(Math.Max(previousHero.Width, protectedHero.Width), Math.Max(previousHero.Height, protectedHero.Height));
+                        Rectangle transition = Rectangle.Union(previousHero, new Rectangle(protectedHero.Location, extent));
+                        transition.Inflate(1, 1); transition.Offset(-location.X, -location.Y); g.ExcludeClip(transition);
+                    }
+                    else ClipHero(g, protectedHero, location);
+                }
                 if (artDemo != null) { g.SmoothingMode = SmoothingMode.AntiAlias; g.InterpolationMode = InterpolationMode.HighQualityBicubic; g.PixelOffsetMode = PixelOffsetMode.HighQuality; }
                 if (artDemo != null) artDemo.DrawProjectile(g, s.Weapon, new RectangleF(0, 0, size, size), s.Age, progress);
                 else
@@ -126,7 +168,7 @@ namespace NetBunny
                 }
                 }
             }
-            s.Window.Location=new Point((int)x-size/2,(int)y-size/2);s.Window.Present(frame);if(!s.Window.Visible)s.Window.Show();
+            s.Window.Location=location;s.Window.Present(frame);if(!s.Window.Visible)s.Window.Show();
         }
         internal void Clear() { foreach(Shot s in shots)s.Dispose();shots.Clear(); }
         public void Dispose() { if(disposed)return;disposed=true;Clear();if(artDemo!=null)artDemo.Dispose(); }

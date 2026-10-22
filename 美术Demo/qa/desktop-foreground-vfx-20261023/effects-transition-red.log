@@ -1,0 +1,101 @@
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS out-of-range selection uses the production entry and changes only combat focus, without a strike
+PASS a stationary merely-selected enemy immediately gains target-badge pixels in the real presented frame
+PASS real planner establishes the nearest automatic target before a manual preemption
+PASS real manual authorization renumbers the old automatic target instead of cancelling its queue
+PASS stationary old automatic target replaces its target word with its new queue-number pixels
+PASS stationary new manual target immediately receives target-badge pixels
+PASS cancelling a stationary target removes its badge immediately through the existing invalidation path
+PASS renumbering another actor does not rerasterize an unchanged stationary target
+PASS a second frame with unchanged stationary semantics retains both original Bitmap instances
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS actual native actor order keeps the hero and its HUD above all enemies
+PASS the current target stays above other enemies independent of creation order
+PASS actor ordering does not rerasterize unchanged stationary enemies
+PASS new actor priority remains below the existing protected feature panel
+PASS later enemies cannot cover the hero HUD or the current target under a protected panel
+PASS a dragged actor remains visible while the feature panel still outranks it
+PASS ending an actor drag restores hero and current-target visibility without raising past the panel
+PASS the fixture starts its unrelated own topmost window above the disturbed actor group
+PASS relative repair preserves a window already above the group instead of globally raising the game
+PASS native ordering changes no combat authorization, HP, queue or real worker
+PASS actual StrikeTarget reports its real health delta on the closed-panel desktop hint at scale 0.8
+PASS player strike uses the actual rendered lower-body anchors at scale 0.8
+PASS new illustrated projectile has the bounded 144-unit footprint at scale 0.8
+PASS the very first Fire frame has zero alpha across the whole head and lower HUD protection zones at scale 0.8
+PASS real relative order puts visible effect above protected hero above current target at scale 0.8
+PASS fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale 0.8
+PASS visual refinement preserves the normal projectile age and duration at scale 0.8
+PASS moving projectile remains visible above protected hero without hiding or clearing at scale 0.8
+PASS real Boss attack still damages through its existing path and emits an effect at scale 0.8
+PASS Boss response uses the same lower-body mapping in the reverse direction at scale 0.8
+PASS later effect windows stay visible above protected hero and below the existing panel at scale 0.8
+PASS a dragged enemy stays above every effect while remaining below the feature panel at scale 0.8
+PASS original effect lifetime disposes its windows with no real worker at scale 0.8
+PASS ClampHero alone refreshes the moved head mask before any Render or Tick, without aging the shot at scale 0.8
+PASS moving fixture puts actual previously visible effect pixels inside the new whole head zone at scale 0.8
+PASS Render immediately clears every alpha in the moved whole head zone without advancing or moving the shot at scale 0.8
+PASS a new Fire first frame is already masked where the real unmasked reference had visible head-zone pixels at scale 0.8
+PASS moving fixture puts actual previously visible effect pixels inside the new HUD zone at scale 0.8
+PASS Render immediately clears every alpha in the moved HUD zone without advancing or moving the shot at scale 0.8
+PASS leaving the protection area restores the original visible effect at unchanged age/endpoints at scale 0.8
+PASS unchanged hero position does not rerasterize a stationary effect at scale 0.8
+PASS a currently dragged hero stays above the effect at scale 0.8
+FAIL prepare phase protects both old head and new HUD with nonzero unmasked reference pixels at scale 0.8
+FAIL commit releases the old zone while retaining the new zone without advancing age or endpoints at scale 0.8
+PASS repeated same-bounds prepare/commit reuses the effect bitmap at scale 0.8
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS actual StrikeTarget reports its real health delta on the closed-panel desktop hint at scale 1
+PASS player strike uses the actual rendered lower-body anchors at scale 1
+PASS new illustrated projectile has the bounded 144-unit footprint at scale 1
+PASS the very first Fire frame has zero alpha across the whole head and lower HUD protection zones at scale 1
+PASS real relative order puts visible effect above protected hero above current target at scale 1
+PASS fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale 1
+PASS visual refinement preserves the normal projectile age and duration at scale 1
+PASS moving projectile remains visible above protected hero without hiding or clearing at scale 1
+PASS real Boss attack still damages through its existing path and emits an effect at scale 1
+PASS Boss response uses the same lower-body mapping in the reverse direction at scale 1
+PASS later effect windows stay visible above protected hero and below the existing panel at scale 1
+PASS a dragged enemy stays above every effect while remaining below the feature panel at scale 1
+PASS original effect lifetime disposes its windows with no real worker at scale 1
+PASS ClampHero alone refreshes the moved head mask before any Render or Tick, without aging the shot at scale 1
+PASS moving fixture puts actual previously visible effect pixels inside the new whole head zone at scale 1
+PASS Render immediately clears every alpha in the moved whole head zone without advancing or moving the shot at scale 1
+PASS a new Fire first frame is already masked where the real unmasked reference had visible head-zone pixels at scale 1
+PASS moving fixture puts actual previously visible effect pixels inside the new HUD zone at scale 1
+PASS Render immediately clears every alpha in the moved HUD zone without advancing or moving the shot at scale 1
+PASS leaving the protection area restores the original visible effect at unchanged age/endpoints at scale 1
+PASS unchanged hero position does not rerasterize a stationary effect at scale 1
+PASS a currently dragged hero stays above the effect at scale 1
+FAIL prepare phase protects both old head and new HUD with nonzero unmasked reference pixels at scale 1
+FAIL commit releases the old zone while retaining the new zone without advancing age or endpoints at scale 1
+PASS repeated same-bounds prepare/commit reuses the effect bitmap at scale 1
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS actual StrikeTarget reports its real health delta on the closed-panel desktop hint at scale 1.2
+PASS player strike uses the actual rendered lower-body anchors at scale 1.2
+PASS new illustrated projectile has the bounded 144-unit footprint at scale 1.2
+PASS the very first Fire frame has zero alpha across the whole head and lower HUD protection zones at scale 1.2
+PASS real relative order puts visible effect above protected hero above current target at scale 1.2
+PASS fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale 1.2
+PASS visual refinement preserves the normal projectile age and duration at scale 1.2
+PASS moving projectile remains visible above protected hero without hiding or clearing at scale 1.2
+PASS real Boss attack still damages through its existing path and emits an effect at scale 1.2
+PASS Boss response uses the same lower-body mapping in the reverse direction at scale 1.2
+PASS later effect windows stay visible above protected hero and below the existing panel at scale 1.2
+PASS a dragged enemy stays above every effect while remaining below the feature panel at scale 1.2
+PASS original effect lifetime disposes its windows with no real worker at scale 1.2
+PASS ClampHero alone refreshes the moved head mask before any Render or Tick, without aging the shot at scale 1.2
+PASS moving fixture puts actual previously visible effect pixels inside the new whole head zone at scale 1.2
+PASS Render immediately clears every alpha in the moved whole head zone without advancing or moving the shot at scale 1.2
+PASS a new Fire first frame is already masked where the real unmasked reference had visible head-zone pixels at scale 1.2
+PASS moving fixture puts actual previously visible effect pixels inside the new HUD zone at scale 1.2
+PASS Render immediately clears every alpha in the moved HUD zone without advancing or moving the shot at scale 1.2
+PASS leaving the protection area restores the original visible effect at unchanged age/endpoints at scale 1.2
+PASS unchanged hero position does not rerasterize a stationary effect at scale 1.2
+PASS a currently dragged hero stays above the effect at scale 1.2
+FAIL prepare phase protects both old head and new HUD with nonzero unmasked reference pixels at scale 1.2
+FAIL commit releases the old zone while retaining the new zone without advancing age or endpoints at scale 1.2
+PASS repeated same-bounds prepare/commit reuses the effect bitmap at scale 1.2
+PASS stopped Virtual fixture owns only screen-external actor windows, with no real worker, visible host or game tick
+PASS off-screen production rendering and disposal never change foreground focus
+Idle target badge: 100 checks, 6 failures. Real source frames; no native screenshot, input, HP edit, Advance or production-archive write.

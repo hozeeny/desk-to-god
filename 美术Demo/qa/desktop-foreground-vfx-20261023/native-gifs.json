@@ -1,0 +1,215 @@
+[
+  {
+    "file": "desktop-idle-walk.gif",
+    "sha256": "822f9c110ffeacfa2e08157d28c052a0483ea9c38a9e9357f1bd00bdb0730676",
+    "source_frames": 5,
+    "encoded_frames": 5,
+    "duration_seconds": 2.2,
+    "source_time_span_seconds": 1.7497496999999989,
+    "canvas": [
+      276,
+      296
+    ],
+    "method": "Original native desktop frame crops, centered with dark padding only; no resizing, repaint, tweening or invented scene. GIF palette conversion; exact PNG originals retained. Approximately3fps capture, real timestamps rounded to GIF10ms. Raw other-app background remains local only.",
+    "source_sha256": [
+      {
+        "image": "native-frames/desktop-idle-walk-001.png",
+        "sha256": "7c7746f09d393e47a8ef8039b16fc0cbd5c9fa9b6c07f18f9755ffd32701a53a"
+      },
+      {
+        "image": "native-frames/desktop-idle-walk-002.png",
+        "sha256": "e74a19acd4f92961252d9fd6c808f89f6c0d4f42309ef7f97422d05c94747251"
+      },
+      {
+        "image": "native-frames/desktop-idle-walk-003.png",
+        "sha256": "8599a6d403524b17da6ab96a43f1d34ac70efca07a8af8c5789fcc8d0b7b8a55"
+      },
+      {
+        "image": "native-frames/desktop-idle-walk-004.png",
+        "sha256": "9ec11c0f764c33c5f8e87298ae37e646b43de15eb3032ab943bbe55428ec4b8c"
+      },
+      {
+        "image": "native-frames/desktop-idle-walk-005.png",
+        "sha256": "cd414d856b6a7271dba5d7b8205762ff4eee60b45939846c151a04bd2c8a93d5"
+      }
+    ]
+  },
+  {
+    "file": "mortal-manual-combat.gif",
+    "sha256": "3bd11ea62672a996d8368955ddf49c0cd67c789c3eebef8f9e89bdcf8dc70c71",
+    "source_frames": 17,
+    "encoded_frames": 17,
+    "duration_seconds": 7.25,
+    "source_time_span_seconds": 6.790215499999999,
+    "canvas": [
+      393,
+      486
+    ],
+    "method": "Original native desktop frame crops, centered with dark padding only; no resizing, repaint, tweening or invented scene. GIF palette conversion; exact PNG originals retained. Approximately3fps capture, real timestamps rounded to GIF10ms. Raw other-app background remains local only.",
+    "source_sha256": [
+      {
+        "image": "native-frames/mortal-manual-combat-006.png",
+        "sha256": "55b218d18c16f6f6d3a856aa8c16c2fa6d17ed8e3db7f7ebf42a062b098a2bdf"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-007.png",
+        "sha256": "6b7824485eaf717bcf96632dac4508ed512641966502fbd37af2975737a4d1d8"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-008.png",
+        "sha256": "18dde2ed80846c81bea2e4a9c657eaf77daa0ed6ac79078899e28197a1c2e787"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-009.png",
+        "sha256": "a1fda65e199b5b0c42b7cff86eabd37819924cf1337bbdea24bf432e33734f15"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-010.png",
+        "sha256": "9291b6f9d2ea038084c2706c307448cdbfc1721fd01bf450c7c75ff08c310a5b"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-011.png",
+        "sha256": "bb8833fa0ddb9d481a31517a513631fd7ef6f6f0b6a07859b1449e3ee6a01b40"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-012.png",
+        "sha256": "e3add73fba7efbff92f8bb27b2e2e696c090a73c2fe6858b7181dc6728ade69e"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-013.png",
+        "sha256": "e3b0861ae0a9613af765535cbad0de90aa134dc3c7ff0e22990da9a6ec576910"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-014.png",
+        "sha256": "a905182b518e4c7f61113f2ed6977221554fbed2a8754a57c6e640e9c7b7fea0"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-015.png",
+        "sha256": "b0ca327f3f65e808010236a49170d24761d8489c6d4ab625b88565a5f3004334"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-016.png",
+        "sha256": "82f3e0c8a7b546e1c4c22a856681638089f79d9f610da335cd9198fb65e07119"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-017.png",
+        "sha256": "4a16455fad4fbdab7c46aef30f16cd51feafde2f353a8c4efcbfed5534df9614"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-018.png",
+        "sha256": "400bd26d7807388b29b2a466136dfaa61e1f72b83e9afaddb4fa6fbf42248cc1"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-019.png",
+        "sha256": "2199f80cd5abee4d279f0fa5fa3e353808e216774738df6c320a17ba9c5b9647"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-020.png",
+        "sha256": "020ad502c595766ea0d22011c1af8ca382d51d68381ff7459a83346daaa320c1"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-021.png",
+        "sha256": "7d5181d56a82ac1f21e16ea9bc4046112931b691d28890b57160a35c73137294"
+      },
+      {
+        "image": "native-frames/mortal-manual-combat-022.png",
+        "sha256": "05e79cba07c53fecbcdfc911389a9de21a7049a0f43f7d0778fe173d7c401704"
+      }
+    ]
+  },
+  {
+    "file": "qishi-automatic-combat.gif",
+    "sha256": "faa0ff09ccc2695c90b141c33ad9efcecbf8354851acb2783b0c463cb3ec03ab",
+    "source_frames": 20,
+    "encoded_frames": 20,
+    "duration_seconds": 8.24,
+    "source_time_span_seconds": 7.783200100000016,
+    "canvas": [
+      425,
+      483
+    ],
+    "method": "Original native desktop frame crops, centered with dark padding only; no resizing, repaint, tweening or invented scene. GIF palette conversion; exact PNG originals retained. Approximately3fps capture, real timestamps rounded to GIF10ms. Raw other-app background remains local only.",
+    "source_sha256": [
+      {
+        "image": "native-frames/qishi-automatic-combat-023.png",
+        "sha256": "f13a2d5c2a69336423cc652a2e4480e8fd32d4e4fe8a2f0a833e72759e75c220"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-024.png",
+        "sha256": "db5d69ee39b6b0ad6daf8acad721338fc329f65e9c24a2f9d24cf2b46d6a56b0"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-025.png",
+        "sha256": "0fbcb0cd1b789b85e63538de38f5790583afcd554cd768cf179c0ef3fc30acd0"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-026.png",
+        "sha256": "a76378d12202356b1cde110de83e7cd2401abd1cfa06a080045fbaed6f4dd09d"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-027.png",
+        "sha256": "ebbeadb567678174b35a2bb057399796fa13142be69b50437b96221af1278f9e"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-028.png",
+        "sha256": "81d2d59a7e66b7433a924b3cb6ffa1d2772e5aad0e040c3c8a507151cb9dfca1"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-029.png",
+        "sha256": "8c4d04a344a54ff73066159aa55e2169e361373902954c18687217f0ee3f1788"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-030.png",
+        "sha256": "938a9656bc1d3a663cbfe6d30c26686c3f1a4fcccf16e5ef0ae9f93d4d064bef"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-031.png",
+        "sha256": "fa28cdd3d3ebc4dda1453c55143da1e2574605af306ea2874d61b1e829467a7b"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-032.png",
+        "sha256": "b09b8039e3c97ca805793079a52e799dd05694e0d496424d0bd2b71205d7ce83"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-033.png",
+        "sha256": "a89edf7dc593ddf1531b9daa544b5494da9548258fcddea4b60f161d5aee0bd6"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-034.png",
+        "sha256": "c641e5fe172f30b8f7f237b386f0d78236798f974eea0ff230afb36c78ba88d2"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-035.png",
+        "sha256": "67d26d1929fc19818f5a2fae63bbf90cdbcaece3b9b14290851dacd497f6964d"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-036.png",
+        "sha256": "02fd6fefc1894330b50f93251eb166b538d0d2f393bd5d1026736bcd2acc5744"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-037.png",
+        "sha256": "cf786b8920166832496171b32627e8a40e716b77bcf96474b1ff97602a7ccd86"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-038.png",
+        "sha256": "d544cecfe46740c68b62c574b6289a7dab42b0b9933145258f5b9e048ae3b92f"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-039.png",
+        "sha256": "34bfe96eb1ad36e368f9da902752df799d830dcc954139d6a3c6bce130eed4e4"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-040.png",
+        "sha256": "cdb79ff78386aa1139f8902e201ec31b212499c2b7ca519b548d577de9f84b00"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-041.png",
+        "sha256": "70aadf7e4af56f96c9672894af48382d1ba49106705f8d000396de1437bf1670"
+      },
+      {
+        "image": "native-frames/qishi-automatic-combat-042.png",
+        "sha256": "9d314358c0d5adedd425e5c57897be3c3de929a63928ba23a728a4f7d16b0c5f"
+      }
+    ]
+  }
+]

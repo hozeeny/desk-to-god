@@ -54,6 +54,134 @@ namespace NetBunny
             return new PointF(actor.Left + actor.Width / 2f, actor.Top + (actor.Height - 220 * s) / 2 + 150 * s);
         }
         static bool Near(PointF a, PointF b) { return Math.Abs(a.X - b.X) < 1.1 && Math.Abs(a.Y - b.Y) < 1.1; }
+        static int AlphaInRegion(Bitmap frame, Rectangle effect, Rectangle hero, Rectangle logical, out int overlapPixels)
+        {
+            float scale = Math.Min(hero.Width / 220f, hero.Height / 220f), dx = (hero.Width - 220 * scale) / 2, dy = (hero.Height - 220 * scale) / 2;
+            Rectangle region = Rectangle.FromLTRB(hero.Left + (int)Math.Floor(dx + logical.Left * scale), hero.Top + (int)Math.Floor(dy + logical.Top * scale),
+                hero.Left + (int)Math.Ceiling(dx + logical.Right * scale), hero.Top + (int)Math.Ceiling(dy + logical.Bottom * scale));
+            Rectangle overlap = Rectangle.Intersect(region, effect); overlapPixels = overlap.Width * overlap.Height; int nonzero = 0;
+            for (int y = overlap.Top; y < overlap.Bottom; y++) for (int x = overlap.Left; x < overlap.Right; x++)
+                if (frame.GetPixel(x - effect.Left, y - effect.Top).A != 0) nonzero++;
+            return nonzero;
+        }
+        static bool Protected(KnightLayeredWindow effect, Rectangle hero, Rectangle logical)
+        { int overlap; return AlphaInRegion(Field<Bitmap>(effect, "current"), effect.Bounds, hero, logical, out overlap) == 0 && overlap > 0; }
+        static bool AllProtectionClear(KnightLayeredWindow effect, Rectangle hero)
+        {
+            int overlap; Bitmap frame = Field<Bitmap>(effect, "current");
+            return AlphaInRegion(frame, effect.Bounds, hero, new Rectangle(0, 0, 220, 115), out overlap) == 0
+                && AlphaInRegion(frame, effect.Bounds, hero, new Rectangle(0, 190, 220, 30), out overlap) == 0;
+        }
+        static void MovingProtectionChecks(AdventureController game, AdventureEffects effects, KnightLayeredWindow hero, float scale)
+        {
+            effects.Clear(); Point original = hero.Location;
+            PointF remote = new PointF(hero.Left + 600 * scale, hero.Top + 200 * scale);
+            effects.Fire(remote, remote, "wave", scale);
+            object shot = FirstShot(effects); KnightLayeredWindow effect = Field<KnightLayeredWindow>(shot, "Window");
+            PointF from = Field<PointF>(shot, "From"), to = Field<PointF>(shot, "To");
+            double age = Field<double>(shot, "Age"); Rectangle effectBounds = effect.Bounds;
+            using (Bitmap unmasked = (Bitmap)Field<Bitmap>(effect, "current").Clone())
+            {
+                Rectangle[] zones = { new Rectangle(0, 0, 220, 115), new Rectangle(0, 190, 220, 30) };
+                float[] centers = { 60, 205 };
+                for (int i = 0; i < zones.Length; i++)
+                {
+                    float actualScale = Math.Min(hero.Width / 220f, hero.Height / 220f), dy = (hero.Height - 220 * actualScale) / 2;
+                    Set(game, "x", (double)(effectBounds.Left + effectBounds.Width / 2 - hero.Width / 2));
+                    Set(game, "y", (double)(effectBounds.Top + effectBounds.Height / 2 - dy - centers[i] * actualScale));
+                    if (i == 0)
+                    {
+                        typeof(AdventureController).GetMethod("ClampHero", Hidden).Invoke(game, null);
+                        Check(Protected(effect, hero.Bounds, zones[i]) && Field<double>(shot, "Age") == age && effect.Bounds == effectBounds,
+                            "ClampHero alone refreshes the moved head mask before any Render or Tick, without aging the shot at scale " + scale);
+                    }
+                    Render(game); int overlap;
+                    Check(AlphaInRegion(unmasked, effectBounds, hero.Bounds, zones[i], out overlap) > 0 && overlap > 0,
+                        "moving fixture puts actual previously visible effect pixels inside the new " + (i == 0 ? "whole head" : "HUD") + " zone at scale " + scale);
+                    Check(Protected(effect, hero.Bounds, zones[i]) && Field<double>(shot, "Age") == age && effect.Bounds == effectBounds,
+                        "Render immediately clears every alpha in the moved " + (i == 0 ? "whole head" : "HUD") + " zone without advancing or moving the shot at scale " + scale);
+                    if (i == 0)
+                    {
+                        effects.Clear(); effects.Fire(remote, remote, "wave", scale);
+                        shot = FirstShot(effects); effect = Field<KnightLayeredWindow>(shot, "Window");
+                        Check(Protected(effect, hero.Bounds, zones[i]) && Field<double>(shot, "Age") == 0,
+                            "a new Fire first frame is already masked where the real unmasked reference had visible head-zone pixels at scale " + scale);
+                    }
+                }
+                Set(game, "x", (double)original.X); Set(game, "y", (double)original.Y); Render(game);
+                Bitmap restored = Field<Bitmap>(effect, "current");
+                Check(Difference(unmasked, restored, false) == 0 && Field<double>(shot, "Age") == age && Near(Field<PointF>(shot, "From"), from) && Near(Field<PointF>(shot, "To"), to),
+                    "leaving the protection area restores the original visible effect at unchanged age/endpoints at scale " + scale);
+                Render(game);
+                Check(Object.ReferenceEquals(restored, Field<Bitmap>(effect, "current")), "unchanged hero position does not rerasterize a stationary effect at scale " + scale);
+            }
+            Set(game, "dragging", true); Render(game);
+            Check(Above(hero, effect), "a currently dragged hero stays above the effect at scale " + scale);
+            Set(game, "dragging", false); Render(game); effects.Clear();
+        }
+        static void TransitionProtectionChecks(AdventureEffects effects, KnightLayeredWindow hero, float scale)
+        {
+            MethodInfo update = typeof(AdventureEffects).GetMethod("UpdateHeroProtection", Hidden), commit = typeof(AdventureEffects).GetMethod("CommitHeroProtection", Hidden);
+            PointF remote = new PointF(hero.Left + 600 * scale, hero.Top + 200 * scale);
+            effects.Fire(remote, remote, "wave", scale);
+            object shot = FirstShot(effects); KnightLayeredWindow effect = Field<KnightLayeredWindow>(shot, "Window");
+            Rectangle bounds = effect.Bounds; float s = Math.Min(hero.Width / 220f, hero.Height / 220f), dy = (hero.Height - 220 * s) / 2;
+            int centerY = bounds.Top + bounds.Height / 2, left = bounds.Left + bounds.Width / 2 - hero.Width / 2;
+            Rectangle oldHero = new Rectangle(left, (int)(centerY - dy - 119 * s), hero.Width, hero.Height);
+            Rectangle newHero = new Rectangle(left, (int)(centerY - dy - 186 * s), hero.Width, hero.Height);
+            Rectangle head = new Rectangle(0, 0, 220, 115), footer = new Rectangle(0, 190, 220, 30);
+            double age = Field<double>(shot, "Age"); PointF from = Field<PointF>(shot, "From"), to = Field<PointF>(shot, "To");
+            using (Bitmap original = (Bitmap)Field<Bitmap>(effect, "current").Clone())
+            {
+                if (update != null) update.Invoke(effects, new object[] { oldHero });
+                if (commit != null) commit.Invoke(effects, null);
+                if (update != null) update.Invoke(effects, new object[] { newHero });
+                int count;
+                Check(AlphaInRegion(original, bounds, oldHero, head, out count) > 0 && AlphaInRegion(original, bounds, newHero, footer, out count) > 0
+                    && Protected(effect, oldHero, head) && Protected(effect, newHero, footer),
+                    "prepare phase protects both old head and new HUD with nonzero unmasked reference pixels at scale " + scale);
+                if (commit != null) commit.Invoke(effects, null);
+                Check(commit != null && AlphaInRegion(Field<Bitmap>(effect, "current"), bounds, oldHero, head, out count) > 0 && Protected(effect, newHero, footer)
+                    && Field<double>(shot, "Age") == age && Near(Field<PointF>(shot, "From"), from) && Near(Field<PointF>(shot, "To"), to),
+                    "commit releases the old zone while retaining the new zone without advancing age or endpoints at scale " + scale);
+                Bitmap stable = Field<Bitmap>(effect, "current");
+                if (update != null) update.Invoke(effects, new object[] { newHero });
+                if (commit != null) commit.Invoke(effects, null);
+                Check(Object.ReferenceEquals(stable, Field<Bitmap>(effect, "current")), "repeated same-bounds prepare/commit reuses the effect bitmap at scale " + scale);
+            }
+            if (update != null) update.Invoke(effects, new object[] { hero.Bounds });
+            if (commit != null) commit.Invoke(effects, null);
+            effects.Clear();
+        }
+        static void ScalePresentationChecks(AdventureController game, AdventureEffects effects, KnightLayeredWindow hero, float oldScale, float newScale)
+        {
+            Render(game); Bitmap oldFrame = Field<Bitmap>(hero, "current"); Rectangle oldBounds = new Rectangle(hero.Location, oldFrame.Size);
+            float effectScale = Math.Max(oldScale, newScale), s = Math.Min(oldFrame.Width / 220f, oldFrame.Height / 220f), dy = (oldFrame.Height - 220 * s) / 2;
+            effects.Fire(new PointF(hero.Left + 800, hero.Top + 500), new PointF(hero.Left + 800, hero.Top + 500), "wave", effectScale);
+            using (Bitmap unmasked = (Bitmap)Field<Bitmap>(Field<KnightLayeredWindow>(FirstShot(effects), "Window"), "current").Clone())
+            {
+                effects.Clear(); PointF center = new PointF(oldBounds.Left + oldBounds.Width / 2f, oldBounds.Top + dy + 205 * s);
+                effects.Fire(center, center, "wave", effectScale);
+                object shot = FirstShot(effects); KnightLayeredWindow effect = Field<KnightLayeredWindow>(shot, "Window");
+                double age = Field<double>(shot, "Age"); int overlap;
+                int oldReferenceAlpha = AlphaInRegion(unmasked, effect.Bounds, oldBounds, new Rectangle(0, 190, 220, 30), out overlap);
+                Set(game, "displayScale", newScale);
+                Size newSize = (Size)typeof(AdventureController).GetProperty("HeroSize", Hidden).GetValue(game, null);
+                hero.Size = newSize;
+                typeof(AdventureController).GetMethod("PositionHeroWindow", Hidden).Invoke(game, null);
+                Rectangle newBounds = hero.Bounds;
+                Check(oldReferenceAlpha > 0 && oldFrame.Size != newSize && Object.ReferenceEquals(oldFrame, Field<Bitmap>(hero, "current")),
+                    "scale transition " + oldScale + " to " + newScale + " retains the actual old presented bitmap and has visible unmasked reference pixels in its old HUD");
+                Check(AllProtectionClear(effect, oldBounds) && AllProtectionClear(effect, newBounds) && Field<double>(shot, "Age") == age,
+                    "before new Present, resized PositionHeroWindow protects both actual old-frame and new-size zones without advancing age for " + oldScale + " to " + newScale);
+                Render(game);
+                Check(Field<Bitmap>(hero, "current").Size == newSize && AllProtectionClear(effect, newBounds)
+                    && AlphaInRegion(Field<Bitmap>(effect, "current"), effect.Bounds, oldBounds, new Rectangle(0, 190, 220, 30), out overlap) == oldReferenceAlpha
+                    && Field<double>(shot, "Age") == age,
+                    "successful new Present releases old HUD pixels while keeping the new zones protected at unchanged age for " + oldScale + " to " + newScale);
+            }
+            effects.Clear(); Set(game, "displayScale", oldScale); Render(game);
+        }
         static void EffectChecks(string assets, string output)
         {
             float[] scales = { .8f, 1f, 1.2f };
@@ -76,14 +204,16 @@ namespace NetBunny
                 object shot = FirstShot(effects); KnightLayeredWindow window = Field<KnightLayeredWindow>(shot, "Window");
                 Check(Near(Field<PointF>(shot, "From"), LowerAnchor(hero)) && Near(Field<PointF>(shot, "To"), LowerAnchor(target)), "player strike uses the actual rendered lower-body anchors at scale " + scale);
                 Check(window.Width == (int)(144 * scale) && window.Height == (int)(144 * scale), "new illustrated projectile has the bounded 144-unit footprint at scale " + scale);
+                Check(Protected(window, hero.Bounds, new Rectangle(0, 0, 220, 115)) && Protected(window, hero.Bounds, new Rectangle(0, 190, 220, 30)),
+                    "the very first Fire frame has zero alpha across the whole head and lower HUD protection zones at scale " + scale);
                 Render(game);
-                Check(Above(hero, window) && Above(window, target), "real relative order puts hero above effect above current target at scale " + scale);
+                Check(Above(window, hero) && Above(hero, target), "real relative order puts visible effect above protected hero above current target at scale " + scale);
                 Check(window.PassThrough && EffectCoverage(hero, window, new Rectangle(55, 15, 110, 100)) == 0 && EffectCoverage(hero, window, new Rectangle(8, 0, 204, 25)) == 0 && EffectCoverage(hero, window, new Rectangle(34, 194, 152, 29)) == 0,
                     "fixed original hero alpha in face, action hint and realm HUD is never covered by that effect at scale " + scale);
                 double duration = Field<double>(shot, "Duration"); effects.Tick(.2); Render(game);
                 Check(Math.Abs(Field<double>(shot, "Age") - .2) < .000001 && Math.Abs(duration - .5) < .000001 && effects.ActiveCount == 1,
                     "visual refinement preserves the normal projectile age and duration at scale " + scale);
-                Check(Above(hero, window) && window.Visible && Field<Bitmap>(window, "current").Width == (int)(144 * scale), "moving projectile remains visible and below hero without hiding or clearing at scale " + scale);
+                Check(Above(window, hero) && window.Visible && Field<Bitmap>(window, "current").Width == (int)(144 * scale), "moving projectile remains visible above protected hero without hiding or clearing at scale " + scale);
                 effects.Clear(); int health = game.Battle.Progress.Health;
                 double cooldown = (double)typeof(AdventureController).GetMethod("EnemyAttackCooldown", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { boss });
                 typeof(AdventureController).GetMethod("AttackHero", Hidden).Invoke(game, new object[] { boss, true, cooldown + .01 });
@@ -94,11 +224,18 @@ namespace NetBunny
                 {
                     panel.Show(); layers.Register(panel, true); effects.Fire(LowerAnchor(target), LowerAnchor(hero), "wave", scale); Render(game);
                     var shots = (System.Collections.IList)Field<object>(effects, "shots");
-                    Check(shots.Cast<object>().All(s => Above(panel, Field<KnightLayeredWindow>(s, "Window")) && Above(hero, Field<KnightLayeredWindow>(s, "Window"))),
-                        "later effect windows preserve the protected panel and hero ceiling at scale " + scale);
+                    Check(shots.Cast<object>().All(s => Above(panel, Field<KnightLayeredWindow>(s, "Window")) && Above(Field<KnightLayeredWindow>(s, "Window"), hero)),
+                        "later effect windows stay visible above protected hero and below the existing panel at scale " + scale);
+                    h.A.Dragging = true; Render(game);
+                    Check(shots.Cast<object>().All(s => Above(game.DesktopEnemyWindows[h.A.Id], Field<KnightLayeredWindow>(s, "Window"))) && Above(panel, game.DesktopEnemyWindows[h.A.Id]),
+                        "a dragged enemy stays above every effect while remaining below the feature panel at scale " + scale);
+                    h.A.Dragging = false;
                 }
                 for (int tick = 0; tick < 5; tick++) effects.Tick(.2);
                 Check(effects.ActiveCount == 0 && game.DesktopRealWorkIdle, "original effect lifetime disposes its windows with no real worker at scale " + scale);
+                MovingProtectionChecks(game, effects, hero, scale);
+                TransitionProtectionChecks(effects, hero, scale);
+                ScalePresentationChecks(game, effects, hero, scale, scales[(i + 1) % scales.Length]);
                 h.VerifyScope();
             }
         }

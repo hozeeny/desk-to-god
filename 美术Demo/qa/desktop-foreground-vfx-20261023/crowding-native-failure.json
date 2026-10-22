@@ -1,0 +1,186 @@
+{
+  "passed": false,
+  "scope": "Synthetic crowded initial layout, not natural discovery/growth or the final distributable EXE. Five byte-identical main archives cloned from a previously verified normal x1 awakened profile, with no consent/seed/marker copied. Production factories, RenderWorld/UpdateLayeredWindow and normal x1 Tick/Move/combat run for 12 wall-clock seconds. Only initial hero/enemy geometry and normal Boss combat authorization are set; HP/realm/damage/cooldowns/clocks are not edited. No scan, real maintenance, native input, foreground activation, other-app move/hide or timer pause. Raw other-app background pixels remain local QA evidence only. Short resource samples do not replace the paused long test.",
+  "elapsedSeconds": 12.3609019,
+  "errors": [
+    "00-first-natural-effect-after-4s: exact presented actor pixels/native root  samples=75 matches=75 roots=0; pass-through-decoration: zero samples hit this window; PassThrough=True",
+    "At least one retained native screenshot contains an actual production effect with the unchanged pixel/root gates satisfied."
+  ],
+  "captures": [
+    {
+      "image": "00-first-natural-effect-after-4s.png",
+      "actualSeconds": 4.0894509999999995,
+      "actualCombatEffectCount": 1,
+      "effectStates": [
+        {
+          "handle": 101976262,
+          "weapon": "spear",
+          "age": 0.08845659999999977,
+          "duration": 0.5,
+          "from": "{X=960.8752, Y=650.8402}",
+          "to": "{X=880, Y=621.3455}"
+        }
+      ],
+      "effectProtection": {
+        "face": {
+          "fixedHeroLocalBounds": "{X=0,Y=25,Width=220,Height=85}",
+          "originalAlphaPixels": 5476,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 1
+        },
+        "topHint": {
+          "fixedHeroLocalBounds": "{X=0,Y=0,Width=220,Height=32}",
+          "originalAlphaPixels": 1361,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 1
+        },
+        "bottomHud": {
+          "fixedHeroLocalBounds": "{X=0,Y=200,Width=220,Height=40}",
+          "originalAlphaPixels": 1933,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 1
+        },
+        "denominator": "All original hero alpha>=20 pixels inside each fixed local rectangle, step 1; never subtract covered pixels. Only effects in front by actual native Z can cover."
+      },
+      "coverage": {
+        "heroHead": 0,
+        "heroHud": 0,
+        "bossByOrdinary": 0,
+        "worstOrdinaryByOtherOrdinary": 0.7891891891891892,
+        "denominator": "Each region's full original alpha>=20 source samples, step 2; no surviving-visible denominator or Z-order exclusion"
+      },
+      "visibleEffectPixels": false,
+      "effects": [
+        {
+          "id": null,
+          "role": "decoration",
+          "handle": 101976262,
+          "title": "骑士助手 · 武器特效",
+          "bounds": "{X=867,Y=571,Width=144,Height=144}",
+          "ZOrder": 20,
+          "sourceOpaqueSamples": 73,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 75,
+          "matchingSamples": 75,
+          "rootMatches": 0,
+          "rootPolicy": "pass-through-decoration: zero samples hit this window",
+          "passThrough": true,
+          "combatEffect": true,
+          "compositedSamples": 2,
+          "unverifiableTranslucent": 323,
+          "coveredTranslucent": 0,
+          "opaqueVisible": 73,
+          "opaqueMatches": 73,
+          "opaqueDistinctColors": 33,
+          "strictOpaqueEffectProof": false,
+          "comparisonMode": "A>=245 source RGB; lower alpha only RGBA-composited over native-hit-verified owned A=255 actor; unknown desktop skipped",
+          "distinctColors": 33,
+          "matchRatio": 1,
+          "passed": false,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        }
+      ]
+    },
+    {
+      "image": "01-crowded-at-8s.png",
+      "actualSeconds": 8.0415688,
+      "actualCombatEffectCount": 0,
+      "effectStates": [],
+      "effectProtection": {
+        "face": {
+          "fixedHeroLocalBounds": "{X=0,Y=25,Width=220,Height=85}",
+          "originalAlphaPixels": 5376,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 0
+        },
+        "topHint": {
+          "fixedHeroLocalBounds": "{X=0,Y=0,Width=220,Height=32}",
+          "originalAlphaPixels": 2635,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 0
+        },
+        "bottomHud": {
+          "fixedHeroLocalBounds": "{X=0,Y=200,Width=220,Height=40}",
+          "originalAlphaPixels": 1963,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 0
+        },
+        "denominator": "All original hero alpha>=20 pixels inside each fixed local rectangle, step 1; never subtract covered pixels. Only effects in front by actual native Z can cover."
+      },
+      "coverage": {
+        "heroHead": 0,
+        "heroHud": 0,
+        "bossByOrdinary": 0,
+        "worstOrdinaryByOtherOrdinary": 0,
+        "denominator": "Each region's full original alpha>=20 source samples, step 2; no surviving-visible denominator or Z-order exclusion"
+      },
+      "visibleEffectPixels": false,
+      "effects": []
+    },
+    {
+      "image": "02-crowded-at-12s.png",
+      "actualSeconds": 12.049234,
+      "actualCombatEffectCount": 0,
+      "effectStates": [],
+      "effectProtection": {
+        "face": {
+          "fixedHeroLocalBounds": "{X=0,Y=25,Width=220,Height=85}",
+          "originalAlphaPixels": 5171,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 0
+        },
+        "topHint": {
+          "fixedHeroLocalBounds": "{X=0,Y=0,Width=220,Height=32}",
+          "originalAlphaPixels": 1368,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 0
+        },
+        "bottomHud": {
+          "fixedHeroLocalBounds": "{X=0,Y=200,Width=220,Height=40}",
+          "originalAlphaPixels": 1962,
+          "coveredPixels": 0,
+          "fraction": 0,
+          "foregroundEffectCount": 0
+        },
+        "denominator": "All original hero alpha>=20 pixels inside each fixed local rectangle, step 1; never subtract covered pixels. Only effects in front by actual native Z can cover."
+      },
+      "coverage": {
+        "heroHead": 0,
+        "heroHud": 0,
+        "bossByOrdinary": 0,
+        "worstOrdinaryByOtherOrdinary": 0,
+        "denominator": "Each region's full original alpha>=20 source samples, step 2; no surviving-visible denominator or Z-order exclusion"
+      },
+      "visibleEffectPixels": false,
+      "effects": []
+    }
+  ],
+  "original_report_sha256": "15e45ff18685403596f27965e600fd83908a7fb6a7cf6e9defd6dc456a97127e",
+  "native_images_reviewed": 3,
+  "source_and_formal_archives_unchanged": true,
+  "foreground_unchanged": true,
+  "resources": {
+    "resourcePeaks": {
+      "cumulativeCpuMs": 11093.75,
+      "gdi": 84,
+      "user": 61,
+      "handles": 357,
+      "sampleInterval": "about one wall-clock second plus start/end; short observation only"
+    },
+    "averageLogicalCoreFraction": 0.652257744981274,
+    "captureValidationCpuMs": 828.125,
+    "captureValidationWallSeconds": 0.9433599999999993,
+    "cpuScope": "Process CPU includes fixture capture/validation. The approximately one-second samples before each capture and explicit capture costs distinguish that work from production Tick/Move; no eight-hour or baseline performance claim."
+  },
+  "interpretation": "Every actor and original-alpha face/Hint/HUD zero-effect-coverage check passed. The one live effect had75/75 verified pixels, under the unchanged100 minimum; no effects existed at the8/12-second snapshots. Full strict effect suite FAILED, never converted to pass. Not a natural-discovery, final-EXE or long-term performance proof."
+}

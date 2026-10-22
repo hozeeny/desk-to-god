@@ -1,0 +1,22 @@
+{
+  "checks": 109,
+  "green_failures": 0,
+  "old_strategy_red": {
+    "checks": 91,
+    "failures": 21
+  },
+  "transition_red": {
+    "checks": 100,
+    "failures": 6
+  },
+  "resize_red": {
+    "checks": 109,
+    "failures": 3
+  },
+  "scales": [
+    0.8,
+    1,
+    1.2
+  ],
+  "scope": "Stopped private source fixtures outside all physical screens. Real RenderWorld/Present, initial Fire, direct ClampHero, drag priority, unchanged-bounds bitmap reuse, old/new masks and actual old-size hero frame before new Present. Same source tests prove real damage, endpoints, duration and Age preserved; not physical mixed-DPI or native atomic-compositor proof."
+}

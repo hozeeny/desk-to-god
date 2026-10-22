@@ -1,0 +1,13 @@
+{
+  "output": "native-awaken-client.png",
+  "source_local_name": "05-ten-kills-awaken-panel.png",
+  "source_sha256": "897fc66e8c074da670b42682b7cb9353a0f5f5440bb753abcea0343c1431b961",
+  "output_sha256": "3fa02386eacdbc2d7d1aa5c5b1296031dcd8d9c5185ee85cd176cc9187372387",
+  "crop_xyxy": [
+    28,
+    47,
+    477,
+    728
+  ],
+  "method": "Original opaque owned handbook client pixels only; no resizing or redraw; all other-app raw captures local only."
+}

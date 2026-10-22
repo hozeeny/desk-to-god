@@ -201,7 +201,7 @@ namespace NetBunny
             Point heroPressedAt = Point.Empty; bool heroDragged = false;
             heroWindow.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { heroPressedAt = Cursor.Position; heroDragged = false; } };
             heroWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !heroDragged && !IsDemo) { if (IsolatedDesktop && battle.Progress.Dead) OpenEquipment(); else TryBlock(); RenderWorld(true); } };
-            heroWindow.DragChanged = delegate(bool active) { dragging = active; if (!active) { if (!artDemoRuntime) area = Screen.FromPoint(heroWindow.Location).WorkingArea; pauseMotionUntil = clock.Elapsed.TotalSeconds + 2; ClampHero(); PickTarget(); PositionLandmark(); } };
+            heroWindow.DragChanged = delegate(bool active) { dragging = active; if (!active) { if (!artDemoRuntime) area = Screen.FromPoint(heroWindow.Location).WorkingArea; pauseMotionUntil = clock.Elapsed.TotalSeconds + 2; ClampHero(); PickTarget(); PositionLandmark(); } if (IsolatedDesktop && !heroWindow.Disposing && !heroWindow.IsDisposed) RenderWorld(false); };
             heroWindow.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(heroPressedAt.X, heroPressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) heroDragged = true; if (IsolatedDesktop) area = Screen.FromPoint(new Point(p.X + HeroSize.Width / 2, p.Y + HeroSize.Height - 1)).WorkingArea; x = p.X; y = p.Y; if (IsolatedDesktop) ClampHero(); else heroWindow.Location = p; };
             landmarkWindow.ContextRequested = OpenEquipment;
             landmarkWindow.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenEquipment(); };
@@ -1428,6 +1428,14 @@ namespace NetBunny
             // meet at waist/leg height instead of travelling through the face.
             return new PointF((float)actorX + size.Width / 2f, (float)actorY + (size.Height - 220 * scale) / 2 + 150 * scale);
         }
+        private void PositionHeroWindow()
+        {
+            Point location = new Point((int)x, (int)y);
+            if (IsolatedDesktop && effects != null)
+                effects.UpdateHeroProtection(new Rectangle(location, HeroSize));
+            heroWindow.Location = location;
+            if (IsolatedDesktop && effects != null && presentedHeroSize == HeroSize) effects.CommitHeroProtection();
+        }
         private void StrikeTarget(AdventureEnemy target, double now)
         {
             attackAnimation = 1;
@@ -1435,6 +1443,7 @@ namespace NetBunny
             if ((!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing)))
             {
                 Size size = EnemySize(target);
+                if (IsolatedDesktop) PositionHeroWindow();
                 effects.Fire(CombatEffectAnchor(x, y, HeroSize, new PointF((float)x + 110 * displayScale, (float)y + 125 * displayScale)),
                     CombatEffectAnchor(target.X, target.Y, size, new PointF((float)target.X + size.Width / 2f, (float)target.Y + size.Height * .47f)), battle.Weapon.Id, displayScale);
             }
@@ -1656,6 +1665,7 @@ namespace NetBunny
             if (!String.IsNullOrEmpty(enemy.EvilTheme) && enabled && (!artDemoRuntime || !artDemoHostHidden) && (!IsolatedDesktop || (desktopActorsVisible && !desktopTestAdvancing)))
             {
                 Size size = EnemySize(enemy);
+                if (IsolatedDesktop) PositionHeroWindow();
                 effects.Fire(CombatEffectAnchor(enemy.X, enemy.Y, size, new PointF((float)enemy.X + size.Width / 2f, (float)enemy.Y + size.Height / 2f)),
                     CombatEffectAnchor(x, y, HeroSize, new PointF((float)x + HeroSize.Width / 2f, (float)y + HeroSize.Height / 2f)), enemy.BossWeapon, displayScale);
             }
@@ -1679,14 +1689,21 @@ namespace NetBunny
             FaceEnemy(e, e.X - oldX);
             e.MoveSpeed = AdventureBattle.Distance(oldX, oldY, e.X, e.Y) / dt;
         }
-        private void ClampHero() { PointF p = KnightPetController.BoundPosition(x, y, HeroSize, area); x = p.X; y = p.Y; heroWindow.Location = new Point((int)x, (int)y); }
+        private void ClampHero() { PointF p = KnightPetController.BoundPosition(x, y, HeroSize, area); x = p.X; y = p.Y; PositionHeroWindow(); }
         private void BoundEnemy(AdventureEnemy e) { PointF p = KnightPetController.BoundPosition(e.X, e.Y, EnemySize(e), area); e.X = p.X; e.Y = p.Y; }
         private Size EnemySize(AdventureEnemy e) { return e.IsBoss ? new Size((int)(190 * displayScale), (int)(220 * displayScale)) : new Size((int)(130 * displayScale), (int)(170 * displayScale)); }
         private void PositionLandmark() { landmarkWindow.Location = artDemoRuntime ? new Point(area.Left + 16, area.Top + 70) : new Point(area.Left + 16, area.Bottom - LandmarkSize.Height - 16); }
+        private Size presentedHeroSize;
         private void PaintWindow(KnightLayeredWindow window, AdventureRenderState state)
         {
             PresentedFrames++;
-            window.Present(renderer.Render(state)); if (!window.Visible) window.Show();
+            window.Present(renderer.Render(state));
+            if (window == heroWindow)
+            {
+                presentedHeroSize = window.Size;
+                if (IsolatedDesktop) effects.CommitHeroProtection();
+            }
+            if (!window.Visible) window.Show();
         }
         // 实际栅格化计数（性能探针用）：每次 PaintWindow +1，跳绘不计。
         internal long PresentedFrames;
@@ -1743,7 +1760,7 @@ namespace NetBunny
             {
                 if (demoStarted >= 0) { RenderDemo(enemies || clock.Elapsed.TotalSeconds - lastEnemyPaint >= .066); return; }
                 if (probe) PerfProbe.Begin();
-                heroWindow.Location = new Point((int)x, (int)y);
+                PositionHeroWindow();
                 AdventureRenderState heroState = HeroVisual(renderTime);
                 string heroSig = HeroSignature(heroState);
                 if (heroSig != lastHeroSignature || !heroWindow.Visible) { lastHeroSignature = heroSig; PaintWindow(heroWindow, heroState); }
@@ -1777,7 +1794,7 @@ namespace NetBunny
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
                         window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else if (IsolatedDesktop) DesktopChooseEnemy(captured.Id, true); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
                         window.ContextRequested = OpenEquipment;
-                        window.DragChanged = delegate(bool active) { captured.Dragging = active; };
+                        window.DragChanged = delegate(bool active) { captured.Dragging = active; if (IsolatedDesktop && !window.Disposing && !window.IsDisposed) RenderWorld(false); };
                         window.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(pressedAt.X, pressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) dragged = true; captured.X = p.X; captured.Y = p.Y; BoundEnemy(captured); };
                     }
                     if (artDemoRuntime || IsolatedDesktop) window.Text = DesktopEnemyName(enemy);
@@ -1808,9 +1825,10 @@ namespace NetBunny
                     KnightLayeredWindow selected = null, held = null;
                     AdventureEnemy focus = battle.Target, dragged = battle.Enemies.FirstOrDefault(e => e.Dragging);
                     if (focus != null) enemyWindows.TryGetValue(focus.Id, out selected);
-                    if (dragged != null) enemyWindows.TryGetValue(dragged.Id, out held);
+                    if (dragging) held = heroWindow;
+                    else if (dragged != null) enemyWindows.TryGetValue(dragged.Id, out held);
                     KnightLayeredWindow[] effectWindows = effects.ActiveWindows;
-                    KnightLayeredWindow.PrioritizeDesktopActors(new[] { held, heroWindow }.Concat(effectWindows.Reverse()).Concat(new[] { selected }).ToArray(),
+                    KnightLayeredWindow.PrioritizeDesktopActors(new[] { held }.Concat(effectWindows.Reverse()).Concat(new[] { heroWindow, selected }).ToArray(),
                         new[] { heroWindow }.Concat(enemyWindows.Values).Concat(effectWindows).ToArray());
                 }
                 foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", HeroStage = ArtDemoHeroStage, Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }

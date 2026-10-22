@@ -1,12 +1,15 @@
-﻿param([ValidateSet('red','green')][string]$Stage = 'green')
+﻿param([ValidateSet('red','green')][string]$Stage = 'green', [string]$SourceSnapshot = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $sourceRoot = Join-Path $projectRoot '源代码'
+$compileRoot = $sourceRoot
+if ($SourceSnapshot) { $compileRoot = [IO.Path]::GetFullPath($SourceSnapshot) }
 $runRoot = Join-Path (Join-Path $projectRoot '美术Demo\verification\idle-target-badge') ($Stage + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
 $snapshot = Join-Path $runRoot 'sources'
 [IO.Directory]::CreateDirectory($snapshot) | Out-Null
-Get-ChildItem -LiteralPath $sourceRoot -Filter '*.cs' -File | Copy-Item -Destination $snapshot
+Get-ChildItem -LiteralPath $compileRoot -Filter '*.cs' -File | Copy-Item -Destination $snapshot
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'DesktopIdleTargetBadgeTests.cs') -Destination $snapshot
+Copy-Item -LiteralPath $PSCommandPath -Destination (Join-Path $runRoot 'wrapper-snapshot.ps1')
 $sources = @(Get-ChildItem -LiteralPath $snapshot -Filter '*.cs' -File | Sort-Object Name | ForEach-Object FullName)
 $utf8 = New-Object Text.UTF8Encoding($true)
 $hashes = @($sources | ForEach-Object { [pscustomobject]@{ Name = [IO.Path]::GetFileName($_); SHA256 = (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash } })

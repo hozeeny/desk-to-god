@@ -159,6 +159,9 @@ namespace NetBunny
             List<ArtDemoActorFrame> actors = game.SnapshotArtDemoActors();
             KnightLayeredWindow[] effectWindows = Field<AdventureEffects>(game, "effects").ActiveWindows;
             ArtDemoActorFrame[] effectFrames = actors.Where(a => effectWindows.Contains(a.Window)).ToArray();
+            object[] effectStates = ((System.Collections.IEnumerable)Field<object>(Field<AdventureEffects>(game, "effects"), "shots")).Cast<object>()
+                .Select(s => (object)new { handle = Field<KnightLayeredWindow>(s, "Window").Handle.ToInt64(), weapon = Field<string>(s, "Weapon"),
+                    age = Field<double>(s, "Age"), duration = Field<double>(s, "Duration"), from = Field<PointF>(s, "From").ToString(), to = Field<PointF>(s, "To").ToString() }).ToArray();
             var entries = new List<object>(); double at = wall.Elapsed.TotalSeconds, captureCpuStart = self.TotalProcessorTime.TotalMilliseconds;
             bool visibleEffectPixels = false;
             try
@@ -210,8 +213,8 @@ namespace NetBunny
                 Check(actors.Count(a => a.Role == "enemy") == 7 && actors.Count(a => a.Role == "hero") == 1, name + ": all initial hero + six ordinary + last-appended Boss remain visibly present");
                 ArtDemoActorFrame hero = actors.FirstOrDefault(a => a.Window == game.DesktopHeroWindow);
                 foreach (ArtDemoActorFrame effect in effectFrames)
-                    Check(hero != null && effect.Window.PassThrough && hero.ZOrder < effect.ZOrder,
-                        name + ": exact real combat effect is pass-through and strictly below hero; effect=" + effect.Window.Handle + ", Z=" + effect.ZOrder + ", heroZ=" + (hero == null ? -1 : hero.ZOrder));
+                    Check(hero != null && effect.Window.PassThrough && effect.ZOrder < hero.ZOrder,
+                        name + ": exact real combat effect is pass-through and in front of hero with protected alpha zones; effect=" + effect.Window.Handle + ", Z=" + effect.ZOrder + ", heroZ=" + (hero == null ? -1 : hero.ZOrder));
                 var effectProtection = new
                 {
                     face = EffectCoverage(name + " face", hero, effectFrames, new Rectangle(0, 25, 220, 85)),
@@ -234,7 +237,7 @@ namespace NetBunny
                 Check(!game.Battle.Progress.Dead && !boss.Defeated && !boss.VisualDefeated && game.Battle.Target == boss, name + ": natural battle remains living with the exact original Boss selected");
                 Check(GetForegroundWindow() == foreground, name + ": foreground remains unchanged without any activation call");
                 captures.Add(new { image = name + ".png", requestedSeconds, actualSeconds = at, bounds = area.ToString(), capture = "Unmodified native desktop BitBlt SRCCOPY|CAPTUREBLT; raw local only", actors = entries, coverage, effectProtection,
-                    ordinarySpacingDeadlineApplied = requestedSeconds >= 8, actualCombatEffectCount = effectFrames.Length, visibleEffectPixels,
+                    ordinarySpacingDeadlineApplied = requestedSeconds >= 8, actualCombatEffectCount = effectFrames.Length, effectStates, visibleEffectPixels,
                     effectObservation = name.StartsWith("00-", StringComparison.Ordinal) ? "First natural effect observed at/after 4s; no Fire or state/timer injection; ordinary convergence remains due at its original 8s deadline" : "Normal scheduled snapshot", state = State() });
             }
             finally
