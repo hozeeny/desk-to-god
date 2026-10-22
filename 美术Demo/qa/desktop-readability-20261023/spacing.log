@@ -1,0 +1,295 @@
+PASS eight-second fixed original-alpha observation is already clear before the separate settled check: center head=0.000 hud=0.000 boss=0.000 peers=0.000
+Dense feet center: dense-0={X=687.399, Y=700};dense-1={X=741.7994, Y=815.6008};dense-2={X=718.1284, Y=528.4841};dense-3={X=615.7603, Y=582.3499};dense-4={X=772.7078, Y=411.1526};dense-5={X=875.3582, Y=499.8924}
+PASS six ordinary actors leave at least 95% of original hero head/upper text and lower HUD opaque samples uncovered: free central area head=0.000 hud=0.000
+PASS ordinary actors yield to the current Boss even when it was appended last; at least 90% original Boss alpha remains clear: free central area covered=0.000
+PASS actual ordinary source-frame alpha overlap remains below twenty percent after dispersal: free central area covered=0.000
+PASS a crowded melee ring uses outer waiting positions and the final one-second observation has no orbit/jitter: free central area lateMove=0.00
+PASS dense visual waiting preserves original speed, bounds, random stream, patrol targets and combat authorizations
+PASS an outer waiting actor can receive an ordinary manual order
+PASS the formerly last ordinary actor becomes the actual current target
+PASS the newly selected outer actor reaches the true existing 86-unit attack distance without starvation or a fabricated hit: {X=980, Y=700} distance=80.00
+PASS eight-second fixed original-alpha observation is already clear before the separate settled check: bottom head=0.000 hud=0.000 boss=0.000 peers=0.000
+Dense feet bottom: dense-0={X=687.399, Y=1096};dense-1={X=585.3983, Y=1096};dense-2={X=607.9996, Y=979.14};dense-3={X=711.5189, Y=914.7061};dense-4={X=813.382, Y=895.7816};dense-5={X=897.1053, Y=779.3729}
+PASS six ordinary actors leave at least 95% of original hero head/upper text and lower HUD opaque samples uncovered: bottom edge head=0.000 hud=0.000
+PASS ordinary actors yield to the current Boss even when it was appended last; at least 90% original Boss alpha remains clear: bottom edge covered=0.000
+PASS actual ordinary source-frame alpha overlap remains below twenty percent after dispersal: bottom edge covered=0.000
+PASS a crowded melee ring uses outer waiting positions and the final one-second observation has no orbit/jitter: bottom edge lateMove=0.00
+PASS dense visual waiting preserves original speed, bounds, random stream, patrol targets and combat authorizations
+PASS an outer waiting actor can receive an ordinary manual order
+PASS the formerly last ordinary actor becomes the actual current target
+PASS the newly selected outer actor reaches the true existing 86-unit attack distance without starvation or a fabricated hit: {X=980, Y=1096} distance=80.00
+PASS spawn avoids the full hero window when free space exists at scale 0.8
+PASS spawn retains four double draws and one initial patrol-sector draw at scale 0.8
+PASS hero-avoidance spawn remains inside its working area at scale 0.8
+PASS spawn avoids an existing visible ordinary actor window at scale 0.8
+PASS neighbor avoidance uses no extra randomness and stays bounded at scale 0.8
+PASS the same proposal and actors produce a deterministic safe spawn at scale 0.8
+PASS a respawned object does not count its own actor as an obstacle at scale 0.8
+PASS an existing patrol sector retains its original random-call contract at scale 0.8
+PASS spawn avoids the full hero window when free space exists at scale 1
+PASS spawn retains four double draws and one initial patrol-sector draw at scale 1
+PASS hero-avoidance spawn remains inside its working area at scale 1
+PASS spawn avoids an existing visible ordinary actor window at scale 1
+PASS neighbor avoidance uses no extra randomness and stays bounded at scale 1
+PASS the same proposal and actors produce a deterministic safe spawn at scale 1
+PASS a respawned object does not count its own actor as an obstacle at scale 1
+PASS an existing patrol sector retains its original random-call contract at scale 1
+PASS spawn avoids the full hero window when free space exists at scale 1.2
+PASS spawn retains four double draws and one initial patrol-sector draw at scale 1.2
+PASS hero-avoidance spawn remains inside its working area at scale 1.2
+PASS spawn avoids an existing visible ordinary actor window at scale 1.2
+PASS neighbor avoidance uses no extra randomness and stays bounded at scale 1.2
+PASS the same proposal and actors produce a deterministic safe spawn at scale 1.2
+PASS a respawned object does not count its own actor as an obstacle at scale 1.2
+PASS an existing patrol sector retains its original random-call contract at scale 1.2
+PASS already coincident 80-scale-ring actors gain a visible 60-scale separation within eight seconds: 2 actors scale 0.8
+PASS ring separation respects the original enemy speed and every frame's dt: 2 actors scale 0.8
+PASS each actual movement segment stays outside the hero's inner circle: 2 actors scale 0.8
+PASS separated actors remain on the melee ring inside existing attack and short-sword reaches: 2 actors scale 0.8
+PASS settled actors do not keep oscillating during seconds eight through twelve: 2 actors scale 0.8
+PASS ring movement remains inside the original working area: 2 actors scale 0.8
+PASS spacing preserves the actual queue, manual authorizations and living combat states: 2 actors scale 0.8
+PASS spacing grants no experience, cultivation, maintenance bytes or damage: 2 actors scale 0.8
+PASS already coincident 80-scale-ring actors gain a visible 60-scale separation within eight seconds: 3 actors scale 0.8
+PASS ring separation respects the original enemy speed and every frame's dt: 3 actors scale 0.8
+PASS each actual movement segment stays outside the hero's inner circle: 3 actors scale 0.8
+PASS separated actors remain on the melee ring inside existing attack and short-sword reaches: 3 actors scale 0.8
+PASS settled actors do not keep oscillating during seconds eight through twelve: 3 actors scale 0.8
+PASS ring movement remains inside the original working area: 3 actors scale 0.8
+PASS spacing preserves the actual queue, manual authorizations and living combat states: 3 actors scale 0.8
+PASS spacing grants no experience, cultivation, maintenance bytes or damage: 3 actors scale 0.8
+PASS already coincident 80-scale-ring actors gain a visible 60-scale separation within eight seconds: 2 actors scale 1
+PASS ring separation respects the original enemy speed and every frame's dt: 2 actors scale 1
+PASS each actual movement segment stays outside the hero's inner circle: 2 actors scale 1
+PASS separated actors remain on the melee ring inside existing attack and short-sword reaches: 2 actors scale 1
+PASS settled actors do not keep oscillating during seconds eight through twelve: 2 actors scale 1
+PASS ring movement remains inside the original working area: 2 actors scale 1
+PASS spacing preserves the actual queue, manual authorizations and living combat states: 2 actors scale 1
+PASS spacing grants no experience, cultivation, maintenance bytes or damage: 2 actors scale 1
+PASS already coincident 80-scale-ring actors gain a visible 60-scale separation within eight seconds: 3 actors scale 1
+PASS ring separation respects the original enemy speed and every frame's dt: 3 actors scale 1
+PASS each actual movement segment stays outside the hero's inner circle: 3 actors scale 1
+PASS separated actors remain on the melee ring inside existing attack and short-sword reaches: 3 actors scale 1
+PASS settled actors do not keep oscillating during seconds eight through twelve: 3 actors scale 1
+PASS ring movement remains inside the original working area: 3 actors scale 1
+PASS spacing preserves the actual queue, manual authorizations and living combat states: 3 actors scale 1
+PASS spacing grants no experience, cultivation, maintenance bytes or damage: 3 actors scale 1
+PASS already coincident 80-scale-ring actors gain a visible 60-scale separation within eight seconds: 2 actors scale 1.2
+PASS ring separation respects the original enemy speed and every frame's dt: 2 actors scale 1.2
+PASS each actual movement segment stays outside the hero's inner circle: 2 actors scale 1.2
+PASS separated actors remain on the melee ring inside existing attack and short-sword reaches: 2 actors scale 1.2
+PASS settled actors do not keep oscillating during seconds eight through twelve: 2 actors scale 1.2
+PASS ring movement remains inside the original working area: 2 actors scale 1.2
+PASS spacing preserves the actual queue, manual authorizations and living combat states: 2 actors scale 1.2
+PASS spacing grants no experience, cultivation, maintenance bytes or damage: 2 actors scale 1.2
+PASS already coincident 80-scale-ring actors gain a visible 60-scale separation within eight seconds: 3 actors scale 1.2
+PASS ring separation respects the original enemy speed and every frame's dt: 3 actors scale 1.2
+PASS each actual movement segment stays outside the hero's inner circle: 3 actors scale 1.2
+PASS separated actors remain on the melee ring inside existing attack and short-sword reaches: 3 actors scale 1.2
+PASS settled actors do not keep oscillating during seconds eight through twelve: 3 actors scale 1.2
+PASS ring movement remains inside the original working area: 3 actors scale 1.2
+PASS spacing preserves the actual queue, manual authorizations and living combat states: 3 actors scale 1.2
+PASS spacing grants no experience, cultivation, maintenance bytes or damage: 3 actors scale 1.2
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=False bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=False bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=False bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=False bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=True bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=True bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=True bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=True bottom=True
+PASS a long frame cannot cut through the hero while separating coincident actors at scale 0.8
+PASS zero dt cannot move an encounter actor at scale 0.8
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=20,Y=30,Width=245,Height=260} right=False bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=20,Y=30,Width=245,Height=260} right=False bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=20,Y=30,Width=245,Height=260} right=False bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=20,Y=30,Width=245,Height=260} right=False bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=20,Y=30,Width=245,Height=260} right=True bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=20,Y=30,Width=245,Height=260} right=True bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1 area {X=20,Y=30,Width=245,Height=260} right=True bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1 area {X=20,Y=30,Width=245,Height=260} right=True bottom=True
+PASS a long frame cannot cut through the hero while separating coincident actors at scale 1
+PASS zero dt cannot move an encounter actor at scale 1
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=False bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=False bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=False bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=False bottom=True
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=True bottom=False
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=True bottom=False
+PASS corner, negative-coordinate and crowded-area soft fallback stays finite, bounded and speed-limited: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=True bottom=True
+PASS crowded spawn fallback consumes no additional random draws: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=True bottom=True
+PASS a long frame cannot cut through the hero while separating coincident actors at scale 1.2
+PASS zero dt cannot move an encounter actor at scale 1.2
+PASS encounter separation respects dragging actors
+PASS encounter separation respects cleaning actors
+PASS encounter separation respects shattering actors
+PASS encounter separation respects defeated actors
+PASS encounter separation respects failed actors
+PASS encounter separation respects disk warning actors
+PASS unselected mortal scenery stays unengaged for canFight=True
+PASS unselected mortal scenery stays unengaged for canFight=False
+PASS unselected mortal actors stay on the unengaged patrol branch regardless of the caller's canFight flag
+PASS active black-hole gathering is not counteracted by lateral encounter dispersion
+PASS non-isolated spawn retains its original random proposal and call count
+PASS non-isolated ordinary chasing keeps its legacy 70-unit approach instead of the desktop stopping ring
+PASS an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: scale 0.8 origin {X=0,Y=0}
+PASS idle avoidance makes forward progress to the far side rather than freezing before the hero: scale 0.8 origin {X=0,Y=0}
+PASS idle detours retain original walk speed, frame limits and screen bounds: scale 0.8 origin {X=0,Y=0}
+PASS visual idle waypoints preserve the original target, patrol sector and random stream: scale 0.8 origin {X=0,Y=0}
+PASS idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: scale 0.8 origin {X=0,Y=0}
+PASS an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: scale 0.8 origin {X=-1920,Y=-260}
+PASS idle avoidance makes forward progress to the far side rather than freezing before the hero: scale 0.8 origin {X=-1920,Y=-260}
+PASS idle detours retain original walk speed, frame limits and screen bounds: scale 0.8 origin {X=-1920,Y=-260}
+PASS visual idle waypoints preserve the original target, patrol sector and random stream: scale 0.8 origin {X=-1920,Y=-260}
+PASS idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: scale 0.8 origin {X=-1920,Y=-260}
+PASS moving-hero fixture starts with an ordinary non-overlapping idle actor at scale 0.8
+PASS an idle actor overlapped by a moved hero exits within four seconds without moving deeper or returning through the HUD at scale 0.8
+PASS overlap escape is gradual, finite and bounded by the original speed at scale 0.8
+PASS escaping the moved hero preserves the patrol plan, randomness and noncombat state at scale 0.8
+PASS an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: scale 1 origin {X=0,Y=0}
+PASS idle avoidance makes forward progress to the far side rather than freezing before the hero: scale 1 origin {X=0,Y=0}
+PASS idle detours retain original walk speed, frame limits and screen bounds: scale 1 origin {X=0,Y=0}
+PASS visual idle waypoints preserve the original target, patrol sector and random stream: scale 1 origin {X=0,Y=0}
+PASS idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: scale 1 origin {X=0,Y=0}
+PASS an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: scale 1 origin {X=-1920,Y=-260}
+PASS idle avoidance makes forward progress to the far side rather than freezing before the hero: scale 1 origin {X=-1920,Y=-260}
+PASS idle detours retain original walk speed, frame limits and screen bounds: scale 1 origin {X=-1920,Y=-260}
+PASS visual idle waypoints preserve the original target, patrol sector and random stream: scale 1 origin {X=-1920,Y=-260}
+PASS idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: scale 1 origin {X=-1920,Y=-260}
+PASS moving-hero fixture starts with an ordinary non-overlapping idle actor at scale 1
+PASS an idle actor overlapped by a moved hero exits within four seconds without moving deeper or returning through the HUD at scale 1
+PASS overlap escape is gradual, finite and bounded by the original speed at scale 1
+PASS escaping the moved hero preserves the patrol plan, randomness and noncombat state at scale 1
+PASS an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: scale 1.2 origin {X=0,Y=0}
+PASS idle avoidance makes forward progress to the far side rather than freezing before the hero: scale 1.2 origin {X=0,Y=0}
+PASS idle detours retain original walk speed, frame limits and screen bounds: scale 1.2 origin {X=0,Y=0}
+PASS visual idle waypoints preserve the original target, patrol sector and random stream: scale 1.2 origin {X=0,Y=0}
+PASS idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: scale 1.2 origin {X=0,Y=0}
+PASS an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: scale 1.2 origin {X=-1920,Y=-260}
+PASS idle avoidance makes forward progress to the far side rather than freezing before the hero: scale 1.2 origin {X=-1920,Y=-260}
+PASS idle detours retain original walk speed, frame limits and screen bounds: scale 1.2 origin {X=-1920,Y=-260}
+PASS visual idle waypoints preserve the original target, patrol sector and random stream: scale 1.2 origin {X=-1920,Y=-260}
+PASS idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: scale 1.2 origin {X=-1920,Y=-260}
+PASS moving-hero fixture starts with an ordinary non-overlapping idle actor at scale 1.2
+PASS an idle actor overlapped by a moved hero exits within four seconds without moving deeper or returning through the HUD at scale 1.2
+PASS overlap escape is gradual, finite and bounded by the original speed at scale 1.2
+PASS escaping the moved hero preserves the patrol plan, randomness and noncombat state at scale 1.2
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=False bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=False bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=True bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 0.8 area {X=20,Y=30,Width=196,Height=208} right=True bottom=True
+PASS a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale 0.8 dt=1.5
+PASS long-dt idle avoidance keeps existing speed, bounds and random cadence: scale 0.8 dt=1.5
+PASS a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale 0.8 dt=8
+PASS long-dt idle avoidance keeps existing speed, bounds and random cadence: scale 0.8 dt=8
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=20,Y=30,Width=245,Height=260} right=False bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=20,Y=30,Width=245,Height=260} right=False bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=20,Y=30,Width=245,Height=260} right=True bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1 area {X=20,Y=30,Width=245,Height=260} right=True bottom=True
+PASS a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale 1 dt=1.5
+PASS long-dt idle avoidance keeps existing speed, bounds and random cadence: scale 1 dt=1.5
+PASS a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale 1 dt=8
+PASS long-dt idle avoidance keeps existing speed, bounds and random cadence: scale 1 dt=8
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=False bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=-1920,Y=-260,Width=1920,Height=1080} right=True bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=False bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=False bottom=True
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=True bottom=False
+PASS idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale 1.2 area {X=20,Y=30,Width=294,Height=312} right=True bottom=True
+PASS a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale 1.2 dt=1.5
+PASS long-dt idle avoidance keeps existing speed, bounds and random cadence: scale 1.2 dt=1.5
+PASS a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale 1.2 dt=8
+PASS long-dt idle avoidance keeps existing speed, bounds and random cadence: scale 1.2 dt=8
+PASS a centered vertical idle crossing goes around the full hero window and reaches the opposite side: scale 0.8 direction=down
+PASS vertical detouring respects each frame's original speed and work-area bounds: scale 0.8 direction=down
+PASS vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: scale 0.8 direction=down
+PASS a centered vertical idle crossing goes around the full hero window and reaches the opposite side: scale 0.8 direction=up
+PASS vertical detouring respects each frame's original speed and work-area bounds: scale 0.8 direction=up
+PASS vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: scale 0.8 direction=up
+PASS an occupied patrol destination is approached safely and waits without late oscillation or entering the hero/HUD: scale 0.8
+PASS waiting at an occupied target preserves original speed, patrol plan, random cadence and noncombat state: scale 0.8
+PASS moving the hero away releases the safe wait and resumes the original target before its arrival threshold: scale 0.8
+PASS resuming an occupied patrol plan needs no new target, random draws, authorization, combat or rewards: scale 0.8
+PASS a centered vertical idle crossing goes around the full hero window and reaches the opposite side: scale 1 direction=down
+PASS vertical detouring respects each frame's original speed and work-area bounds: scale 1 direction=down
+PASS vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: scale 1 direction=down
+PASS a centered vertical idle crossing goes around the full hero window and reaches the opposite side: scale 1 direction=up
+PASS vertical detouring respects each frame's original speed and work-area bounds: scale 1 direction=up
+PASS vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: scale 1 direction=up
+PASS an occupied patrol destination is approached safely and waits without late oscillation or entering the hero/HUD: scale 1
+PASS waiting at an occupied target preserves original speed, patrol plan, random cadence and noncombat state: scale 1
+PASS moving the hero away releases the safe wait and resumes the original target before its arrival threshold: scale 1
+PASS resuming an occupied patrol plan needs no new target, random draws, authorization, combat or rewards: scale 1
+PASS a centered vertical idle crossing goes around the full hero window and reaches the opposite side: scale 1.2 direction=down
+PASS vertical detouring respects each frame's original speed and work-area bounds: scale 1.2 direction=down
+PASS vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: scale 1.2 direction=down
+PASS a centered vertical idle crossing goes around the full hero window and reaches the opposite side: scale 1.2 direction=up
+PASS vertical detouring respects each frame's original speed and work-area bounds: scale 1.2 direction=up
+PASS vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: scale 1.2 direction=up
+PASS an occupied patrol destination is approached safely and waits without late oscillation or entering the hero/HUD: scale 1.2
+PASS waiting at an occupied target preserves original speed, patrol plan, random cadence and noncombat state: scale 1.2
+PASS moving the hero away releases the safe wait and resumes the original target before its arrival threshold: scale 1.2
+PASS resuming an occupied patrol plan needs no new target, random draws, authorization, combat or rewards: scale 1.2
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 0.8 wall=top-left
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 0.8 wall=top-left
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 0.8 wall=top-right
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 0.8 wall=top-right
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 0.8 wall=left
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 0.8 wall=left
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 1 wall=top-left
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 1 wall=top-left
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 1 wall=top-right
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 1 wall=top-right
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 1 wall=left
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 1 wall=left
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 1.2 wall=top-left
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 1.2 wall=top-left
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 1.2 wall=top-right
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 1.2 wall=top-right
+PASS a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: scale 1.2 wall=left
+PASS wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: scale 1.2 wall=left
+PASS idle avoidance leaves dragging actors and their patrol plans untouched
+PASS idle avoidance leaves cleaning actors and their patrol plans untouched
+PASS idle avoidance leaves shattering actors and their patrol plans untouched
+PASS idle avoidance leaves defeated actors and their patrol plans untouched
+PASS idle avoidance leaves failed actors and their patrol plans untouched
+PASS idle avoidance leaves disk warning actors and their patrol plans untouched
+PASS non-isolated idle patrol keeps its original straight-line movement through the same geometry
+PASS legacy idle geometry preserves its original target, sector and random cadence
+PASS all controller and actor windows remain hidden throughout the stopped-timer fixture
+PASS no real scan, process target, cleanup, memory task or system worker is started
+Desktop encounter spacing: 292 checks, 0 failures. Hidden controller/private archives, no native input or natural-time claim.

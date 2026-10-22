@@ -65,6 +65,7 @@ namespace NetBunny
         {
             if (enemy.ProcessTarget != null) return "程灵 · " + enemy.ProcessTarget.Name;
             if (enemy.NoFieldClear) return enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖";
+            if (!enemy.IsVirtual && enemy.IsBoss) return enemy.IsDiskBoss ? enemy.IsDiskWarning ? "磁盘空间预警" : "磁盘危机" : "内存分身";
             return (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
         }
 

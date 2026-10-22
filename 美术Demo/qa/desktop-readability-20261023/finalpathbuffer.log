@@ -1,0 +1,34 @@
+PASS real owned handle still resolves and normalizes to the exact expected file
+OBSERVED 100 actual owned short-path resolutions allocated 196608 managed bytes (AppDomain monotonic allocation counter).
+PASS 100 ordinary owned path reads do not allocate the old multi-megabyte maximum-sized buffers
+PASS production exposes the narrow final-path read seam for required-size fault injection
+PASS ordinary short path uses one small buffer call, preserving raw native text
+PASS native success length 259 excludes its terminating null
+PASS required length including null is used exactly, without off-by-one, for 259
+PASS native success length 260 excludes its terminating null
+PASS required length including null is used exactly, without off-by-one, for 260
+PASS native success length 511 excludes its terminating null
+PASS required length including null is used exactly, without off-by-one, for 511
+PASS native success length 4096 excludes its terminating null
+PASS required length including null is used exactly, without off-by-one, for 4096
+PASS native success length 32767 excludes its terminating null
+PASS required length including null is used exactly, without off-by-one, for 32767
+PASS a shorter valid result on retry is accepted only from the actual second buffer
+PASS zero initial result fails closed with IOException
+PASS zero retry result fails closed with IOException
+PASS zero retry never causes a third read
+PASS required capacity above original 32768 limit fails closed with IOException
+PASS oversized first response cannot allocate a larger buffer
+PASS required capacity uint overflow fails closed with IOException
+PASS uint size is bounded before conversion to int
+PASS path grows beyond retry capacity fails closed with IOException
+PASS changing oversized result is bounded to two native calls
+PASS retry result exactly at 32768 capacity fails closed with IOException
+PASS 32768 actual characters cannot hide a missing terminator
+PASS retry result greater than 32768 fails closed with IOException
+PASS reported success disagrees with actual string fails closed with IOException
+PASS truncated second string fails closed with IOException
+PASS equal-to-initial-capacity required response remains a bounded safe retry
+Cleanup self-test: 57 passed (isolated fixtures only; user Temp untouched).
+PASS existing owned-file identity, reparse, locking and deletion regression suite passes
+Final path buffer: 31 checks, 0 failures.

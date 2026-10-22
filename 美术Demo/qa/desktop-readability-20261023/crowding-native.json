@@ -1,0 +1,735 @@
+{
+  "scope": "Synthetic crowded initial layout, not natural discovery/growth or the final distributable EXE. Five byte-identical main archives cloned from a previously verified normal x1 awakened profile, with no consent/seed/marker copied. Production factories, RenderWorld/UpdateLayeredWindow and normal x1 Tick/Move/combat run for 12 wall-clock seconds. Only initial hero/enemy geometry and normal Boss combat authorization are set; HP/realm/damage/cooldowns/clocks are not edited. No scan, real maintenance, native input, foreground activation, other-app move/hide or timer pause. Raw other-app background pixels remain local QA evidence only. Short resource samples do not replace the paused long test.",
+  "passed": true,
+  "seconds": 12.325519799999999,
+  "native_inputs": 0,
+  "checks": [
+    {
+      "seconds": 8.1413675,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root hero samples=2010 matches=2009 roots=2010; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.161424199999999,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root fiend-7aedbded21d2443bbb1d93e18e0a90eb samples=968 matches=968 roots=968; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.1749095,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root fiend-4e6c5ecf469b43bd97f6e4fa5b909c8c samples=674 matches=674 roots=674; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.1921682,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root fiend-ae86a2875bbe4a688334716a11fd813c samples=908 matches=908 roots=908; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.2112296,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root fiend-46988bf74d4c4dd7b3551b24e59d75c0 samples=992 matches=992 roots=992; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.2299017,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root fiend-49e3010e5fb447779f772b92dce6af60 samples=988 matches=988 roots=988; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.2424582,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root fiend-1e746d22a3124d9aa583ee0c0d5221f4 samples=638 matches=638 roots=638; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.2785314,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root memory-6cd2aecc969d4279a39a36150e5f5ac9 samples=1863 matches=1863 roots=1863; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 8.2867281,
+      "passed": true,
+      "message": "01-crowded-at-8s: exact presented actor pixels/native root  samples=220 matches=220 roots=0; pass-through-decoration: zero samples hit this window; PassThrough=True"
+    },
+    {
+      "seconds": 8.2883288,
+      "passed": true,
+      "message": "01-crowded-at-8s: all initial hero + six ordinary + last-appended Boss remain visibly present"
+    },
+    {
+      "seconds": 8.3191272,
+      "passed": true,
+      "message": "01-crowded-at-8s: unchanged spacing thresholds on original alpha; head=0.000, HUD=0.000, Boss=0.000, peers=0.000"
+    },
+    {
+      "seconds": 8.3193117,
+      "passed": true,
+      "message": "01-crowded-at-8s: natural battle remains living with the exact original Boss selected"
+    },
+    {
+      "seconds": 8.319447,
+      "passed": true,
+      "message": "01-crowded-at-8s: foreground remains unchanged without any activation call"
+    },
+    {
+      "seconds": 12.123174599999999,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root hero samples=2274 matches=2274 roots=2274; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.141301499999999,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root fiend-7aedbded21d2443bbb1d93e18e0a90eb samples=968 matches=968 roots=968; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.1553299,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root fiend-4e6c5ecf469b43bd97f6e4fa5b909c8c samples=674 matches=674 roots=674; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.1723156,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root fiend-ae86a2875bbe4a688334716a11fd813c samples=908 matches=908 roots=908; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.190128099999999,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root fiend-46988bf74d4c4dd7b3551b24e59d75c0 samples=992 matches=992 roots=992; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.2080637,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root fiend-49e3010e5fb447779f772b92dce6af60 samples=988 matches=988 roots=988; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.221484,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root fiend-1e746d22a3124d9aa583ee0c0d5221f4 samples=638 matches=638 roots=638; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.256834699999999,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root memory-6cd2aecc969d4279a39a36150e5f5ac9 samples=1632 matches=1632 roots=1632; interactive-actor: every visible sample hits this exact window; PassThrough=False"
+    },
+    {
+      "seconds": 12.2651782,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root  samples=224 matches=224 roots=0; pass-through-decoration: zero samples hit this window; PassThrough=True"
+    },
+    {
+      "seconds": 12.2734268,
+      "passed": true,
+      "message": "02-crowded-at-12s: exact presented actor pixels/native root  samples=195 matches=195 roots=0; pass-through-decoration: zero samples hit this window; PassThrough=True"
+    },
+    {
+      "seconds": 12.274741899999999,
+      "passed": true,
+      "message": "02-crowded-at-12s: all initial hero + six ordinary + last-appended Boss remain visibly present"
+    },
+    {
+      "seconds": 12.3035806,
+      "passed": true,
+      "message": "02-crowded-at-12s: unchanged spacing thresholds on original alpha; head=0.000, HUD=0.000, Boss=0.000, peers=0.000"
+    },
+    {
+      "seconds": 12.303796499999999,
+      "passed": true,
+      "message": "02-crowded-at-12s: natural battle remains living with the exact original Boss selected"
+    },
+    {
+      "seconds": 12.3039016,
+      "passed": true,
+      "message": "02-crowded-at-12s: foreground remains unchanged without any activation call"
+    },
+    {
+      "seconds": 12.3128216,
+      "passed": true,
+      "message": "Both actual 8s/12s native desktop observations were retained."
+    },
+    {
+      "seconds": 12.3129964,
+      "passed": true,
+      "message": "Foreground before/after the complete observation is identical."
+    },
+    {
+      "seconds": 12.3131431,
+      "passed": true,
+      "message": "All maintenance/scans remain off and the host remains hidden."
+    }
+  ],
+  "captures": [
+    {
+      "image": "01-crowded-at-8s.png",
+      "actual_seconds": 8.020022299999999,
+      "actors": [
+        {
+          "id": "hero",
+          "role": "hero",
+          "handle": 77989568,
+          "title": "桌面修仙传 · 修士",
+          "bounds": "{X=838,Y=583,Width=220,Height=240}",
+          "ZOrder": 21,
+          "sourceOpaqueSamples": 2497,
+          "ownCoveredSamples": 487,
+          "ownCoverage": 0.19503404084901882,
+          "visibleSamples": 2010,
+          "matchingSamples": 2009,
+          "rootMatches": 2010,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 230,
+          "matchRatio": 0.9995024875621891,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-7aedbded21d2443bbb1d93e18e0a90eb",
+          "role": "enemy",
+          "handle": 15532134,
+          "title": "赤伞菇妖",
+          "bounds": "{X=755,Y=654,Width=130,Height=170}",
+          "ZOrder": 28,
+          "sourceOpaqueSamples": 968,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 968,
+          "matchingSamples": 968,
+          "rootMatches": 968,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 159,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-4e6c5ecf469b43bd97f6e4fa5b909c8c",
+          "role": "enemy",
+          "handle": 49744118,
+          "title": "夜翼蝠妖",
+          "bounds": "{X=653,Y=646,Width=130,Height=170}",
+          "ZOrder": 27,
+          "sourceOpaqueSamples": 674,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 674,
+          "matchingSamples": 674,
+          "rootMatches": 674,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 126,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-ae86a2875bbe4a688334716a11fd813c",
+          "role": "enemy",
+          "handle": 2687888,
+          "title": "苔露灵团",
+          "bounds": "{X=657,Y=529,Width=130,Height=170}",
+          "ZOrder": 26,
+          "sourceOpaqueSamples": 908,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 908,
+          "matchingSamples": 908,
+          "rootMatches": 908,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 220,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-46988bf74d4c4dd7b3551b24e59d75c0",
+          "role": "enemy",
+          "handle": 4852432,
+          "title": "山中石傀",
+          "bounds": "{X=703,Y=769,Width=130,Height=170}",
+          "ZOrder": 25,
+          "sourceOpaqueSamples": 992,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 992,
+          "matchingSamples": 992,
+          "rootMatches": 992,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 163,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-49e3010e5fb447779f772b92dce6af60",
+          "role": "enemy",
+          "handle": 24775844,
+          "title": "山中石傀",
+          "bounds": "{X=804,Y=797,Width=130,Height=170}",
+          "ZOrder": 24,
+          "sourceOpaqueSamples": 988,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 988,
+          "matchingSamples": 988,
+          "rootMatches": 988,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 166,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-1e746d22a3124d9aa583ee0c0d5221f4",
+          "role": "enemy",
+          "handle": 9243300,
+          "title": "木芽小妖",
+          "bounds": "{X=908,Y=797,Width=130,Height=170}",
+          "ZOrder": 23,
+          "sourceOpaqueSamples": 638,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 638,
+          "matchingSamples": 638,
+          "rootMatches": 638,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 173,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "memory-6cd2aecc969d4279a39a36150e5f5ac9",
+          "role": "enemy",
+          "handle": 3605810,
+          "title": "内存分身",
+          "bounds": "{X=785,Y=476,Width=190,Height=220}",
+          "ZOrder": 22,
+          "sourceOpaqueSamples": 2410,
+          "ownCoveredSamples": 547,
+          "ownCoverage": 0.22697095435684647,
+          "visibleSamples": 1863,
+          "matchingSamples": 1863,
+          "rootMatches": 1863,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 190,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": null,
+          "role": "decoration",
+          "handle": 9307448,
+          "title": "骑士助手 · 武器特效",
+          "bounds": "{X=859,Y=524,Width=192,Height=192}",
+          "ZOrder": 20,
+          "sourceOpaqueSamples": 220,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 220,
+          "matchingSamples": 220,
+          "rootMatches": 0,
+          "rootPolicy": "pass-through-decoration: zero samples hit this window",
+          "passThrough": true,
+          "distinctColors": 80,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        }
+      ],
+      "coverage": {
+        "heroHead": 0,
+        "heroHud": 0,
+        "bossByOrdinary": 0,
+        "worstOrdinaryByOtherOrdinary": 0,
+        "denominator": "Each region's full original alpha>=20 source samples, step 2; no surviving-visible denominator or Z-order exclusion"
+      },
+      "raw_sha256": "31c2538edd411ac8ddb8f186512a11470688bb49f4f5e0146c9bd1a213b39fb0"
+    },
+    {
+      "image": "02-crowded-at-12s.png",
+      "actual_seconds": 12.0047959,
+      "actors": [
+        {
+          "id": "hero",
+          "role": "hero",
+          "handle": 77989568,
+          "title": "桌面修仙传 · 修士",
+          "bounds": "{X=854,Y=552,Width=220,Height=240}",
+          "ZOrder": 22,
+          "sourceOpaqueSamples": 2442,
+          "ownCoveredSamples": 168,
+          "ownCoverage": 0.0687960687960688,
+          "visibleSamples": 2274,
+          "matchingSamples": 2274,
+          "rootMatches": 2274,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 257,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-7aedbded21d2443bbb1d93e18e0a90eb",
+          "role": "enemy",
+          "handle": 15532134,
+          "title": "赤伞菇妖",
+          "bounds": "{X=755,Y=654,Width=130,Height=170}",
+          "ZOrder": 29,
+          "sourceOpaqueSamples": 968,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 968,
+          "matchingSamples": 968,
+          "rootMatches": 968,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 159,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-4e6c5ecf469b43bd97f6e4fa5b909c8c",
+          "role": "enemy",
+          "handle": 49744118,
+          "title": "夜翼蝠妖",
+          "bounds": "{X=653,Y=646,Width=130,Height=170}",
+          "ZOrder": 28,
+          "sourceOpaqueSamples": 674,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 674,
+          "matchingSamples": 674,
+          "rootMatches": 674,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 126,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-ae86a2875bbe4a688334716a11fd813c",
+          "role": "enemy",
+          "handle": 2687888,
+          "title": "苔露灵团",
+          "bounds": "{X=657,Y=529,Width=130,Height=170}",
+          "ZOrder": 27,
+          "sourceOpaqueSamples": 908,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 908,
+          "matchingSamples": 908,
+          "rootMatches": 908,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 220,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-46988bf74d4c4dd7b3551b24e59d75c0",
+          "role": "enemy",
+          "handle": 4852432,
+          "title": "山中石傀",
+          "bounds": "{X=703,Y=769,Width=130,Height=170}",
+          "ZOrder": 26,
+          "sourceOpaqueSamples": 992,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 992,
+          "matchingSamples": 992,
+          "rootMatches": 992,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 163,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-49e3010e5fb447779f772b92dce6af60",
+          "role": "enemy",
+          "handle": 24775844,
+          "title": "山中石傀",
+          "bounds": "{X=804,Y=797,Width=130,Height=170}",
+          "ZOrder": 25,
+          "sourceOpaqueSamples": 988,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 988,
+          "matchingSamples": 988,
+          "rootMatches": 988,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 166,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "fiend-1e746d22a3124d9aa583ee0c0d5221f4",
+          "role": "enemy",
+          "handle": 9243300,
+          "title": "木芽小妖",
+          "bounds": "{X=908,Y=797,Width=130,Height=170}",
+          "ZOrder": 24,
+          "sourceOpaqueSamples": 638,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 638,
+          "matchingSamples": 638,
+          "rootMatches": 638,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 173,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": "memory-6cd2aecc969d4279a39a36150e5f5ac9",
+          "role": "enemy",
+          "handle": 3605810,
+          "title": "内存分身",
+          "bounds": "{X=785,Y=476,Width=190,Height=220}",
+          "ZOrder": 23,
+          "sourceOpaqueSamples": 2436,
+          "ownCoveredSamples": 804,
+          "ownCoverage": 0.33004926108374383,
+          "visibleSamples": 1632,
+          "matchingSamples": 1632,
+          "rootMatches": 1632,
+          "rootPolicy": "interactive-actor: every visible sample hits this exact window",
+          "passThrough": false,
+          "distinctColors": 175,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": null,
+          "role": "decoration",
+          "handle": 9569592,
+          "title": "骑士助手 · 武器特效",
+          "bounds": "{X=855,Y=581,Width=192,Height=192}",
+          "ZOrder": 21,
+          "sourceOpaqueSamples": 224,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 224,
+          "matchingSamples": 224,
+          "rootMatches": 0,
+          "rootPolicy": "pass-through-decoration: zero samples hit this window",
+          "passThrough": true,
+          "distinctColors": 79,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "id": null,
+          "role": "decoration",
+          "handle": 46009316,
+          "title": "骑士助手 · 武器特效",
+          "bounds": "{X=784,Y=484,Width=192,Height=192}",
+          "ZOrder": 20,
+          "sourceOpaqueSamples": 195,
+          "ownCoveredSamples": 0,
+          "ownCoverage": 0,
+          "visibleSamples": 195,
+          "matchingSamples": 195,
+          "rootMatches": 0,
+          "rootPolicy": "pass-through-decoration: zero samples hit this window",
+          "passThrough": true,
+          "distinctColors": 59,
+          "matchRatio": 1,
+          "passed": true,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        }
+      ],
+      "coverage": {
+        "heroHead": 0,
+        "heroHud": 0,
+        "bossByOrdinary": 0,
+        "worstOrdinaryByOtherOrdinary": 0,
+        "denominator": "Each region's full original alpha>=20 source samples, step 2; no surviving-visible denominator or Z-order exclusion"
+      },
+      "raw_sha256": "9c87a1b72b0cf78dc57289576b6f1ccb605eb6f8f10765899beb8465edaf54db"
+    }
+  ],
+  "screenshots_reviewed": 2,
+  "cpu_core_equivalents": 0.4867944234291235,
+  "capture_validation_cpu_ms": 546.875,
+  "capture_validation_wall_seconds": 0.5989859000000006,
+  "resource_peaks": {
+    "cumulativeCpuMs": 9093.75,
+    "gdi": 84,
+    "user": 61,
+    "handles": 355,
+    "sampleInterval": "about one wall-clock second plus start/end; short observation only"
+  },
+  "resource_samples": [
+    {
+      "seconds": 0.0084392,
+      "cpu_ms": 0,
+      "gdi": 72,
+      "user": 50,
+      "handles": 339,
+      "working_set_bytes": 126988288,
+      "private_bytes": 108896256
+    },
+    {
+      "seconds": 0.23243019999999998,
+      "cpu_ms": 218.75,
+      "gdi": 78,
+      "user": 56,
+      "handles": 339,
+      "working_set_bytes": 129638400,
+      "private_bytes": 110223360
+    },
+    {
+      "seconds": 1.2443711,
+      "cpu_ms": 984.375,
+      "gdi": 78,
+      "user": 57,
+      "handles": 345,
+      "working_set_bytes": 135323648,
+      "private_bytes": 115269632
+    },
+    {
+      "seconds": 2.2922906,
+      "cpu_ms": 1656.25,
+      "gdi": 78,
+      "user": 57,
+      "handles": 345,
+      "working_set_bytes": 135315456,
+      "private_bytes": 115286016
+    },
+    {
+      "seconds": 3.2985919,
+      "cpu_ms": 2484.375,
+      "gdi": 78,
+      "user": 57,
+      "handles": 345,
+      "working_set_bytes": 135356416,
+      "private_bytes": 115286016
+    },
+    {
+      "seconds": 4.328498199999999,
+      "cpu_ms": 3390.625,
+      "gdi": 84,
+      "user": 61,
+      "handles": 345,
+      "working_set_bytes": 135692288,
+      "private_bytes": 115433472
+    },
+    {
+      "seconds": 5.3834668,
+      "cpu_ms": 4062.5,
+      "gdi": 72,
+      "user": 53,
+      "handles": 351,
+      "working_set_bytes": 135208960,
+      "private_bytes": 115232768
+    },
+    {
+      "seconds": 6.4425044,
+      "cpu_ms": 4343.75,
+      "gdi": 78,
+      "user": 57,
+      "handles": 350,
+      "working_set_bytes": 135512064,
+      "private_bytes": 115351552
+    },
+    {
+      "seconds": 7.457482,
+      "cpu_ms": 4484.375,
+      "gdi": 84,
+      "user": 61,
+      "handles": 350,
+      "working_set_bytes": 135856128,
+      "private_bytes": 115499008
+    },
+    {
+      "seconds": 8.5083357,
+      "cpu_ms": 5078.125,
+      "gdi": 78,
+      "user": 57,
+      "handles": 354,
+      "working_set_bytes": 148520960,
+      "private_bytes": 115048448
+    },
+    {
+      "seconds": 9.5704393,
+      "cpu_ms": 5187.5,
+      "gdi": 72,
+      "user": 53,
+      "handles": 354,
+      "working_set_bytes": 148226048,
+      "private_bytes": 114900992
+    },
+    {
+      "seconds": 10.634027099999999,
+      "cpu_ms": 5296.875,
+      "gdi": 72,
+      "user": 53,
+      "handles": 355,
+      "working_set_bytes": 148279296,
+      "private_bytes": 115003392
+    },
+    {
+      "seconds": 11.6989752,
+      "cpu_ms": 5562.5,
+      "gdi": 84,
+      "user": 61,
+      "handles": 354,
+      "working_set_bytes": 148852736,
+      "private_bytes": 115261440
+    },
+    {
+      "seconds": 12.317909,
+      "cpu_ms": 6000,
+      "gdi": 84,
+      "user": 59,
+      "handles": 354,
+      "working_set_bytes": 148979712,
+      "private_bytes": 115318784
+    }
+  ],
+  "source_and_formal_archives_unchanged": true,
+  "foreground_unchanged": true,
+  "report_sha256": "d701ec1dc3e86a5de7877291164c0c25cc27f85194a963504db0e5eba7a01da0",
+  "raw_screenshots": "Local ignored QA only; not included in Git or ZIP.",
+  "coverage_scope": "Ordinary enemies against protected hero head/HUD, Boss and each other; Boss melee illustrations and pass-through combat effects may intersect the hero and are not included in these avoidance metrics.",
+  "retained_first_failure": {
+    "report_sha256": "ae866c1c2e14fd2b3e035567f53a8f39082ed529f755ca9c1a93c7de3653589a",
+    "reason": "Fixture required its weapon-effect window to receive mouse hits, although production decoration is intentionally pass-through. All hero/enemy pixels, roots and ordinary-overlap metrics passed. Corrected decoration-only root policy; interactive actors and pixel thresholds unchanged. Production source unchanged."
+  }
+}

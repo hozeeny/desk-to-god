@@ -95,6 +95,7 @@ namespace NetBunny
         private Rectangle area;
         private bool enabled, roaming = true, disposed, dragging, scanBusy, memoryBusy, monitoringAvailable, heroFacing = true;
         private double x, y, targetX, targetY, bytesPerSecond, lastTick, lastTelemetry = -100, lastScan = -100, lastMemory = -100, lastRegion = -100, lastSave, lastEnemyPaint, demoStarted = -1, pauseMotionUntil;
+        private double scanFinishedAt = -100, scanDurationSeconds, nextAutoScanAt = -100;
         private double memoryPercent, attackAnimation, renderTime, runCycle, actualMoveSpeed, blackholeUntil, blackholeX, blackholeY, blockUntil = -1, blockCooldownUntil = -1;
         private float displayScale = 1f;
         private string scanStatus = "等待扫描临时文件", connectivityDetail = "正在确认网络", failure;
@@ -1062,11 +1063,20 @@ namespace NetBunny
             equipment.RefreshData(); equipment.Show(); equipment.BringToFront(); equipment.Activate();
         }
         public void RefreshWorld() { RefreshWorld(true); }
+        private static double AutomaticScanRestSeconds(double duration) { return Math.Min(15, Math.Max(0, duration) * 3); }
+        private bool AutomaticScanDue(double now)
+        {
+            if (now < nextAutoScanAt) return false;
+            return (now - scanFinishedAt >= InventoryIntervalSeconds && now - lastScan >= InventoryIntervalSeconds) ||
+                (now - scanFinishedAt >= .35 && now - lastScan >= .35 && scannedChangeVersion != Interlocked.CompareExchange(ref tempChangeVersion, 0, 0));
+        }
         private void RefreshWorld(bool manualRequest)
         {
             if (disposed || demonstrationOnly || !MayObserveLocalResources || scanBusy || IsDemo) return;
+            if (!manualRequest && !AutomaticScanDue(clock.Elapsed.TotalSeconds)) return;
             EnsureTempWatcher(); scannedChangeVersion = Interlocked.CompareExchange(ref tempChangeVersion,0,0);
             scanBusy = true; int scanEpoch = cleanupEpoch; lastScan = clock.Elapsed.TotalSeconds; scanStatus = "正在实时复核临时文件与可处理项目…";
+            double scanStartedAt = lastScan;
             scanCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
             CancellationToken scanToken = scanCancellation.Token;
             Task.Run(delegate
@@ -1075,6 +1085,11 @@ namespace NetBunny
                 try { snapshot = cleanup.Scan(scanToken); } catch (Exception e) { error = e; }
                 Post(delegate
                 {
+                    scanFinishedAt = clock.Elapsed.TotalSeconds;
+                    scanDurationSeconds = Math.Max(0, scanFinishedAt - scanStartedAt);
+                    // Leave actual idle time after completion, including failed,
+                    // cancelled or epoch-invalid scans. Dirty events stay pending.
+                    nextAutoScanAt = scanFinishedAt + AutomaticScanRestSeconds(scanDurationSeconds);
                     scanBusy = false; if (scanCancellation != null) { scanCancellation.Dispose(); scanCancellation = null; } if (disposed) return;
                     if (error != null) { scanStatus = "扫描失败：" + error.Message; return; }
                     if (scanEpoch != cleanupEpoch) { scanStatus = "清理期间文件已变化，正在准备重新扫描"; lastScan = -100; return; }
@@ -1339,7 +1354,7 @@ namespace NetBunny
             if (probe) { PerfProbe.End(SecEnemyLoop); PerfProbe.Begin(); }
             PumpCleanup();
             RefillEnemies();
-            if (now - lastScan >= InventoryIntervalSeconds || (now - lastScan >= .35 && scannedChangeVersion != Interlocked.CompareExchange(ref tempChangeVersion,0,0))) RefreshWorld(false);
+            if (AutomaticScanDue(now)) RefreshWorld(false);
             if (!demonstrationOnly && MayObserveLocalResources && now - lastMemory >= 1 && !memoryBusy) ReadMemory(now);
             if (!demonstrationOnly && !IsolatedDesktop && now - lastRegion >= 60) { lastRegion = now; region.RefreshAsync(); }
             if (IsolatedDesktop) MaintainDesktopField();
@@ -1550,7 +1565,7 @@ namespace NetBunny
             {
                 string freshness = lastInventoryObservation < 0 ? "等待扫描" : "最近复核 " + (int)Math.Max(0,clock.Elapsed.TotalSeconds-lastInventoryObservation) + " 秒前";
                 return "临时文件实时监测 · " + GrowthStatusText + "\r\n" + CleanupAmountText + "；监测总量 " + AdventureBattle.FormatBytes(liveTemp.TotalBytes) + "\r\n" +
-                    "待重扫 " + recheckFiles + " 项；近期/占用文件须通过安全检查后才能删除。\r\n" + freshness + (lastInventoryComplete ? "" : " · 普查未完整，部分项目等待核实") + "；文件变化立即触发复核，满员后等待空位。";
+                    "待重扫 " + recheckFiles + " 项；近期/占用文件须通过安全检查后才能删除。\r\n" + freshness + (lastInventoryComplete ? "" : " · 普查未完整，部分项目等待核实") + "；文件变化会合并复核，满员后等待空位。";
             }
         }
         private void RecordRecheck(IEnumerable<CleanupCandidate> candidates)
@@ -1742,17 +1757,17 @@ namespace NetBunny
                     {
                         AdventureEnemy captured = enemy; window = NewWindow(enemy.IsDiskBoss ? "C 盘空间危机 Boss" : enemy.IsBoss ? "邪恶分身 Boss" : AdventureMonster.Find(enemy.MonsterKind).Name + " · 临时文件怪物"); enemyWindows.Add(enemy.Id, window);
                         Point pressedAt = Point.Empty; bool dragged = false;
-                        if (artDemoRuntime || IsolatedDesktop) window.Text = enemy.ProcessTarget != null ? DesktopEnemyName(enemy) : enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
                         window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else if (IsolatedDesktop) DesktopChooseEnemy(captured.Id, true); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
                         window.ContextRequested = OpenEquipment;
                         window.DragChanged = delegate(bool active) { captured.Dragging = active; };
                         window.DragMoved = delegate(Point p) { if (AdventureBattle.Distance(pressedAt.X, pressedAt.Y, Cursor.Position.X, Cursor.Position.Y) > 6) dragged = true; captured.X = p.X; captured.Y = p.Y; BoundEnemy(captured); };
                     }
+                    if (artDemoRuntime || IsolatedDesktop) window.Text = DesktopEnemyName(enemy);
                     window.Location = new Point((int)enemy.X, (int)enemy.Y);
                     if (!enemies && !newWindow && !enemy.VisualDirty && !enemy.VisualDefeated && (enemyIndex - paintStart + enemyCount) % enemyCount >= 4) continue;
                     string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "邪恶分身 · " + AdventureWeapon.Find(enemy.BossWeapon).Name : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name + (enemy.Batch != null && enemy.Batch.Candidates.Any(f=>!f.EligibleForCleanup) ? " · 近期文件" : "");
-                    if (artDemoRuntime || IsolatedDesktop) label = enemy.VisualDefeated ? "" : enemy.ProcessTarget != null ? DesktopEnemyName(enemy) : enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : enemy.Elite ? "精英 · " + ArtDemoMonsterLabel(enemy.MonsterKind) : ArtDemoMonsterLabel(enemy.MonsterKind);
+                    if (artDemoRuntime || IsolatedDesktop) label = enemy.VisualDefeated ? "" : DesktopEnemyName(enemy);
                     double deathProgress = enemy.VisualDefeated ? Math.Min(1, enemy.DeathElapsed / AdventureEnemy.ShatterSeconds) : 0;
                     // P0：完全静止且无特效的妖物整体跳绘（姿态冻结）；活动妖物按帧量化签名跳绘。
                     bool idleStatic = !enemy.VisualDefeated && enemy.AttackFlash <= .05 && enemy.HitFlash <= 0 && enemy.MoveSpeed <= 1;
@@ -1771,6 +1786,14 @@ namespace NetBunny
                 enemyPaintCursor = enemyCount == 0 ? 0 : (paintStart + 4) % enemyCount;
                 if (probe) { PerfProbe.End(SecRenderEnemies); PerfProbe.Begin(); }
                 RemoveUnusedWindows(visible);
+                if (IsolatedDesktop)
+                {
+                    KnightLayeredWindow selected = null, held = null;
+                    AdventureEnemy focus = battle.Target, dragged = battle.Enemies.FirstOrDefault(e => e.Dragging);
+                    if (focus != null) enemyWindows.TryGetValue(focus.Id, out selected);
+                    if (dragged != null) enemyWindows.TryGetValue(dragged.Id, out held);
+                    KnightLayeredWindow.PrioritizeDesktopActors(new[] { held, heroWindow, selected }, new[] { heroWindow }.Concat(enemyWindows.Values).ToArray());
+                }
                 foreach (LootView loot in lootViews) { loot.Window.Location = new Point((int)loot.X, (int)(loot.Y - (3.2 - loot.Life) * 18)); PaintWindow(loot.Window, new AdventureRenderState { Kind = "Loot", HeroStage = ArtDemoHeroStage, Size = new Size(160, 155), ThemeCode = region.CurrentCode, WeaponId = loot.WeaponId, Time = 3.2 - loot.Life, Label = loot.Label, Opacity = Math.Min(1, loot.Life) }); }
                 if (probe) PerfProbe.End(SecRenderWindows);
             }

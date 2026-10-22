@@ -1,0 +1,22 @@
+[
+  {
+    "image": "dense-bottom-8s-source-render.png",
+    "sha256": "afcf4085068ce1f8ef5a82ebe3922029542cfa5b373ab6401fdcdaa8e499cb11",
+    "scope": "Actual production renderer frames from a hidden stopped-timer/private geometry fixture; flat compositing background. Not a native Windows screenshot."
+  },
+  {
+    "image": "dense-bottom-source-render.png",
+    "sha256": "5d3c41089264abb55e7fb40d5a6e2cafea308bfc6ef19892c80505889662d8cd",
+    "scope": "Actual production renderer frames from a hidden stopped-timer/private geometry fixture; flat compositing background. Not a native Windows screenshot."
+  },
+  {
+    "image": "dense-center-8s-source-render.png",
+    "sha256": "ba67465c1e041941e3e55b7d5bf2f8514318c55c7c884ca0c57fa2dff74111ec",
+    "scope": "Actual production renderer frames from a hidden stopped-timer/private geometry fixture; flat compositing background. Not a native Windows screenshot."
+  },
+  {
+    "image": "dense-center-source-render.png",
+    "sha256": "ba67465c1e041941e3e55b7d5bf2f8514318c55c7c884ca0c57fa2dff74111ec",
+    "scope": "Actual production renderer frames from a hidden stopped-timer/private geometry fixture; flat compositing background. Not a native Windows screenshot."
+  }
+]

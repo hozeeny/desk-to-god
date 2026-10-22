@@ -247,8 +247,146 @@ namespace NetBunny
             }
             return score + .12 * AdventureBattle.Distance(current.X, current.Y, feet.X, feet.Y) / (80 * displayScale);
         }
+
+        private RectangleF DesktopCombatBody(AdventureEnemy enemy, PointF feet)
+        {
+            Size size = EnemySize(enemy); float scale = Math.Min(size.Width / 220f, size.Height / 220f);
+            // The illustration plus its existing name/health strip, excluding
+            // transparent window padding. Use the renderer's uniform mapping.
+            RectangleF logical = enemy.IsBoss ? new RectangleF(19, 7, 182, 191) : new RectangleF(28, 8, 164, 188);
+            RectangleF body = new RectangleF(feet.X - size.Width / 2f + (size.Width - 220 * scale) / 2 + logical.X * scale,
+                feet.Y - size.Height + (size.Height - 220 * scale) / 2 + logical.Y * scale, logical.Width * scale, logical.Height * scale);
+            body.Inflate(2 * displayScale, 2 * displayScale); return body;
+        }
+        private List<RectangleF> DesktopCombatBlockers(AdventureEnemy enemy)
+        {
+            float s = displayScale;
+            var blockers = new List<RectangleF> {
+                new RectangleF((float)x + 8 * s, (float)y + 8 * s, 204 * s, 24 * s),
+                new RectangleF((float)x + 68 * s, (float)y + 34 * s, 88 * s, 108 * s),
+                new RectangleF((float)x + 34 * s, (float)y + 199 * s, 152 * s, 34 * s) };
+            foreach (AdventureEnemy boss in battle.Enemies)
+                if (boss != enemy && boss.IsBoss && !boss.IsVisuallyHidden && !boss.IsDiskWarning)
+                {
+                    Size bossSize = EnemySize(boss);
+                    blockers.Add(DesktopCombatBody(boss, new PointF((float)boss.X + bossSize.Width / 2f, (float)boss.Y + bossSize.Height)));
+                }
+            bool earlier = true;
+            foreach (AdventureEnemy other in battle.Enemies)
+            {
+                if (other == enemy) { earlier = false; continue; }
+                if (other.IsVisuallyHidden || other.IsDiskWarning || other.IsBoss) continue;
+                // The selected actor and every Boss reserve their actual visual
+                // position even when appended after ordinary scenery.
+                if (other != battle.Target && (!earlier || enemy == battle.Target)) continue;
+                Size size = EnemySize(other);
+                blockers.Add(DesktopCombatBody(other, new PointF((float)other.X + size.Width / 2f, (float)other.Y + size.Height)));
+            }
+            return blockers;
+        }
+        private double DesktopDenseStandScore(AdventureEnemy enemy, PointF feet, PointF current, List<RectangleF> blockers)
+        {
+            RectangleF body = DesktopCombatBody(enemy, feet); double score = 0;
+            for (int i = 0; i < blockers.Count; i++)
+                score += (i < 3 ? 2000 : 800) * DesktopIntersectionArea(body, blockers[i])
+                    / Math.Max(1, Math.Min(body.Width * body.Height, blockers[i].Width * blockers[i].Height));
+            // A clear waiting place stays clear and still. Only the current
+            // target must enter the melee ring; idle peers need not orbit it.
+            return score + .12 * AdventureBattle.Distance(current.X, current.Y, feet.X, feet.Y) / (80 * displayScale);
+        }
+        private bool DesktopDenseSegmentSafe(AdventureEnemy enemy, PointF from, PointF to, List<RectangleF> blockers)
+        {
+            RectangleF start = DesktopCombatBody(enemy, from), end = DesktopCombatBody(enemy, to);
+            int protectedCount = 3 + battle.Enemies.Count(e => e != enemy && e.IsBoss && !e.IsVisuallyHidden && !e.IsDiskWarning);
+            // Peers reserve destinations by stable priority. They are not hard
+            // walls: coincident actors must be able to walk out of a crowd.
+            for (int i = enemy == battle.Target ? 3 : 0; i < protectedCount; i++)
+            {
+                RectangleF block = blockers[i]; double overlap = DesktopIntersectionArea(start, block);
+                if (overlap <= .001)
+                {
+                    RectangleF expanded = new RectangleF(block.Left - (start.Right - from.X), block.Top - (start.Bottom - from.Y), block.Width + start.Width, block.Height + start.Height);
+                    if (DesktopIdleSegmentBlocked(from, to, expanded)) return false;
+                }
+                else
+                {
+                    // Same conservative whole-segment overlap bound as idle
+                    // escape: an actor already inside must not first dig deeper.
+                    float nearestX = Math.Max(Math.Min(start.X, end.X), Math.Min(Math.Max(start.X, end.X), block.Left + (block.Width - start.Width) / 2));
+                    float nearestY = Math.Max(Math.Min(start.Y, end.Y), Math.Min(Math.Max(start.Y, end.Y), block.Top + (block.Height - start.Height) / 2));
+                    if (DesktopIntersectionArea(new RectangleF(nearestX, nearestY, start.Width, start.Height), block) > overlap + .001) return false;
+                }
+            }
+            return true;
+        }
+        private PointF DesktopDenseWaypoint(AdventureEnemy enemy, PointF current, PointF goal, List<RectangleF> blockers)
+        {
+            if (DesktopDenseSegmentSafe(enemy, current, goal, blockers)) return goal;
+            RectangleF body = DesktopCombatBody(enemy, current); var corners = new List<PointF>(); bool inside = false;
+            int protectedCount = 3 + battle.Enemies.Count(e => e != enemy && e.IsBoss && !e.IsVisuallyHidden && !e.IsDiskWarning);
+            for (int i = enemy == battle.Target ? 3 : 0; i < protectedCount; i++)
+            {
+                RectangleF block = blockers[i];
+                RectangleF expanded = new RectangleF(block.Left - (body.Right - current.X), block.Top - (body.Bottom - current.Y), block.Width + body.Width, block.Height + body.Height);
+                inside |= DesktopIntersectionArea(body, block) > .001;
+                float gap = displayScale;
+                corners.Add(new PointF(expanded.Left - gap, expanded.Top - gap)); corners.Add(new PointF(expanded.Right + gap, expanded.Top - gap));
+                corners.Add(new PointF(expanded.Right + gap, expanded.Bottom + gap)); corners.Add(new PointF(expanded.Left - gap, expanded.Bottom + gap));
+                if (inside)
+                {
+                    corners.Add(new PointF(current.X, expanded.Top - gap)); corners.Add(new PointF(current.X, expanded.Bottom + gap));
+                    corners.Add(new PointF(expanded.Left - gap, current.Y)); corners.Add(new PointF(expanded.Right + gap, current.Y));
+                }
+            }
+            PointF best = current; double bestScore = inside ? DesktopDenseStandScore(enemy, current, current, blockers) : Double.MaxValue;
+            // At most two corners around the fixed protected footprints. This
+            // also reaches the far side of a Boss without crossing its body.
+            PointF[] bounded = corners.Select(p => DesktopBoundEnemyFeet(enemy, p.X, p.Y)).Distinct().ToArray();
+            foreach (PointF candidate in bounded)
+            {
+                if (AdventureBattle.Distance(current.X, current.Y, candidate.X, candidate.Y) < .1 || !DesktopDenseSegmentSafe(enemy, current, candidate, blockers)) continue;
+                double score;
+                if (inside) score = DesktopDenseStandScore(enemy, candidate, current, blockers);
+                else
+                {
+                    double remainder = DesktopDenseSegmentSafe(enemy, candidate, goal, blockers)
+                        ? AdventureBattle.Distance(candidate.X, candidate.Y, goal.X, goal.Y) : Double.MaxValue;
+                    foreach (PointF second in bounded)
+                        if (DesktopDenseSegmentSafe(enemy, candidate, second, blockers) && DesktopDenseSegmentSafe(enemy, second, goal, blockers))
+                            remainder = Math.Min(remainder, AdventureBattle.Distance(candidate.X, candidate.Y, second.X, second.Y)
+                                + AdventureBattle.Distance(second.X, second.Y, goal.X, goal.Y));
+                    if (remainder == Double.MaxValue) continue;
+                    score = AdventureBattle.Distance(current.X, current.Y, candidate.X, candidate.Y) + remainder;
+                }
+                if (score + .001 < bestScore) { bestScore = score; best = candidate; }
+            }
+            return best;
+        }
+        private PointF DesktopDenseStandPoint(AdventureEnemy enemy)
+        {
+            Size size = EnemySize(enemy); PointF current = new PointF((float)enemy.X + size.Width / 2f, (float)enemy.Y + size.Height);
+            double heroX = x + HeroSize.Width / 2.0, heroY = y + HeroSize.Height;
+            List<RectangleF> blockers = DesktopCombatBlockers(enemy); bool selected = enemy == battle.Target;
+            PointF best = current; double score = selected ? Double.MaxValue : DesktopDenseStandScore(enemy, current, current, blockers);
+            double[] radii = selected ? new[] { 80d } : new[] { 80d, 140d, 200d, 260d, 320d };
+            foreach (double radius in radii) for (int i = 0; i < 16; i++)
+            {
+                double angle = i * Math.PI / 8;
+                PointF candidate = DesktopBoundEnemyFeet(enemy, heroX + Math.Cos(angle) * radius * displayScale, heroY + Math.Sin(angle) * radius * displayScale);
+                if (selected && AdventureBattle.Distance(heroX, heroY, candidate.X, candidate.Y) > EnemyAttackReach(enemy) * displayScale) continue;
+                double next = DesktopDenseStandScore(enemy, candidate, current, blockers);
+                if (next + .004 >= score) continue;
+                PointF waypoint = DesktopDenseWaypoint(enemy, current, candidate, blockers);
+                if (AdventureBattle.Distance(current.X, current.Y, waypoint.X, waypoint.Y) < .1
+                    && AdventureBattle.Distance(current.X, current.Y, candidate.X, candidate.Y) >= .1) continue;
+                score = next; best = waypoint;
+            }
+            return best;
+        }
         private PointF DesktopEnemyStandPoint(AdventureEnemy enemy)
         {
+            if (battle.Enemies.Any(e => e.IsBoss && !e.IsVisuallyHidden && !e.IsDiskWarning)
+                || battle.Enemies.Count(e => !e.IsBoss && !e.IsVisuallyHidden) > 3) return DesktopDenseStandPoint(enemy);
             Size size = EnemySize(enemy);
             double heroX = x + HeroSize.Width / 2.0, heroY = y + HeroSize.Height, radius = 80 * displayScale;
             PointF current = new PointF((float)enemy.X + size.Width / 2f, (float)enemy.Y + size.Height);

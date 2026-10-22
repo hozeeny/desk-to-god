@@ -1,0 +1,31 @@
+{
+  "spacing": {
+    "checks": 292,
+    "old_source_failures": 8,
+    "final_failures": 0,
+    "original_checks_retained": 274
+  },
+  "idle_and_order": {
+    "checks": 22,
+    "old_source_failures": 6,
+    "final_failures": 0
+  },
+  "source_names": {
+    "checks": 38,
+    "old_source_failures": 12,
+    "final_failures": 0
+  },
+  "final_path": {
+    "checks": 31,
+    "final_failures": 0,
+    "owned_100_reads_before_bytes": 13194208,
+    "owned_100_reads_after_bytes": 196608,
+    "allocation_note": "Managed allocations only, not CPU improvement proof."
+  },
+  "census_cadence": {
+    "checks": 26,
+    "final_failures": 0,
+    "immutable_start_time_regression": true
+  },
+  "long_test": "PAUSED"
+}

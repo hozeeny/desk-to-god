@@ -1,0 +1,27 @@
+PASS real owned Scan and queued production ApplyInventory have completed
+PASS automatic RefreshWorld cannot restart immediately after a slow completed scan
+PASS real gated scan completion measures its actual bounded elapsed duration
+PASS three-second scan receives nine seconds of shared CPU rest budget
+PASS manual RefreshWorld bypasses the pending automatic budget
+PASS manual refresh cannot create a concurrent scan
+PASS fast completed scan retains the original two-second minimum idle interval
+PASS fast dirty scan must wait 350ms after completion, not only after its start
+PASS fast dirty scan may start after 350ms without waiting the quiet two-second interval
+PASS in-flight lastScan invalidation cannot turn a fast real scan into fifteen seconds of rest
+PASS dirty automatic request cannot spend budget or consume its change version
+PASS continuously dirty requests coalesce while budget is pending
+PASS first permitted dirty scan captures the newest version exactly once
+PASS a change during an active scan is not falsely claimed by that snapshot
+PASS change during scan remains pending through the next completion budget
+PASS dirty input still respects the original 350ms debounce
+PASS epoch-invalid real snapshot cannot replace the known inventory
+PASS epoch invalidation schedules a rested retry instead of a tight rescan loop
+PASS epoch-invalid snapshot is retried after the budget without requiring another watcher event
+PASS very slow scan idle budget is capped at fifteen seconds without waiting a hundred seconds
+PASS real worker exception is reported through the normal completion callback
+PASS worker exception still leaves an automatic retry budget
+PASS cancelled owned scan cannot immediately spin into another scan
+PASS all timing fixtures remain hidden with zero presented actor frames
+PASS cadence fixture invokes no real maintenance
+PASS disposed controller never restarts an automatic or manual census
+Census cadence: 26 checks, 0 failures.

@@ -1,0 +1,182 @@
+{
+  "scope": "Exact delivered EXE, private qishi-full functional seed, normal x1. Real breakthrough, stage change, cave planting, mirror combat, five saves and same-process Load. Not natural growth or true process restart.",
+  "passed": true,
+  "seconds": 23.7065536,
+  "native_clicks": 6,
+  "assertions": [
+    {
+      "passed": true,
+      "detail": "业务控制器使用独立持久化存档",
+      "elapsedSeconds": 0.0248197
+    },
+    {
+      "passed": true,
+      "detail": "清理、内存、无人值守维护授权及服务全部关闭",
+      "elapsedSeconds": 0.0259783
+    },
+    {
+      "passed": true,
+      "detail": "正式入口不存在传统场景演示窗口",
+      "elapsedSeconds": 0.02647
+    },
+    {
+      "passed": true,
+      "detail": "每个角色/妖物均为小尺寸独立透明窗，无整屏覆盖层",
+      "elapsedSeconds": 0.2533993
+    },
+    {
+      "passed": true,
+      "detail": "局部测试底窗置于角色下方，原生Z序及220×240边界一致",
+      "elapsedSeconds": 0.5697257
+    },
+    {
+      "passed": true,
+      "detail": "透明角色与测试底窗显示时不抢占前台焦点",
+      "elapsedSeconds": 0.5699744
+    },
+    {
+      "passed": true,
+      "detail": "零alpha透明区域的真实Windows命中穿透角色",
+      "elapsedSeconds": 0.7745056
+    },
+    {
+      "passed": true,
+      "detail": "透明区域的真实鼠标点击到达下方窗口",
+      "elapsedSeconds": 0.8829467
+    },
+    {
+      "passed": true,
+      "detail": "角色可见区域正确接受真实鼠标命中",
+      "elapsedSeconds": 0.9178695
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标拖动角色可以改变桌面位置",
+      "elapsedSeconds": 1.1960279999999999
+    },
+    {
+      "passed": true,
+      "detail": "拖动结束不会误触格挡或点击动作",
+      "elapsedSeconds": 1.196448
+    },
+    {
+      "passed": true,
+      "detail": "可见角色真实点击触发格挡及冷却",
+      "elapsedSeconds": 1.3393325
+    },
+    {
+      "passed": true,
+      "detail": "选择和拖动透明角色不抢占其他应用焦点",
+      "elapsedSeconds": 1.3398432999999998
+    },
+    {
+      "passed": true,
+      "detail": "透明坐标WM_NCHITTEST返回HTTRANSPARENT（含负屏幕坐标编码）",
+      "elapsedSeconds": 1.5382483
+    },
+    {
+      "passed": true,
+      "detail": "角色WM_MOUSEACTIVATE明确返回MA_NOACTIVATE",
+      "elapsedSeconds": 1.5386780999999998
+    },
+    {
+      "passed": true,
+      "detail": "跨屏拖动由角色自身真实鼠标捕获承载",
+      "elapsedSeconds": 1.6585189
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标跨屏拖动后角色完整位于目标显示器工作区",
+      "elapsedSeconds": 1.9133769999999999
+    },
+    {
+      "passed": true,
+      "detail": "跨屏拖动不会触发格挡或点击动作",
+      "elapsedSeconds": 1.913675
+    },
+    {
+      "passed": true,
+      "detail": "跨屏拖动由角色自身真实鼠标捕获承载",
+      "elapsedSeconds": 2.0712832999999997
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标可拖回原显示器且角色完整落在有效工作区",
+      "elapsedSeconds": 2.3259146
+    },
+    {
+      "passed": true,
+      "detail": "跨屏往返不抢前台焦点、不误触格挡",
+      "elapsedSeconds": 2.3262327
+    },
+    {
+      "passed": true,
+      "detail": "纯透明画面负例会被截图像素校验拒绝",
+      "elapsedSeconds": 2.3287812999999997
+    },
+    {
+      "passed": true,
+      "detail": "修行手札可打开功法与成长目标页",
+      "elapsedSeconds": 3.2086932
+    },
+    {
+      "passed": true,
+      "detail": "手札目标与修行正文已由真实桌面字形像素核实",
+      "elapsedSeconds": 3.2991615999999997
+    },
+    {
+      "passed": true,
+      "detail": "手札真实按钮打开百业道碑，未开启识别或代替玩家确认隐私",
+      "elapsedSeconds": 3.8615535
+    },
+    {
+      "passed": true,
+      "detail": "行囊按需展开，已有兵器可查看独立原画与真实属性",
+      "elapsedSeconds": 4.5639094
+    },
+    {
+      "passed": true,
+      "detail": "炼气圆满经正式确认破境为筑基，外观由修仙状态真实切换",
+      "elapsedSeconds": 7.0507659
+    },
+    {
+      "passed": true,
+      "detail": "筑基洞天按需面板可打开",
+      "elapsedSeconds": 7.911512999999999
+    },
+    {
+      "passed": true,
+      "detail": "洞天收起后修士仍在桌面持续修行",
+      "elapsedSeconds": 12.6178329
+    },
+    {
+      "passed": true,
+      "detail": "灵域探索真实生成桌面独立可交互镜妖",
+      "elapsedSeconds": 14.9100635
+    },
+    {
+      "passed": true,
+      "detail": "灵域镜妖经正式战斗胜利结算，探索继续",
+      "elapsedSeconds": 23.6115219
+    },
+    {
+      "passed": true,
+      "detail": "五份隔离业务存档安全落盘",
+      "elapsedSeconds": 23.701658899999998
+    },
+    {
+      "passed": true,
+      "detail": "独立存档重新Load后身份、境界、灵域及洞天一致",
+      "elapsedSeconds": 23.7047274
+    },
+    {
+      "passed": true,
+      "detail": "真实用户五档及维护授权文件哈希保持不变",
+      "elapsedSeconds": 23.7061955
+    }
+  ],
+  "captures": 10,
+  "screenshots_reviewed": 10,
+  "real_archives_unchanged": true,
+  "source_report_sha256": "36ff56a04a817ee13c3ea0943b12fbecb77bcbae2e1156e60eff34b44c5c9bde"
+}

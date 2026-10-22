@@ -1,0 +1,145 @@
+{
+  "scope": "Short hidden-actor background diagnostics, not visible gameplay or long-duration performance. Same host but live Temp counts and measurement windows differ. Buffer allocation reduction alone did not materially reduce CPU. Final 24-second run includes complete scan/rest/restart cycles.",
+  "phases": [
+    {
+      "phase": "before",
+      "runs": [
+        {
+          "mode": "virtual",
+          "measuredSeconds": 5.2735109,
+          "processCpuSeconds": 0.21875,
+          "cpuCoreEquivalents": 0.04148090411645874,
+          "cpuMachinePercent": 0.3456742009704895,
+          "uiThreadCpuSeconds": 0.203125,
+          "scanStarts": 0,
+          "scanCompletions": 0,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 0,
+          "sample_count": 23,
+          "last_observed_files": 0,
+          "last_population_complete": false
+        },
+        {
+          "mode": "observe",
+          "measuredSeconds": 5.2719892999999995,
+          "processCpuSeconds": 5.46875,
+          "cpuCoreEquivalents": 1.037321908069882,
+          "cpuMachinePercent": 8.644349233915683,
+          "uiThreadCpuSeconds": 0.21875,
+          "scanStarts": 2,
+          "scanCompletions": 1,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 23,
+          "sample_count": 23,
+          "last_observed_files": 8092,
+          "last_population_complete": false
+        }
+      ],
+      "formal_archives_unchanged": true,
+      "report_sha256": "2278bda3a999caf0af08f2f0ff556be4f10cb6759e86924df36c9e1a0f93c64e"
+    },
+    {
+      "phase": "buffer-only",
+      "runs": [
+        {
+          "mode": "virtual",
+          "measuredSeconds": 5.2908193,
+          "processCpuSeconds": 0.171875,
+          "cpuCoreEquivalents": 0.03248551694063715,
+          "cpuMachinePercent": 0.27071264117197624,
+          "uiThreadCpuSeconds": 0.171875,
+          "scanStarts": 0,
+          "scanCompletions": 0,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 0,
+          "sample_count": 23,
+          "last_observed_files": 0,
+          "last_population_complete": false
+        },
+        {
+          "mode": "observe",
+          "measuredSeconds": 5.278416199999999,
+          "processCpuSeconds": 5.40625,
+          "cpuCoreEquivalents": 1.0242182115157954,
+          "cpuMachinePercent": 8.535151762631628,
+          "uiThreadCpuSeconds": 0.203125,
+          "scanStarts": 3,
+          "scanCompletions": 2,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 22,
+          "sample_count": 23,
+          "last_observed_files": 8092,
+          "last_population_complete": false
+        }
+      ],
+      "formal_archives_unchanged": true,
+      "report_sha256": "e990725c628456697f75f5b54060c98a699937af6065ff6d515b881569dc7eba"
+    },
+    {
+      "phase": "final-8s",
+      "runs": [
+        {
+          "mode": "virtual",
+          "measuredSeconds": 5.2705766999999994,
+          "processCpuSeconds": 0.171875,
+          "cpuCoreEquivalents": 0.032610283424961826,
+          "cpuMachinePercent": 0.2717523618746819,
+          "uiThreadCpuSeconds": 0.171875,
+          "scanStarts": 0,
+          "scanCompletions": 0,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 0,
+          "sample_count": 23,
+          "last_observed_files": 0,
+          "last_population_complete": false
+        },
+        {
+          "mode": "observe",
+          "measuredSeconds": 5.2880299,
+          "processCpuSeconds": 2.65625,
+          "cpuCoreEquivalents": 0.5023137255710298,
+          "cpuMachinePercent": 4.185947713091915,
+          "uiThreadCpuSeconds": 0.171875,
+          "scanStarts": 1,
+          "scanCompletions": 1,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 10,
+          "sample_count": 23,
+          "last_observed_files": 8083,
+          "last_population_complete": false
+        }
+      ],
+      "formal_archives_unchanged": true,
+      "report_sha256": "a17fa24041489eac04cb4a87997082c12327cb6e0ecc7cfe59f02768b2c04c03"
+    },
+    {
+      "phase": "final-24s",
+      "runs": [
+        {
+          "mode": "observe",
+          "measuredSeconds": 21.3033559,
+          "processCpuSeconds": 6.453125,
+          "cpuCoreEquivalents": 0.3029158894162774,
+          "cpuMachinePercent": 2.524299078468978,
+          "uiThreadCpuSeconds": 0.40625,
+          "scanStarts": 3,
+          "scanCompletions": 2,
+          "forbiddenWorkers": 0,
+          "scope": "Fresh private mortal background-only x1; normal production controller/timer, actors invisible and zero presented frames, all maintenance off. Observe may read real Temp. Virtual has two initial ambient opponents; Observe scene depends on census. No input/capture/native maintenance. CPU is own-process CPU; PerfProbe sections are UI wall time, not thread CPU. Samples stay in memory; one final JSON write.",
+          "busy_samples": 26,
+          "sample_count": 87,
+          "last_observed_files": 8083,
+          "last_population_complete": false
+        }
+      ],
+      "formal_archives_unchanged": true,
+      "report_sha256": "5768768bcd24c0fd1b5c77762d71784c495a8a803a97e712e3afaf1f1c970c93"
+    }
+  ]
+}

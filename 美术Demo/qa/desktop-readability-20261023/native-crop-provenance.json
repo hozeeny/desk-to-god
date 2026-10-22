@@ -1,0 +1,28 @@
+[
+  {
+    "image": "native-training-client.png",
+    "source": "10-training-handbook.png",
+    "source_sha256": "d15075db68947072882079c55d9a0ff5ecaf5ed30a249d8dfc84fd98d99bc439",
+    "crop": [
+      8,
+      31,
+      478,
+      731
+    ],
+    "output_sha256": "34108a63edd7509b1de48fb7b5161844a08bbf8659dedde8abedab958e2796c7",
+    "scope": "Unmodified native Windows pixels cropped only inside this program opaque client; functional qishi-full private seed. No rescale, replacement background or composited character."
+  },
+  {
+    "image": "native-inventory-client.png",
+    "source": "12-inventory-owned-weapon.png",
+    "source_sha256": "b020f7340d9622678d312d7a4c6905f2b4c6e5197213ccc28c85a3ee0a4083d4",
+    "crop": [
+      8,
+      31,
+      478,
+      731
+    ],
+    "output_sha256": "703accf24d54abb89435dbc05ea0f7a79cc420f0a4a8489729b3150f520a6692",
+    "scope": "Unmodified native Windows pixels cropped only inside this program opaque client; functional qishi-full private seed. No rescale, replacement background or composited character."
+  }
+]

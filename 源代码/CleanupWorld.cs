@@ -295,12 +295,26 @@ namespace NetBunny
         }
         static string FinalPath(SafeFileHandle handle)
         {
-            StringBuilder buffer = new StringBuilder(32768);
-            uint length = GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Capacity, 0);
-            if (length == 0 || length >= buffer.Capacity) throw new IOException("不能确认文件实际位置");
-            string result = buffer.ToString();
+            string result = ReadFinalPath(delegate(StringBuilder buffer) { return GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Capacity, 0); });
             if (result.StartsWith("\\\\?\\", StringComparison.Ordinal)) result = result.Substring(4);
             return Canonical(result);
+        }
+        internal static string ReadFinalPath(Func<StringBuilder, uint> read)
+        {
+            if (read == null) throw new ArgumentNullException("read");
+            int capacity = 260;
+            StringBuilder buffer = new StringBuilder(capacity);
+            uint length = read(buffer);
+            if (length == 0 || length > 32768) throw new IOException("不能确认文件实际位置");
+            if (length >= capacity)
+            {
+                // W API: insufficient-buffer length includes the terminating null;
+                // success length excludes it. Keep the original capacity ceiling.
+                capacity = (int)length; buffer = new StringBuilder(capacity);
+                length = read(buffer);
+            }
+            if (length == 0 || length >= capacity || length != buffer.Length) throw new IOException("不能确认文件实际位置");
+            return buffer.ToString();
         }
         DirectoryLease LockAncestors(string path)
         {

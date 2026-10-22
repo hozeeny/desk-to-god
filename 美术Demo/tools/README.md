@@ -54,3 +54,9 @@ JSON 示例见 `asset-manifest.example.json`。`source` 相对输入 manifest �
 摆到同一脚底位置，关掉随机漫游，按正式×1时钟观察8秒分散，再真实点选指定镜妖并战斗结算。
 它只改变受控场景的初始几何，不注入气血、修为、奖励或时间；不代表自然成长或交付EXE本身。
 `crowd-*.png` 是实际Windows采集帧，其他应用内容可能在背景中，必须留在忽略的本地原始目录。
+
+`verify-desktop-ecology.ps1 -Suite All -Baseline` 另含 FinalPathBuffer（自有文件路径与原身份安全回归）和 CensusCadence（自有目录真实Scan/回调，静态预算边界及dirty/并发失效）。两者不触碰用户Temp。
+
+`verify-desktop-background-perf.ps1` 默认只编译，`-Run` 才执行隐藏角色的8秒Virtual/Observe后台对照；`-Run -Mode observe -ShortSeconds 24` 是最长24秒的单次短样本，不能代替长期性能。Observe只读本用户Temp，维护始终关闭。
+
+`verify-desktop-crowding-native.ps1` 默认只编译，显式 `-RunNative` 才串行运行12秒真实Windows透明演员观察。只复制已核正常×1档的五主档，以生产factory及人工初始密集几何覆盖6普通+1Boss；不是最终EXE、自然发现或自然成长证明。只留本地原生图，前台、像素、命中、授权、档案与自有句柄截止均核对；不要与其他可见原生验收并行。

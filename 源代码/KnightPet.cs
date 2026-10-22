@@ -338,6 +338,31 @@ namespace NetBunny
             get { CreateParams p = base.CreateParams; p.ExStyle |= 0x00000008 | 0x00080000 | 0x08000000 | 0x00000080; if (PassThrough) p.ExStyle |= 0x20; return p; }
         }
         internal bool DesktopTopMost { get { return IsHandleCreated ? (GetWindowLongPtr(Handle, -20).ToInt64() & 8) != 0 : true; } }
+        // Change only relative actor order. Inserting below the highest actor's
+        // existing predecessor preserves panels and other windows above the group.
+        internal static void PrioritizeDesktopActors(KnightLayeredWindow[] priority, KnightLayeredWindow[] actors)
+        {
+            List<KnightLayeredWindow> shown = new List<KnightLayeredWindow>();
+            foreach (KnightLayeredWindow actor in actors)
+                if (actor != null && !actor.IsDisposed && actor.Visible && actor.IsHandleCreated && !shown.Contains(actor)) shown.Add(actor);
+            for (int i = priority.Length - 1; i >= 0; i--)
+            {
+                KnightLayeredWindow actor = priority[i];
+                if (!shown.Contains(actor)) continue;
+                bool duplicate = false;
+                for (int j = 0; j < i; j++) if (priority[j] == actor) duplicate = true;
+                if (duplicate) continue;
+                HashSet<IntPtr> lower = new HashSet<IntPtr>();
+                foreach (KnightLayeredWindow other in shown) lower.Add(other.Handle);
+                for (int j = 0; j <= i; j++) if (priority[j] != null && shown.Contains(priority[j])) lower.Remove(priority[j].Handle);
+                IntPtr highest = IntPtr.Zero, previous = GetWindow(actor.Handle, 3); // GW_HWNDPREV
+                for (int hops = 0; hops < 1024 && previous != IntPtr.Zero; hops++, previous = GetWindow(previous, 3))
+                    if (lower.Contains(previous)) highest = previous;
+                // An already correct group incurs no SetWindowPos or repaint.
+                if (highest != IntPtr.Zero)
+                    SetWindowPos(actor.Handle, GetWindow(highest, 3), 0, 0, 0, 0, 0x213); // NOSIZE|NOMOVE|NOACTIVATE|NOOWNERZORDER
+            }
+        }
         protected override void OnVisibleChanged(EventArgs e)
         {
             base.OnVisibleChanged(e);
@@ -454,6 +479,8 @@ namespace NetBunny
         [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr item);
         [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr item);
         [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
+        [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
+        [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
     }
 
     internal sealed class KnightPetController : IDisposable

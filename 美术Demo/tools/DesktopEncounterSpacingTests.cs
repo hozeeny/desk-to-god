@@ -512,16 +512,117 @@ namespace NetBunny
             finally { Set(g, "isolatedProfileRoot", privateRoot); }
         }
 
+        private sealed class SourceActor : IDisposable
+        {
+            internal Bitmap Frame; internal Point Origin;
+            public void Dispose() { Frame.Dispose(); }
+        }
+        private static SourceActor SourceFrame(AdventureController g, AdventureEnemy enemy)
+        {
+            AdventureRenderState state = enemy == null
+                ? (AdventureRenderState)typeof(AdventureController).GetMethod("HeroVisual", Hidden).Invoke(g, new object[] { 0d })
+                : new AdventureRenderState { Kind = enemy.IsBoss ? "EvilBoss" : "Skeleton", HeroStage = "qishi", Phase = "idle", Time = 0,
+                    Size = SizeOf(g, enemy), MonsterKind = enemy.MonsterKind, WeaponId = enemy.BossWeapon ?? "spear", ThemeCode = enemy.EvilTheme ?? "OFF",
+                    Label = enemy.IsBoss ? "内存压力 Boss" : AdventureController.ArtDemoMonsterLabel(enemy.MonsterKind), QueueNumber = enemy.QueueNumber,
+                    HealthRatio = 1, HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, Opacity = 1 };
+            return new SourceActor { Frame = Field<AdventureRenderer>(g, "renderer").Render(state), Origin = enemy == null
+                ? new Point((int)Field<double>(g, "x"), (int)Field<double>(g, "y")) : new Point((int)enemy.X, (int)enemy.Y) };
+        }
+        private static double Covered(SourceActor victim, SourceActor[] others, Rectangle region)
+        {
+            int total = 0, covered = 0; region.Intersect(new Rectangle(Point.Empty, victim.Frame.Size));
+            for (int y = region.Top; y < region.Bottom; y++) for (int x = region.Left; x < region.Right; x++)
+            {
+                if (victim.Frame.GetPixel(x, y).A < 20) continue;
+                total++;
+                foreach (SourceActor other in others)
+                {
+                    int ox = victim.Origin.X + x - other.Origin.X, oy = victim.Origin.Y + y - other.Origin.Y;
+                    if (ox >= 0 && oy >= 0 && ox < other.Frame.Width && oy < other.Frame.Height && other.Frame.GetPixel(ox, oy).A >= 20) { covered++; break; }
+                }
+            }
+            return total == 0 ? 0 : covered / (double)total; // Original opaque denominator, never the surviving visible subset.
+        }
+        private static void DenseBossChecks(AdventureController g, string evidence, bool bottom)
+        {
+            Rectangle area = new Rectangle(0, 0, 1800, 1100); PointF hero = new PointF(900, bottom ? 1096 : 700);
+            FixedRandom random = Scene(g, 1, area, hero);
+            AdventureEnemy[] ordinary = Enumerable.Range(0, 6).Select(i => Enemy("dense-" + i)).ToArray();
+            foreach (AdventureEnemy e in ordinary) { Place(g, e, new PointF(hero.X - 80, hero.Y)); g.Battle.Enemies.Add(e); }
+            AdventureEnemy boss = Enemy("late-current-boss"); boss.IsBoss = true; boss.EvilTheme = "HK"; boss.BossWeapon = "automaton";
+            Place(g, boss, new PointF(hero.X - 80, hero.Y)); g.Battle.Enemies.Add(boss); g.Battle.Authorize(boss);
+            double[] tx = ordinary.Select(e => e.TargetX).ToArray(), ty = ordinary.Select(e => e.TargetY).ToArray();
+            bool speed = true, bounded = true; double lateMovement = 0;
+            for (int frame = 0; frame < 240; frame++)
+            {
+                foreach (AdventureEnemy e in ordinary)
+                {
+                    PointF before = Feet(g, e); Advance(g, e, true, .05); double moved = Distance(before, Feet(g, e));
+                    speed &= moved <= 68 * .05 + .003; bounded &= InBounds(g, e, area); if (frame >= 220) lateMovement += moved;
+                }
+                if (frame == 159)
+                {
+                    SourceActor earlyHero = SourceFrame(g, null), earlyBoss = SourceFrame(g, boss);
+                    SourceActor[] earlyPeers = ordinary.Select(e => SourceFrame(g, e)).ToArray();
+                    try
+                    {
+                        double head = Covered(earlyHero, earlyPeers, new Rectangle(0, 0, 220, 132)), hud = Covered(earlyHero, earlyPeers, new Rectangle(0, 200, 220, 40));
+                        double bossCover = Covered(earlyBoss, earlyPeers, new Rectangle(Point.Empty, earlyBoss.Frame.Size));
+                        double pairs = earlyPeers.Select((actor, i) => Covered(actor, earlyPeers.Where((other, j) => i != j).ToArray(), new Rectangle(Point.Empty, actor.Frame.Size))).Max();
+                        Check(head <= .05 && hud <= .05 && bossCover <= .1 && pairs <= .2,
+                            "eight-second fixed original-alpha observation is already clear before the separate settled check: " + (bottom ? "bottom" : "center")
+                            + " head=" + head.ToString("F3") + " hud=" + hud.ToString("F3") + " boss=" + bossCover.ToString("F3") + " peers=" + pairs.ToString("F3"));
+                        using (Bitmap picture = new Bitmap(area.Width, area.Height))
+                        {
+                            using (Graphics draw = Graphics.FromImage(picture)) { draw.Clear(Color.FromArgb(245, 242, 232)); foreach (SourceActor actor in earlyPeers.Concat(new[] { earlyBoss, earlyHero })) draw.DrawImageUnscaled(actor.Frame, actor.Origin); }
+                            picture.Save(Path.Combine(evidence, bottom ? "dense-bottom-8s-source-render.png" : "dense-center-8s-source-render.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                    }
+                    finally { earlyHero.Dispose(); earlyBoss.Dispose(); foreach (SourceActor actor in earlyPeers) actor.Dispose(); }
+                }
+            }
+            SourceActor h = SourceFrame(g, null), b = SourceFrame(g, boss); SourceActor[] peers = ordinary.Select(e => SourceFrame(g, e)).ToArray();
+            Console.WriteLine("Dense feet " + (bottom ? "bottom" : "center") + ": " + String.Join(";", ordinary.Select(e => e.Id + "=" + Feet(g, e))));
+            try
+            {
+                double head = Covered(h, peers, new Rectangle(0, 0, 220, 132)), hud = Covered(h, peers, new Rectangle(0, 200, 220, 40));
+                double bossCover = Covered(b, peers, new Rectangle(Point.Empty, b.Frame.Size));
+                double pairCover = peers.Select((actor, i) => Covered(actor, peers.Where((other, j) => i != j).ToArray(), new Rectangle(Point.Empty, actor.Frame.Size))).Max();
+                string label = bottom ? "bottom edge" : "free central area";
+                Check(head <= .05 && hud <= .05, "six ordinary actors leave at least 95% of original hero head/upper text and lower HUD opaque samples uncovered: " + label + " head=" + head.ToString("F3") + " hud=" + hud.ToString("F3"));
+                Check(bossCover <= .10, "ordinary actors yield to the current Boss even when it was appended last; at least 90% original Boss alpha remains clear: " + label + " covered=" + bossCover.ToString("F3"));
+                Check(pairCover <= .20, "actual ordinary source-frame alpha overlap remains below twenty percent after dispersal: " + label + " covered=" + pairCover.ToString("F3"));
+                Check(ordinary.Any(e => Distance(Feet(g, e), hero) > 100) && lateMovement <= .1,
+                    "a crowded melee ring uses outer waiting positions and the final one-second observation has no orbit/jitter: " + label + " lateMove=" + lateMovement.ToString("F2"));
+                using (Bitmap picture = new Bitmap(area.Width, area.Height))
+                {
+                    using (Graphics draw = Graphics.FromImage(picture)) { draw.Clear(Color.FromArgb(245, 242, 232)); foreach (SourceActor actor in peers.Concat(new[] { b, h })) draw.DrawImageUnscaled(actor.Frame, actor.Origin); }
+                    picture.Save(Path.Combine(evidence, bottom ? "dense-bottom-source-render.png" : "dense-center-source-render.png"), System.Drawing.Imaging.ImageFormat.Png);
+                }
+            }
+            finally { h.Dispose(); b.Dispose(); foreach (SourceActor actor in peers) actor.Dispose(); }
+            Check(speed && bounded && random.Doubles == 0 && random.Integers == 0 && ordinary.Select((e, i) => e.TargetX == tx[i] && e.TargetY == ty[i] && !e.Authorized && e.Health == 200).All(ok => ok)
+                && g.Battle.Target == boss && g.Battle.QueueCount == 1, "dense visual waiting preserves original speed, bounds, random stream, patrol targets and combat authorizations");
+            AdventureEnemy selected = ordinary[5]; Check(g.Battle.Authorize(selected), "an outer waiting actor can receive an ordinary manual order");
+            // A real manual selection, rather than appending behind the already manual Boss.
+            Check(g.Battle.SelectDesktopTarget(selected) && g.Battle.Target == selected, "the formerly last ordinary actor becomes the actual current target");
+            for (int frame = 0; frame < 200; frame++) foreach (AdventureEnemy e in ordinary) Advance(g, e, true, .05);
+            Check(Distance(Feet(g, selected), hero) <= 86.05 && selected.Health == 200 && !selected.KillRewarded,
+                "the newly selected outer actor reaches the true existing 86-unit attack distance without starvation or a fabricated hit: " + Feet(g, selected) + " distance=" + Distance(Feet(g, selected), hero).ToString("F2"));
+        }
+
         [STAThread] private static int Main(string[] args)
         {
             try
             {
                 Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
                 string evidence = Path.GetFullPath(args[1]); Directory.CreateDirectory(evidence);
+                Environment.SetEnvironmentVariable(ArtDemoPack.EnvironmentVariable, Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[0])), "ArtDemoAssets"));
                 using (Form owner = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual, Location = new Point(-25000, -25000) })
                 using (AdventureController g = new AdventureController(owner, Path.GetFullPath(args[0]), false, null, false, Path.Combine(evidence, "private-profile")))
                 {
                     Field<Timer>(g, "timer").Stop(); g.ConfigureDesktopDemo(false); Field<Timer>(g, "timer").Stop();
+                    DenseBossChecks(g, evidence, false); DenseBossChecks(g, evidence, true);
                     SpawnChecks(g);
                     foreach (float s in new[] { .8f, 1f, 1.2f }) { RingChecks(g, 2, s); RingChecks(g, 3, s); }
                     BoundsAndFallbackChecks(g); ProtectedAndLegacyChecks(g);

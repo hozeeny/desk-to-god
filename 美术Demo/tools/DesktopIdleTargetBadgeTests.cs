@@ -15,6 +15,8 @@ namespace NetBunny
     {
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
         [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+        [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
         static int checks, failures;
         static T Field<T>(object item, string name) { return (T)item.GetType().GetField(name, Hidden).GetValue(item); }
         static void Set(object item, string name, object value) { item.GetType().GetField(name, Hidden).SetValue(item, value); }
@@ -23,6 +25,56 @@ namespace NetBunny
         { typeof(AdventureController).GetMethod("RenderWorld", Hidden).Invoke(game, new object[] { true }); }
         static Bitmap Frame(AdventureController game, AdventureEnemy enemy)
         { return Field<Bitmap>(game.DesktopEnemyWindows[enemy.Id], "current"); }
+        static bool Above(Form a, Form b)
+        {
+            IntPtr current = GetWindow(b.Handle, 3);
+            for (int i = 0; i < 1024 && current != IntPtr.Zero; i++, current = GetWindow(current, 3))
+                if (current == a.Handle) return true;
+            return false;
+        }
+        sealed class PassivePanel : Form
+        {
+            internal PassivePanel(Point point) { ShowInTaskbar = false; StartPosition = FormStartPosition.Manual; Location = point; Size = new Size(300, 180); }
+            protected override bool ShowWithoutActivation { get { return true; } }
+            protected override CreateParams CreateParams { get { CreateParams p = base.CreateParams; p.ExStyle |= 8 | 0x08000000 | 0x80; return p; } }
+        }
+        static void OrderChecks(string assets, string output)
+        {
+            using (Host h = new Host(assets, Path.Combine(output, "private-order")))
+            {
+                h.Game.Battle.Authorize(h.A); Render(h.Game); h.VerifyScope();
+                KnightLayeredWindow hero = h.Game.DesktopHeroWindow, a = h.Game.DesktopEnemyWindows[h.A.Id], b = h.Game.DesktopEnemyWindows[h.B.Id];
+                Check(Above(hero, a) && Above(hero, b), "actual native actor order keeps the hero and its HUD above all enemies");
+                Check(Above(a, b), "the current target stays above other enemies independent of creation order");
+                Bitmap aFrame = Frame(h.Game, h.A), bFrame = Frame(h.Game, h.B); Render(h.Game);
+                Check(Object.ReferenceEquals(aFrame, Frame(h.Game, h.A)) && Object.ReferenceEquals(bFrame, Frame(h.Game, h.B)), "actor ordering does not rerasterize unchanged stationary enemies");
+                // A real later Show triggers the existing feature-panel protection.
+                using (var layers = new DesktopPanelLayerCoordinator())
+                using (var panel = new PassivePanel(new Point(hero.Left - 600, hero.Top)))
+                {
+                    panel.Show(); layers.Register(panel, true);
+                    var later = new AdventureEnemy { Id = "later-window", MonsterKind = "bat", IsVirtual = true, Health = 100, MaxHealth = 100, X = b.Left + 100, Y = b.Top };
+                    h.Game.Battle.Enemies.Add(later); Render(h.Game);
+                    KnightLayeredWindow c = h.Game.DesktopEnemyWindows[later.Id];
+                    Check(Above(panel, hero) && Above(panel, a) && Above(panel, b) && Above(panel, c), "new actor priority remains below the existing protected feature panel");
+                    Check(Above(hero, a) && Above(a, c), "later enemies cannot cover the hero HUD or the current target under a protected panel");
+                    later.Dragging = true; Render(h.Game);
+                    Check(Above(c, hero) && Above(hero, a) && Above(panel, c), "a dragged actor remains visible while the feature panel still outranks it");
+                    later.Dragging = false; Render(h.Game);
+                    Check(Above(hero, a) && Above(a, c) && Above(panel, hero), "ending an actor drag restores hero and current-target visibility without raising past the panel");
+                }
+                SetWindowPos(b.Handle, new IntPtr(-1), 0, 0, 0, 0, 0x213);
+                using (var unrelated = new PassivePanel(new Point(hero.Left - 800, hero.Top)))
+                {
+                    unrelated.Show(); Check(Above(unrelated, b), "the fixture starts its unrelated own topmost window above the disturbed actor group");
+                    Render(h.Game);
+                    Check(Above(unrelated, hero) && Above(hero, a) && Above(a, b), "relative repair preserves a window already above the group instead of globally raising the game");
+                }
+                int queue = h.Game.Battle.QueueCount, health = h.Game.Battle.Progress.Health;
+                Check(queue == 1 && health > 0 && h.A.Authorization == AdventureAuthorization.Manual && h.A.Health == h.A.MaxHealth && h.Game.DesktopRealWorkIdle,
+                    "native ordering changes no combat authorization, HP, queue or real worker");
+            }
+        }
         static Rectangle Badge(Bitmap frame)
         {
             float scale = Math.Min(frame.Width / 220f, frame.Height / 220f), dx = (frame.Width - 220 * scale) / 2, dy = (frame.Height - 220 * scale) / 2;
@@ -117,6 +169,7 @@ namespace NetBunny
                     Check(Object.ReferenceEquals(original, Frame(h.Game, h.A)) && Object.ReferenceEquals(second, Frame(h.Game, h.B)),
                         "a second frame with unchanged stationary semantics retains both original Bitmap instances");
                 }
+                OrderChecks(assets, output);
                 Check(GetForegroundWindow() == foreground, "off-screen production rendering and disposal never change foreground focus");
                 Console.WriteLine("Idle target badge: " + checks + " checks, " + failures + " failures. Real source frames; no native screenshot, input, HP edit, Advance or production-archive write.");
                 return failures == 0 ? 0 : 1;

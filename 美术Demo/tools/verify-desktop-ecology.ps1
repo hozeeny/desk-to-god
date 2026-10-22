@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'All')]
+    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'FinalPathBuffer', 'CensusCadence', 'All')]
     [string]$Suite = 'Policy',
     [switch]$Baseline
 )
@@ -150,7 +150,7 @@ Write-Host ('Ecology verification artifacts: ' + $runRoot)
 try {
     # Always prove the unmodified production source set still builds independently.
     $baselineExecutable = Build-Runner 'Baseline' 'NetBunny.Program' $null
-    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge') } else { @($Suite) })
+    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'FinalPathBuffer', 'CensusCadence') } else { @($Suite) })
     $suiteFiles = @{
         Policy = 'DesktopEnvironmentTests'
         Sources = 'DesktopSourceTests'
@@ -171,6 +171,8 @@ try {
         DisplayLayout = 'DesktopDisplayLayoutTests'
         MemoryOutcomes = 'DesktopMemoryOutcomeTests'
         IdleTargetBadge = 'DesktopIdleTargetBadgeTests'
+        FinalPathBuffer = 'DesktopFinalPathBufferTests'
+        CensusCadence = 'DesktopCensusCadenceTests'
     }
     foreach ($suiteName in $suiteNames) {
         $className = $suiteFiles[$suiteName]
@@ -188,8 +190,8 @@ try {
             if ($suiteName -eq 'Maintenance') {
                 $ownedProcessFixture = Build-ProcessFixture
                 if ($ownedProcessFixture) { Run-Runner $suiteName $executable @($firstArgument, $evidence, $ownedProcessFixture) }
-            } elseif ($suiteName -in @('SuspendCore', 'ConsentFeedback', 'MemoryOutcomes')) { Run-Runner $suiteName $executable @($evidence) }
-            elseif ($suiteName -in @('Equipment', 'LingyuFlow', 'MaterialGuidance', 'DisplayLayout', 'IdleTargetBadge')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
+            } elseif ($suiteName -in @('SuspendCore', 'ConsentFeedback', 'MemoryOutcomes', 'FinalPathBuffer')) { Run-Runner $suiteName $executable @($evidence) }
+            elseif ($suiteName -in @('Equipment', 'LingyuFlow', 'MaterialGuidance', 'DisplayLayout', 'IdleTargetBadge', 'CensusCadence')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
             elseif ($firstArgument) { Run-Runner $suiteName $executable @($firstArgument, $evidence) }
         }
     }
