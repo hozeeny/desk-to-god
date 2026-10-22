@@ -1,0 +1,29 @@
+{
+  "scope": "baseline d4ce9c3 x1 panels-closed automatic combat; bounded 120-second observation, not long-duration or final-EXE performance proof",
+  "samples": 58,
+  "cpuMachinePercent": {
+    "min": 1.6165760866754,
+    "max": 5.88227651722646,
+    "mean": 3.7030707333153177
+  },
+  "privateMiB": {
+    "min": 114.05078125,
+    "max": 115.10546875,
+    "mean": 114.64331896551724
+  },
+  "handles": {
+    "min": 343.0,
+    "max": 349.0,
+    "mean": 345.91379310344826
+  },
+  "gdi": {
+    "min": 63.0,
+    "max": 75.0,
+    "mean": 68.58620689655173
+  },
+  "user": {
+    "min": 77.0,
+    "max": 85.0,
+    "mean": 80.72413793103448
+  }
+}

@@ -1,0 +1,49 @@
+[
+  {
+    "output": "01-normal-mortal-welcome-client.png",
+    "source": "qa/desktop-accept-completeness-normal-x1-20261023-r1/00-first-visible-welcome.png",
+    "source_sha256": "1468923f913955e790ea2d4ae7b40455ef2b3986ad7d2f6eaf1436589c8a43e0",
+    "output_sha256": "f0d12b19b458b12b865da8449f704805319d304ce942b00a06a9b810ac04ab4f",
+    "crop_box": [
+      8,
+      32,
+      478,
+      732
+    ],
+    "operation": "pixel-preserving crop inside own opaque panel"
+  },
+  {
+    "output": "02-qishi-four-opportunities-native.png",
+    "source": "qa/desktop-accept-completeness-final-qishi-x1-20261023-r1/20-qishi-full-breakthrough-panel.png",
+    "source_sha256": "ce38bd5937ac927a15411383db992677bc86a7efb8486f874c6d3ceb3344e9f4",
+    "output_sha256": "52952cb5e3ab29a231014b3a38f8c92dc8cc81a01edc37b8ed88b3f80af545df",
+    "crop_box": [
+      40,
+      60,
+      680,
+      780
+    ],
+    "operation": "pixel-preserving crop inside own opaque panel"
+  },
+  {
+    "output": "03-zhuji-three-opportunities-native.png",
+    "source": "qa/desktop-accept-completeness-final-qishi-x1-20261023-r1/21-zhuji-after-real-breakthrough.png",
+    "source_sha256": "62aa7f6fb4439686efa7517efaaaaf4afab862e1749854ac4efc28c789862563",
+    "output_sha256": "c30b48b13bd7990d3cb6296aafcf39a7ce42db45fe215da58152ac85d1cdf658",
+    "crop_box": [
+      40,
+      60,
+      680,
+      780
+    ],
+    "operation": "pixel-preserving crop inside own opaque panel"
+  },
+  {
+    "output": "04-upgrade-restored-hero-native.png",
+    "source": "qa/desktop-accept-completeness-upgrade-restart-20261023-r1/00-multi-monitor-secondary.png",
+    "source_sha256": "089e1d83ed4cf1bfb02230906937c7ea527d4cc917f6106d3ed073c3adbef786",
+    "output_sha256": "089e1d83ed4cf1bfb02230906937c7ea527d4cc917f6106d3ed073c3adbef786",
+    "crop_box": null,
+    "operation": "byte-identical own actor on wallpaper native capture; reviewed for other-app content"
+  }
+]

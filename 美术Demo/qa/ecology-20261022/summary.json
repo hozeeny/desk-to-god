@@ -49,12 +49,12 @@
     "status": "cancelled_by_user"
   },
   "latest_gameplay_update": {
-    "report": "../gameplay-flow-20261023/summary.json",
+    "report": "../continuing-demo-20261023/summary.json",
     "source_files": 58,
-    "all_baseline_results": 28,
+    "all_baseline_results": 32,
     "nonpassing": 0,
-    "scope": "equipment, real combat feedback and story realm gates; bounded Demo progress, not full acceptance",
-    "long_test": "PAUSED by user; no restart",
-    "executable_sha256": "fccbc858b88cca56cad762ffccf3b6999f91f1af236f842f9d5b4d88ea316ef2"
+    "scope": "desktop automatic combat vs independent maintenance; configured realm guidance; baseline normal new-player and exact latest new-process upgrade restore",
+    "long_test": "PAUSED by user; natural r2 zhuji harvest/restore still deferred",
+    "executable_sha256": "0eabdb45b6d85a2005f51f52e22a53a97a9d38fc7e2ad735027b7a3f3514fbab"
   }
 }

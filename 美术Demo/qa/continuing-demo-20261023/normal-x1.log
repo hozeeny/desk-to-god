@@ -1,0 +1,81 @@
+2026-10-23 01:03:36.968 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY19","primary":false,"bounds":"{X=1920,Y=0,Width=1920,Height=1080}","workingArea":"{X=1920,Y=0,Width=1920,Height=1080}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-23 01:03:36.971 +08:00 DISPLAY {"device":"\\\\.\\DISPLAY20","primary":true,"bounds":"{X=0,Y=0,Width=1920,Height=1080}","workingArea":"{X=0,Y=0,Width=1920,Height=1040}","effectiveDpiX":96,"effectiveDpiY":96,"scalePercent":100}
+2026-10-23 01:03:36.971 +08:00 DISPLAY heroWindowDpi=96; queryOnly=true; system settings unchanged
+2026-10-23 01:03:36.972 +08:00 PASS 业务控制器使用独立持久化存档
+2026-10-23 01:03:36.974 +08:00 PASS 清理、内存、无人值守维护授权及服务全部关闭
+2026-10-23 01:03:36.974 +08:00 PASS 正式入口不存在传统场景演示窗口
+2026-10-23 01:03:36.975 +08:00 NORMAL 全流程×1正常速率，主战斗循环出招尝试间隔至少0.75秒；初始输入/切敌探针另计，无数值或时间快进。
+2026-10-23 01:03:38.407 +08:00 PASS 首次零击杀进入即显示可收起的修行手札，操作入口可发现
+2026-10-23 01:03:38.409 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（40）
+2026-10-23 01:03:38.409 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（130）
+2026-10-23 01:03:38.409 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（220）
+2026-10-23 01:03:38.410 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（310）
+2026-10-23 01:03:38.410 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（400）
+2026-10-23 01:03:38.411 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（490）
+2026-10-23 01:03:38.411 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（580）
+2026-10-23 01:03:38.411 +08:00 PASS 首次手札在真实桌面可见，未被其他应用遮住（670）
+2026-10-23 01:03:38.465 +08:00 READING 留出20秒阅读首次操作，无任何战斗输入。
+2026-10-23 01:03:58.436 +08:00 PASS 首次阅读20秒未选敌，普通妖物不会主动围攻伤人
+2026-10-23 01:03:58.443 +08:00 PASS 每个角色/妖物均为小尺寸独立透明窗，无整屏覆盖层
+2026-10-23 01:03:58.570 +08:00 CAPTURE verified real desktop hero+enemy 01-transparent-desktop-start
+2026-10-23 01:03:58.723 +08:00 INPUT probe setup visible=True; nativeVisible=True; style=0x8010088; underlay=263468; underlayBounds={X=1660,Y=770,Width=220,Height=240}; underlayZ=23; hero=132394; heroBounds={X=1660,Y=770,Width=220,Height=240}; heroZ=20; cursor={X=960,Y=540}; capture=0
+2026-10-23 01:03:58.724 +08:00 INPUT probe sample local={X=5,Y=5}; alpha=0; screen={X=1665,Y=775}; root=263468
+2026-10-23 01:03:58.724 +08:00 INPUT probe sample local={X=214,Y=5}; alpha=0; screen={X=1874,Y=775}; root=263468
+2026-10-23 01:03:58.725 +08:00 INPUT probe sample local={X=5,Y=234}; alpha=0; screen={X=1665,Y=1004}; root=263468
+2026-10-23 01:03:58.725 +08:00 INPUT probe sample local={X=214,Y=234}; alpha=0; screen={X=1874,Y=1004}; root=263468
+2026-10-23 01:03:58.726 +08:00 INPUT probe sample local={X=110,Y=120}; alpha=252; screen={X=1770,Y=890}; root=132394
+2026-10-23 01:03:58.726 +08:00 PASS 局部测试底窗置于角色下方，原生Z序及220×240边界一致
+2026-10-23 01:03:58.726 +08:00 PASS 透明角色与测试底窗显示时不抢占前台焦点
+2026-10-23 01:03:58.928 +08:00 PASS 零alpha透明区域的真实Windows命中穿透角色
+2026-10-23 01:03:58.930 +08:00 INPUT transparent-probe requested={X=1795,Y=871}; actual={X=1795,Y=871}; actualRoot=263468; expectedRoot=263468
+2026-10-23 01:03:59.053 +08:00 INPUT transparent-probe requested={X=1795,Y=871}; actual={X=1795,Y=871}; actualRoot=263468; expectedUnderlay=263468; underlayBounds={X=1660,Y=770,Width=220,Height=240}; heroBounds={X=1660,Y=770,Width=220,Height=240}; underlayClicks=0→1
+2026-10-23 01:03:59.054 +08:00 PASS 透明区域的真实鼠标点击到达下方窗口
+2026-10-23 01:03:59.089 +08:00 PASS 角色可见区域正确接受真实鼠标命中
+2026-10-23 01:03:59.350 +08:00 PASS 真实鼠标拖动角色可以改变桌面位置
+2026-10-23 01:03:59.350 +08:00 PASS 拖动结束不会误触格挡或点击动作
+2026-10-23 01:03:59.492 +08:00 PASS 可见角色真实点击触发格挡及冷却
+2026-10-23 01:03:59.492 +08:00 PASS 选择和拖动透明角色不抢占其他应用焦点
+2026-10-23 01:03:59.767 +08:00 PASS 透明坐标WM_NCHITTEST返回HTTRANSPARENT（含负屏幕坐标编码）
+2026-10-23 01:03:59.767 +08:00 PASS 角色WM_MOUSEACTIVATE明确返回MA_NOACTIVATE
+2026-10-23 01:03:59.885 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-23 01:04:00.138 +08:00 MULTISCREEN native drag from=\\.\DISPLAY20 {X=1692,Y=745,Width=220,Height=240}; target=\\.\DISPLAY19 {X=1920,Y=0,Width=1920,Height=1080}; actual={X=2770,Y=420,Width=220,Height=240}; windowDpi=96
+2026-10-23 01:04:00.138 +08:00 PASS 真实鼠标跨屏拖动后角色完整位于目标显示器工作区
+2026-10-23 01:04:00.139 +08:00 PASS 跨屏拖动不会触发格挡或点击动作
+2026-10-23 01:04:00.215 +08:00 CAPTURE verified real desktop hero 00-multi-monitor-secondary
+2026-10-23 01:04:00.309 +08:00 PASS 跨屏拖动由角色自身真实鼠标捕获承载
+2026-10-23 01:04:00.558 +08:00 MULTISCREEN native drag back to=\\.\DISPLAY20; requested={X=1692,Y=745,Width=220,Height=240}; actual={X=1692,Y=745,Width=220,Height=240}; windowDpi=96
+2026-10-23 01:04:00.558 +08:00 PASS 真实鼠标可拖回原显示器且角色完整落在有效工作区
+2026-10-23 01:04:00.559 +08:00 PASS 跨屏往返不抢前台焦点、不误触格挡
+2026-10-23 01:04:00.561 +08:00 PASS 纯透明画面负例会被截图像素校验拒绝
+2026-10-23 01:04:00.563 +08:00 PASS 全新凡人 0 杀，自动战斗尚未解锁
+2026-10-23 01:04:00.947 +08:00 PASS 真实点击首个妖物完成选中
+2026-10-23 01:04:01.274 +08:00 PASS 真实点击第二只妖物立即切换当前目标，不再仅排队
+2026-10-23 01:04:01.596 +08:00 PASS 真实点击可切回第一只妖物
+2026-10-23 01:04:02.707 +08:00 PASS 只点击一次后不会自行连续攻击；自动接近不等于自动战斗
+2026-10-23 01:04:11.351 +08:00 KILL 有效击杀=1; native mouse clicks=15
+2026-10-23 01:04:20.553 +08:00 KILL 有效击杀=2; native mouse clicks=27
+2026-10-23 01:04:30.624 +08:00 KILL 有效击杀=3; native mouse clicks=41
+2026-10-23 01:04:38.560 +08:00 KILL 有效击杀=4; native mouse clicks=52
+2026-10-23 01:04:38.578 +08:00 REST 停止出招，让已选敌人自然还击以验证力竭，不注入HP。
+2026-10-23 01:05:24.883 +08:00 CAPTURE verified real desktop hero+enemy 03-mortal-resting
+2026-10-23 01:05:24.885 +08:00 REST 自然战斗力竭，等待正式调息恢复；没有注入死亡或改血。
+2026-10-23 01:06:24.917 +08:00 PASS 凡人自动调息恢复，死亡计时归零且仍需手动战斗
+2026-10-23 01:06:24.989 +08:00 CAPTURE verified real desktop hero 04-mortal-recovered
+2026-10-23 01:06:30.599 +08:00 KILL 有效击杀=5; native mouse clicks=61
+2026-10-23 01:06:39.129 +08:00 KILL 有效击杀=6; native mouse clicks=73
+2026-10-23 01:06:45.261 +08:00 KILL 有效击杀=7; native mouse clicks=81
+2026-10-23 01:06:54.561 +08:00 KILL 有效击杀=8; native mouse clicks=94
+2026-10-23 01:07:00.793 +08:00 KILL 有效击杀=9; native mouse clicks=103
+2026-10-23 01:07:10.202 +08:00 KILL 有效击杀=10; native mouse clicks=116
+2026-10-23 01:07:10.203 +08:00 PASS 十次真实有效击杀达成，仍由玩家主动觉醒
+2026-10-23 01:07:11.000 +08:00 CAPTURE verified real desktop hero 05-ten-kills-awaken-panel
+2026-10-23 01:07:11.512 +08:00 PASS 主动觉醒后同人外观切为炼气，自动战斗默认开启
+2026-10-23 01:07:11.625 +08:00 CAPTURE verified real desktop hero 06-qishi-desktop-automatic
+2026-10-23 01:07:19.513 +08:00 PASS 功能面板收起后零战斗点击仍自动击杀并持续修炼
+2026-10-23 01:07:19.513 +08:00 PASS 本轮真实桌面战斗经过力竭与调息恢复
+2026-10-23 01:07:19.514 +08:00 PERF 继续保持正常×1；功能面板关闭、零输入观察120秒。
+2026-10-23 01:09:19.606 +08:00 PASS 正常×1速率持续120秒，面板关闭且没有额外鼠标输入
+2026-10-23 01:09:19.709 +08:00 CAPTURE verified real desktop hero+enemy 07-qishi-panels-closed-still-cultivating
+2026-10-23 01:09:19.720 +08:00 PASS 五份隔离业务存档安全落盘
+2026-10-23 01:09:19.724 +08:00 PASS 独立存档重新Load后身份、境界、灵域及洞天一致
+2026-10-23 01:09:19.727 +08:00 PASS 真实用户五档及维护授权文件哈希保持不变

@@ -1,0 +1,62 @@
+PASS first viewport exposes planting in an empty newly unlocked cave
+PASS insufficient real inventory disables alchemy before a click
+PASS recipe benefit, ingredients, and shortage are readable without hover
+PASS unchanged refreshes preserve all button instances
+PASS inventory refresh enables the existing recipe button in place
+PASS pending archive disables every new cave operation
+PASS pending state retains the same action controls
+PASS a queued disabled click cannot consume inventory while pending
+PASS an enabled recipe still uses the real controller and consumes its original recipe once
+PASS mature harvest appears in the first viewport
+PASS harvest uses the original yield and clears only its real field
+PASS dongtian accepts client size {Width=700, Height=520}
+PASS dongtian fits top-level content at {Width=700, Height=520}
+PASS dongtian needs only vertical scrolling at {Width=700, Height=520}
+PASS dongtian wraps every visible action row at {Width=700, Height=520}
+PASS dongtian shows wrapped explanatory text at {Width=700, Height=520}
+PASS dongtian keeps consecutive sections from overlapping at {Width=700, Height=520}
+PASS dongtian accepts client size {Width=390, Height=490}
+PASS dongtian fits top-level content at {Width=390, Height=490}
+PASS dongtian needs only vertical scrolling at {Width=390, Height=490}
+PASS dongtian wraps every visible action row at {Width=390, Height=490}
+PASS dongtian shows wrapped explanatory text at {Width=390, Height=490}
+PASS dongtian keeps consecutive sections from overlapping at {Width=390, Height=490}
+PASS baiye accepts client size {Width=700, Height=520}
+PASS baiye fits top-level content at {Width=700, Height=520}
+PASS baiye needs only vertical scrolling at {Width=700, Height=520}
+PASS baiye wraps every visible action row at {Width=700, Height=520}
+PASS baiye shows wrapped explanatory text at {Width=700, Height=520}
+PASS baiye keeps consecutive sections from overlapping at {Width=700, Height=520}
+PASS baiye accepts client size {Width=390, Height=490}
+PASS baiye fits top-level content at {Width=390, Height=490}
+PASS baiye needs only vertical scrolling at {Width=390, Height=490}
+PASS baiye wraps every visible action row at {Width=390, Height=490}
+PASS baiye shows wrapped explanatory text at {Width=390, Height=490}
+PASS baiye keeps consecutive sections from overlapping at {Width=390, Height=490}
+PASS breakthrough accepts client size {Width=700, Height=520}
+PASS breakthrough fits top-level content at {Width=700, Height=520}
+PASS breakthrough needs only vertical scrolling at {Width=700, Height=520}
+PASS breakthrough wraps every visible action row at {Width=700, Height=520}
+PASS breakthrough shows wrapped explanatory text at {Width=700, Height=520}
+PASS breakthrough keeps consecutive sections from overlapping at {Width=700, Height=520}
+PASS breakthrough accepts client size {Width=390, Height=490}
+PASS breakthrough fits top-level content at {Width=390, Height=490}
+PASS breakthrough needs only vertical scrolling at {Width=390, Height=490}
+PASS breakthrough wraps every visible action row at {Width=390, Height=490}
+PASS breakthrough shows wrapped explanatory text at {Width=390, Height=490}
+PASS breakthrough keeps consecutive sections from overlapping at {Width=390, Height=490}
+PASS lingyu accepts client size {Width=700, Height=520}
+PASS lingyu fits top-level content at {Width=700, Height=520}
+PASS lingyu needs only vertical scrolling at {Width=700, Height=520}
+PASS lingyu wraps every visible action row at {Width=700, Height=520}
+PASS lingyu shows wrapped explanatory text at {Width=700, Height=520}
+PASS lingyu keeps consecutive sections from overlapping at {Width=700, Height=520}
+PASS lingyu accepts client size {Width=390, Height=490}
+PASS lingyu fits top-level content at {Width=390, Height=490}
+PASS lingyu needs only vertical scrolling at {Width=390, Height=490}
+PASS lingyu wraps every visible action row at {Width=390, Height=490}
+PASS lingyu shows wrapped explanatory text at {Width=390, Height=490}
+PASS lingyu keeps consecutive sections from overlapping at {Width=390, Height=490}
+PASS layout inspection never authorizes activity recognition
+PASS all UI fixtures and desktop actors remain hidden
+Feature panel usability: 61 checks, 0 failures. Images are hidden-window previews only.

@@ -1,0 +1,88 @@
+PASS file monster: the attended-only scope can be enabled in memory
+PASS file monster: attended-only consent must not block automatic combat selection
+PASS file monster attended-only: the real maintenance gate remains closed
+PASS file monster attended-only: the real automatic strike defeats its selected target
+PASS file monster attended-only: virtual settlement retires the target and clears its combat queue
+PASS file monster attended-only: combat grants experience and qi without inventing freed disk bytes
+PASS file monster attended-only: no real maintenance worker or pending cleanup is created
+PASS file monster attended-only: settlement does not claim successful system maintenance
+PASS file monster: fighting cannot widen the independent consent flags
+PASS file monster: the automatic scope can be enabled without granting attended scopes
+PASS file monster: missing attended scope still allows pure combat
+PASS file monster no attended scope: the real maintenance gate remains closed
+PASS file monster no attended scope: the real automatic strike defeats its selected target
+PASS file monster no attended scope: virtual settlement retires the target and clears its combat queue
+PASS file monster no attended scope: combat grants experience and qi without inventing freed disk bytes
+PASS file monster no attended scope: no real maintenance worker or pending cleanup is created
+PASS file monster no attended scope: settlement does not claim successful system maintenance
+PASS file monster: automatic consent and combat do not grant an attended scope
+PASS file monster: both explicit scopes retain the existing maintenance permission
+PASS file monster: revocation cancels the old automatic order while preserving automatic combat preference
+PASS file monster: a revoked automatic-maintenance scope cannot strand the next combat selection
+PASS file monster after revocation: the real maintenance gate remains closed
+PASS file monster after revocation: the real automatic strike defeats its selected target
+PASS file monster after revocation: virtual settlement retires the target and clears its combat queue
+PASS file monster after revocation: combat grants experience and qi without inventing freed disk bytes
+PASS file monster after revocation: no real maintenance worker or pending cleanup is created
+PASS file monster after revocation: settlement does not claim successful system maintenance
+PASS memory boss: the attended-only scope can be enabled in memory
+PASS memory boss: attended-only consent must not block automatic combat selection
+PASS memory boss attended-only: the real maintenance gate remains closed
+PASS memory boss attended-only: the real automatic strike defeats its selected target
+PASS memory boss attended-only: virtual settlement retires the target and clears its combat queue
+PASS memory boss attended-only: combat grants experience and qi without inventing freed disk bytes
+PASS memory boss attended-only: no real maintenance worker or pending cleanup is created
+PASS memory boss attended-only: settlement does not claim successful system maintenance
+PASS memory boss: fighting cannot widen the independent consent flags
+PASS memory boss: the automatic scope can be enabled without granting attended scopes
+PASS memory boss: missing attended scope still allows pure combat
+PASS memory boss no attended scope: the real maintenance gate remains closed
+PASS memory boss no attended scope: the real automatic strike defeats its selected target
+PASS memory boss no attended scope: virtual settlement retires the target and clears its combat queue
+PASS memory boss no attended scope: combat grants experience and qi without inventing freed disk bytes
+PASS memory boss no attended scope: no real maintenance worker or pending cleanup is created
+PASS memory boss no attended scope: settlement does not claim successful system maintenance
+PASS memory boss: automatic consent and combat do not grant an attended scope
+PASS memory boss: both explicit scopes retain the existing maintenance permission
+PASS memory boss: revocation cancels the old automatic order while preserving automatic combat preference
+PASS memory boss: a revoked automatic-maintenance scope cannot strand the next combat selection
+PASS memory boss after revocation: the real maintenance gate remains closed
+PASS memory boss after revocation: the real automatic strike defeats its selected target
+PASS memory boss after revocation: virtual settlement retires the target and clears its combat queue
+PASS memory boss after revocation: combat grants experience and qi without inventing freed disk bytes
+PASS memory boss after revocation: no real maintenance worker or pending cleanup is created
+PASS memory boss after revocation: settlement does not claim successful system maintenance
+PASS selection matrix desktop=False, granted=False, automatic-consent=False, memory=False
+PASS selection matrix desktop=False, granted=False, automatic-consent=False, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=False, granted=False, automatic-consent=True, memory=False
+PASS selection matrix desktop=False, granted=False, automatic-consent=True, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=False, granted=True, automatic-consent=False, memory=False
+PASS selection matrix desktop=False, granted=True, automatic-consent=False, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=False, granted=True, automatic-consent=True, memory=False
+PASS selection matrix desktop=False, granted=True, automatic-consent=True, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=True, granted=False, automatic-consent=False, memory=False
+PASS selection matrix desktop=True, granted=False, automatic-consent=False, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=True, granted=False, automatic-consent=True, memory=False
+PASS selection matrix desktop=True, granted=False, automatic-consent=True, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=True, granted=True, automatic-consent=False, memory=False
+PASS selection matrix desktop=True, granted=True, automatic-consent=False, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS selection matrix desktop=True, granted=True, automatic-consent=True, memory=False
+PASS selection matrix desktop=True, granted=True, automatic-consent=True, memory=True
+PASS automatic planning never selects a program target, regardless of entry or maintenance grants
+PASS an accidental automatic program order settles combat without confirmation, process requests or a false exit result
+PASS virtual entry still refuses all real-maintenance grants
+PASS the virtual entry can still settle a defensive file-backed combat fixture without gaining maintenance authority
+PASS virtual entry: the real maintenance gate remains closed
+PASS virtual entry: the real automatic strike defeats its selected target
+PASS virtual entry: virtual settlement retires the target and clears its combat queue
+PASS virtual entry: combat grants experience and qi without inventing freed disk bytes
+PASS virtual entry: no real maintenance worker or pending cleanup is created
+PASS virtual entry: settlement does not claim successful system maintenance
+Desktop automatic combat consent: 87 checks, 0 failures. No forms, observers, processes, maintenance, saves or natural-time advancement.

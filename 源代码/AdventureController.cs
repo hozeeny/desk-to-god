@@ -359,6 +359,9 @@ namespace NetBunny
         private bool AutoMaintenanceEligibility(AdventureEnemy enemy)
         {
             if (enemy.ProcessTarget != null) return false;
+            // Desktop combat remains available independently of real maintenance.
+            // BeginCleanup/PumpCleanup enforce the separate scope/automatic grants.
+            if (IsolatedDesktop) return true;
             if (enemy.IsVirtual) return true; // pure combat, never any real effect
             bool memoryBoss = enemy.IsBoss && !enemy.IsDiskBoss;
             if (memoryBoss) return !consent.MemoryEnabled || consent.AutoMaintenanceEnabled;

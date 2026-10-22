@@ -1,0 +1,94 @@
+{
+  "scope": "continued Demo gameplay development; not full product acceptance",
+  "executable_sha256": "0eabdb45b6d85a2005f51f52e22a53a97a9d38fc7e2ad735027b7a3f3514fbab",
+  "archive_sha256": "71502ef9811af2615123270f7c4cce954ba0450599a56b0ddd4cfb8c9248b1dd",
+  "source_files": 58,
+  "all_baseline": {
+    "results": 32,
+    "nonpassing": 0
+  },
+  "auto_battle": {
+    "checks": 87,
+    "failures": 0,
+    "scope": "pure in-memory planner/strike/held settlement and consent transitions; no system effects or live grants"
+  },
+  "breakthrough_guidance": {
+    "checks": 38,
+    "failures": 0,
+    "scope": "hidden private real form and current/old-realm eligibility; no natural-time advancement"
+  },
+  "feature_panel_layout": {
+    "checks": 61,
+    "failures": 0,
+    "scope": "hidden/offscreen client layout, two sizes/four panels"
+  },
+  "normal_new_player_baseline": {
+    "passed": true,
+    "elapsed_seconds": 342.7797425,
+    "native_clicks": 117,
+    "assertions": 46,
+    "captures": 7,
+    "source_report_sha256": "5e62534b2d42ee0b7a42ccf71737cc3d0f3651476be2966f831f0aaa5b0d81c7",
+    "real_archives_unchanged": true,
+    "scope": "d4ce9c3 exact old EXE; fresh private x1 mortal, real native ten-kill, natural 60sec rest, active awakening, same-person qishi, no-input auto battle/practice; Virtual; not natural zhuji"
+  },
+  "latest_exe_natural_profile_restart": {
+    "passed": true,
+    "elapsed_seconds": 8.5884234,
+    "native_clicks": 0,
+    "assertions": 28,
+    "captures": 3,
+    "source_report_sha256": "ce94d75a3e4b5247c29f8dda1be9ed5f299e8da8713481b694a688542d7333fe",
+    "real_archives_unchanged": true,
+    "scope": "exact final EXE in genuinely new process at identical natural-profile path; old EXE separately preserved; no seed or profile/marker editing; state/identity/stage/auto restored"
+  },
+  "latest_exe_qishi_feature": {
+    "passed": true,
+    "elapsed_seconds": 18.922083999999998,
+    "native_clicks": 5,
+    "assertions": 33,
+    "captures": 10,
+    "source_report_sha256": "141a85786d40e1383af5c17fd095e4a02db53f5075261d8a50567b4fccbe801f",
+    "real_archives_unchanged": true,
+    "scope": "exact final EXE, qishi-full private x1 fixture; real qi->zhuji, four->three actual guidance paths, cave planting, mirror combat, five saves/same-process production Load; not natural progression"
+  },
+  "local_native_gif": {
+    "path": "qa/desktop-accept-completeness-normal-x1-20261023-r1/qishi-automatic-native-local.gif",
+    "frames": 20,
+    "duration_ms": 8327,
+    "published": false,
+    "scope": "native baseline automatic-combat frames, original timestamps/padding only; GIF palette conversion; first/middle/last frames reviewed; other-app content stays local"
+  },
+  "visual_review": {
+    "normal_pngs": "all eight including welcome reviewed by root team",
+    "latest_feature_pngs": "all ten reviewed",
+    "restart_pngs": "all three reviewed",
+    "mirror_capture_limit": "41 shows mirror enemy partially overlapping an ordinary creature; expedition panel is clipped. Not accepted as complete panel/no-overlap proof. 42 settlement requires state assertions, not image filename."
+  },
+  "isolation": {
+    "runtime_private_files_preserved": 240,
+    "original_assets_identical_files": 22,
+    "package_files": 63,
+    "new_png_files": 31,
+    "raw_other_app_captures_published": false
+  },
+  "long_test": {
+    "status": "paused_by_user",
+    "automation": "PAUSED",
+    "eight_hours_passed": false,
+    "first_natural_harvest_verified": false
+  },
+  "remaining": [
+    "natural harvest and duration verification deferred; no automatic restart",
+    "mixed-DPI and lock/resume not verified",
+    "additional enemy overlap/capture framing around expedition should be checked",
+    "latest EXE restored natural baseline profile, not a new full ten-kill replay under latest EXE",
+    "complete product acceptance remains open"
+  ],
+  "windows_powershell_5_wrappers": {
+    "guidance_checks": 38,
+    "auto_battle_checks": 87,
+    "failures": 0,
+    "scope": "actual Windows PowerShell 5.1 wrapper invocation; same hidden/pure fixtures"
+  }
+}

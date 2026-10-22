@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'All')]
+    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'All')]
     [string]$Suite = 'Policy',
     [switch]$Baseline
 )
@@ -150,7 +150,7 @@ Write-Host ('Ecology verification artifacts: ' + $runRoot)
 try {
     # Always prove the unmodified production source set still builds independently.
     $baselineExecutable = Build-Runner 'Baseline' 'NetBunny.Program' $null
-    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm') } else { @($Suite) })
+    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance') } else { @($Suite) })
     $suiteFiles = @{
         Policy = 'DesktopEnvironmentTests'
         Sources = 'DesktopSourceTests'
@@ -161,6 +161,8 @@ try {
         Equipment = 'DesktopEquipmentFlowTests'
         Combat = 'DesktopCombatFeedbackTests'
         Realm = 'LingyuRealmGateTests'
+        AutoBattle = 'DesktopAutoBattleConsentTests'
+        Guidance = 'BreakthroughGuidanceTests'
     }
     foreach ($suiteName in $suiteNames) {
         $className = $suiteFiles[$suiteName]
