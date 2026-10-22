@@ -1,0 +1,12 @@
+{
+  "production_changed": false,
+  "accepted": false,
+  "scope": "Pure offscreen 384x384 PArgb Graphics; actual ArtDemoPack cached images. No Controller, Form, screenshots, archives, census or existing process access. CPU is current microbench process CPU; not production idle or gameplay CPU.",
+  "asset_count": 26,
+  "scenes": 624,
+  "unequal_scenes": 624,
+  "unequal_pixels": 5654640,
+  "max_channel_delta": 4,
+  "report_sha256": "96ba2193cd9115963d0b1a8670e3860682f271cb35f6da239ced7389d77df8b9",
+  "interpretation": "The attributes=null candidate changes cached-art drawing pixels and was rejected. No production performance or lower-CPU claim follows; the first time-truncated timing had unequal work and is retained locally."
+}

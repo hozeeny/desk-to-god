@@ -1,0 +1,12 @@
+{
+  "results": 58,
+  "nonpassing": 1,
+  "failed_suite": "Sources",
+  "source_naming_log_sha256": "cf74809758a4056d103578e7bf6be29a8aac8cc98bfba983f408608a8f2f4a5f",
+  "summary_sha256": "19d54cacd48f67bddd338c4707bce112a1ec645bd0993a52d32846083885eac5",
+  "controller_versions": [
+    "a3e801c6a661fdc914be00372a5e3acfa8c5b12b4df2bb8bb96f49e3334bbb0c",
+    "bdddb91ddee6b89e8fdd399e6e9a7f3c2fcdbed65c9c7f9378b74da4b5b58fbb"
+  ],
+  "interpretation": "Retained failed integration attempt. Overlapped the independent native panel fixture and crossed the intermediate/final production edit, so it cannot establish independent focus behavior or one frozen source set. The Sources failure is its unchanged foreground assertion. A new serial All on final frozen sources is required; this report was not changed to pass."
+}

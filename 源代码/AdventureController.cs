@@ -658,7 +658,7 @@ namespace NetBunny
         {
             if (disposed) return;
             if (dongtianForm == null || dongtianForm.IsDisposed) dongtianForm = new DongtianForm(this);
-            dongtianForm.RefreshData(); dongtianForm.Show(); dongtianForm.BringToFront(); dongtianForm.Activate();
+            dongtianForm.RefreshData(); dongtianForm.Show(); if (dongtianForm.WindowState == FormWindowState.Minimized) dongtianForm.WindowState = FormWindowState.Normal; dongtianForm.BringToFront(); dongtianForm.Activate();
         }
         // 破境契机评估（B2 时刻授予，幂等，四条路径并行不互斥）：
         // 秘境寻宝 = 蜃楼通关时刻；天材地宝 = 水月灵髓入手时刻；百业悟道见下；
@@ -823,19 +823,19 @@ namespace NetBunny
         {
             if (disposed) return;
             if (stele == null || stele.IsDisposed) stele = new BaiyeSteleForm(this);
-            stele.RefreshData(); stele.Show(); stele.BringToFront(); stele.Activate();
+            stele.RefreshData(); stele.Show(); if (stele.WindowState == FormWindowState.Minimized) stele.WindowState = FormWindowState.Normal; stele.BringToFront(); stele.Activate();
         }
         public void OpenLingyu()
         {
             if (disposed) return;
             if (lingyuForm == null || lingyuForm.IsDisposed) lingyuForm = new LingyuForm(this);
-            lingyuForm.RefreshData(); lingyuForm.Show(); lingyuForm.BringToFront(); lingyuForm.Activate();
+            lingyuForm.RefreshData(); lingyuForm.Show(); if (lingyuForm.WindowState == FormWindowState.Minimized) lingyuForm.WindowState = FormWindowState.Normal; lingyuForm.BringToFront(); lingyuForm.Activate();
         }
         public void OpenBreakthrough()
         {
             if (disposed) return;
             if (breakthroughForm == null || breakthroughForm.IsDisposed) breakthroughForm = new BreakthroughForm(this);
-            breakthroughForm.RefreshData(); breakthroughForm.Show(); breakthroughForm.BringToFront(); breakthroughForm.Activate();
+            breakthroughForm.RefreshData(); breakthroughForm.Show(); if (breakthroughForm.WindowState == FormWindowState.Minimized) breakthroughForm.WindowState = FormWindowState.Normal; breakthroughForm.BringToFront(); breakthroughForm.Activate();
         }
         // ---- 灵域历练（P3）：进入门控 / 节点选择 / 暂离；秘境战斗只生成虚拟妖物 ----
         internal string LingyuWritePath { get { return lingyuPathOverride ?? lingyuPath; } }

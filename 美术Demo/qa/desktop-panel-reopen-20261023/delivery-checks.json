@@ -1,0 +1,11 @@
+{
+  "executable_sha256": "260b23a931ab0bbe7484bfb3bbf849d9be36abfde458c8fa69c64b111933dc54",
+  "archive_sha256": "e5055f2e12c838156af213978b8e85260a4076c6ead0cd16c19c9fd3dc2eebe4",
+  "results": 58,
+  "nonpassing": 0,
+  "runtime_profile_files": 240,
+  "runtime_profile_hashes_unchanged": true,
+  "legacy_assets_same_as_main": true,
+  "long_test": "PAUSED",
+  "full_product_acceptance": false
+}
