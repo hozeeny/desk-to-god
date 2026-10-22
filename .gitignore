@@ -38,3 +38,6 @@ Thumbs.db
 *.p12
 *.pem
 *.key
+
+# Plan execution ledger and transient reviews
+/.superpowers/

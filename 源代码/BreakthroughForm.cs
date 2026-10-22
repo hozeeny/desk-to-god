@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -71,6 +71,7 @@ namespace NetBunny
 
             refresh.Interval = 500; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
+            if (controller.IsolatedDesktop) DesktopFeatureStyle.Apply(this);
         }
 
         private void Attempt()
@@ -115,7 +116,7 @@ namespace NetBunny
                 {
                     bool owned = practice.HasOpportunity(OpportunityIds[i]);
                     opportunityLines[i].Text = (owned ? "✓ " : "○ ") + OpportunityNames[i] + " —— " + OpportunityHints[i] + (owned ? "（已悟得）" : "");
-                    opportunityLines[i].ForeColor = owned ? Color.FromArgb(34, 126, 84) : Color.FromArgb(91, 87, 107);
+                    opportunityLines[i].ForeColor = owned ? Color.FromArgb(34, 126, 84) : (controller.IsolatedDesktop ? DesktopFeatureStyle.Ink : Color.FromArgb(91, 87, 107));
                 }
 
                 bool canUseMaterial = materialAvailable && !practice.IsFinalRealm;

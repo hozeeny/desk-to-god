@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "date": "2026-10-22",
+  "generator": "Codex built-in image_gen__imagegen; four independent requests; no CLI or external paid API",
+  "scope": "Four standalone weapon PNGs and real gameplay WeaponId mapping; no hero regeneration, gameplay or renderer replacement.",
+  "mapping": {
+    "spear": "weapon-mortal",
+    "greatsword": "weapon-zhuji",
+    "laser": "weapon-qishi",
+    "wave": "weapon-wave",
+    "boomerang": "weapon-moonring",
+    "blackhole": "weapon-array",
+    "automaton": "weapon-talisman"
+  },
+  "aliases": {
+    "moonring": "boomerang",
+    "array": "blackhole",
+    "talisman": "automaton"
+  },
+  "production_transform": "Existing prepare-assets.py: crop only fully transparent (alpha=0) outer margins; proportional Lanczos resize within 512x512; no alpha threshold, masking, background extraction, semantic edit or recolour. Generated original files retained unchanged. Existing runtime PNGs never overwritten.",
+  "runtime_loading": "Existing ArtDemoPack.LoadIllustration retains its established alpha<=12 noise cleanup and bounded PArgb cache policy; no new loader or renderer.",
+  "hero_identity": "HeroStage selects mortal/qishi/zhuji rig independently from WeaponId; existing motion solver, phases and gameplay statistics unchanged.",
+  "handheld_maximum_pixels": {
+    "straight": [
+      47,
+      104
+    ],
+    "weapon-wave": [
+      54,
+      86
+    ],
+    "weapon-moonring": [
+      58,
+      64
+    ],
+    "weapon-array": [
+      58,
+      58
+    ],
+    "weapon-talisman": [
+      43,
+      70
+    ]
+  },
+  "hand_anchor_normalized": [
+    0.5,
+    0.85
+  ],
+  "assets": [
+    {
+      "id": "weapon-wave",
+      "gameplay_id": "wave",
+      "source_sha256": "94688b1d9415b7bfd2db91d344e3f6da40f1c37351e9a6a2de89efaa441f3eca",
+      "runtime_sha256": "cc46899bd4f11e0741edf2a77cca315d6b5c890e65fa65944df36ae8bbcf91ef",
+      "runtime_size": [
+        339,
+        512
+      ],
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "weapon-moonring",
+      "gameplay_id": "boomerang",
+      "source_sha256": "28888c2732accfc3685c3e8d0bfffcede5858a6c77f9b5a0f6baef0ba15d1356",
+      "runtime_sha256": "1a0ca8deb85fcf4b9deb7cc0416ff9ef448b216bc70d81c893788da1a2972585",
+      "runtime_size": [
+        512,
+        479
+      ],
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "weapon-array",
+      "gameplay_id": "blackhole",
+      "source_sha256": "63c5160365ceaba18d686a8306642728026ef25170ccd8acf40df78fe5b8cca5",
+      "runtime_sha256": "83709a94cdff6d3aaca5abc615aad795a70506af12fb736e81c372b118b8f1ae",
+      "runtime_size": [
+        512,
+        496
+      ],
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "warnings": []
+    },
+    {
+      "id": "weapon-talisman",
+      "gameplay_id": "automaton",
+      "source_sha256": "079dadb31ad1fffaa2eafb1635a57fab89ab3c1c2af3e21c5d9fe496e7b6a875",
+      "runtime_sha256": "fbcd3d58cf04e886bc7b00a189141a5970fec44782cba129ed0426f97bf8c399",
+      "runtime_size": [
+        337,
+        512
+      ],
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "warnings": []
+    }
+  ],
+  "verification": {
+    "mapping_red": "9 mismatches, correct failure before implementation; mapping-red.log",
+    "mapping_green": "10 mapping cases, zero failures; mapping-green.log",
+    "compile": "All production C# source files compiled with both console probe entry points; only pre-existing cultivationPathOverride CS0649 warning.",
+    "art_cache_and_hero_atlas": "2420 passing integrity checks; offscreen.log",
+    "visual_inspection": [
+      "held-native-220x240.png: 3 hero stages x 7 gameplay WeaponIds",
+      "held-small-110x120.png: all silhouettes readable at reduced size",
+      "icons-96px-and-32px.png: 7 distinct actual icon renders",
+      "attack-both-directions-220x240.png: held objects follow original hand and rotation in both directions"
+    ],
+    "desktop_safety": "No visible GUI, controller, archive or running game PID was used."
+  },
+  "evidence_directory": "../../verification/weapons",
+  "runtime_png_count_observed": 31,
+  "manifest_entry_count": 28,
+  "remaining_scope": "Root agent owns packaging counts, production rebuild and native desktop GUI acceptance."
+}

@@ -18,6 +18,7 @@ namespace NetBunny
         readonly System.Windows.Forms.Timer statusTimer;
         readonly Mutex profileGate;
         DesktopPracticePanel panel;
+        DesktopEcologyPanel ecology;
         bool exiting, disposedSession;
         readonly bool acceptanceMode;
         int exitCode;
@@ -29,6 +30,11 @@ namespace NetBunny
             if (!Regex.IsMatch(name ?? "", "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"))
                 throw new ArgumentException("隔离档名称仅可使用字母、数字、下划线和短横线，最长64字。");
             return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "profiles", name);
+        }
+        internal static bool ReadDesktopObserve(string[] args)
+        {
+            return args != null && args.Length > 0 && args[0] == "--desktop-demo"
+                && !args.Contains("--seed") && !args.Contains("--normal-speed");
         }
         internal static int Run(string[] args)
         {
@@ -61,7 +67,7 @@ namespace NetBunny
                 return 0;
             }
             string profile = ProfilePath(name);
-            using (DesktopDemoSession session = new DesktopDemoSession(assets, profile, acceptance, seed))
+            using (DesktopDemoSession session = new DesktopDemoSession(assets, profile, acceptance, seed, ReadDesktopObserve(args)))
             {
                 if (acceptance)
                 {
@@ -73,7 +79,7 @@ namespace NetBunny
                 return session.exitCode;
             }
         }
-        internal DesktopDemoSession(string assets, string profile, bool acceptanceMode = false, string seed = null)
+        internal DesktopDemoSession(string assets, string profile, bool acceptanceMode = false, string seed = null, bool observeSystem = false)
         {
             this.acceptanceMode = acceptanceMode;
             ProfileRoot = Path.GetFullPath(profile);
@@ -90,13 +96,22 @@ namespace NetBunny
             try
             {
                 if (seed != null) DesktopDemoProfiles.CreateSeed(ProfileRoot, seed);
-                Game = new AdventureController(owner, assets, false, null, false, ProfileRoot);
+                Game = new AdventureController(owner, assets, false, null, false, ProfileRoot, observeSystem && !acceptanceMode && seed == null);
                 Game.DesktopPanelRequested = delegate { OpenPanel("practice"); };
+                Game.DesktopProcessConfirmation = delegate(ProcessIdentity target)
+                {
+                    string text = "请求「" + target.Name + "」正常退出？\nPID " + target.Id + "\n" + target.ExecutablePath
+                        + "\n\n程序可能显示保存提示。取消或超时不会强制结束；本次确认只针对这个进程。";
+                    Form host = ecology != null && ecology.Visible ? (Form)ecology : panel != null && panel.Visible ? panel : null;
+                    return (host == null ? MessageBox.Show(text,"确认本次程序退出",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)
+                        : MessageBox.Show(host,text,"确认本次程序退出",MessageBoxButtons.YesNo,MessageBoxIcon.Question,MessageBoxDefaultButton.Button2)) == DialogResult.Yes;
+                };
                 tray = new NotifyIcon { Icon = SystemIcons.Application, Text = "桌面修仙传 · 透明桌面隔离版", Visible = true };
                 ContextMenuStrip menu = new ContextMenuStrip();
                 menu.Items.Add("修行与操作", null, delegate { OpenPanel("practice"); });
                 menu.Items.Add("功法与修行", null, delegate { OpenPanel("training"); });
                 menu.Items.Add("行囊与兵器", null, delegate { OpenPanel("inventory"); });
+                menu.Items.Add("电脑生态与维护", null, delegate { OpenPanel("ecology"); });
                 menu.Items.Add("百业道碑", null, delegate { OpenPanel("baiye"); });
                 menu.Items.Add("破境", null, delegate { OpenPanel("breakthrough"); });
                 menu.Items.Add("灵域历练", null, delegate { OpenPanel("lingyu"); });
@@ -133,6 +148,11 @@ namespace NetBunny
         internal void OpenPanel(string id)
         {
             if (exiting) return;
+            if (id == "ecology")
+            {
+                if (ecology == null || ecology.IsDisposed) ecology = new DesktopEcologyPanel(Game);
+                ecology.UpdateState();ecology.Show();PlaceFeaturePanel(ecology);ecology.BringToFront();ecology.Activate();return;
+            }
             if (id == "baiye") { Game.OpenBaiyeStele(); PlaceFeaturePanel(Application.OpenForms.OfType<BaiyeSteleForm>().FirstOrDefault(f => f.Visible)); return; }
             if (id == "dongtian") { Game.OpenDongtian(); PlaceFeaturePanel(Application.OpenForms.OfType<DongtianForm>().FirstOrDefault(f => f.Visible)); return; }
             if (id == "lingyu") { Game.OpenLingyu(); PlaceFeaturePanel(Application.OpenForms.OfType<LingyuForm>().FirstOrDefault(f => f.Visible)); return; }
@@ -202,6 +222,7 @@ namespace NetBunny
                 if (statusTimer != null) { statusTimer.Stop(); statusTimer.Dispose(); }
                 if (tray != null) { tray.Visible = false; if (tray.ContextMenuStrip != null) tray.ContextMenuStrip.Dispose(); tray.Dispose(); }
                 if (panel != null) panel.Dispose();
+                if (ecology != null) ecology.Dispose();
                 if (Game != null) { Game.Dispose(); Game = null; }
                 owner.Dispose();
                 try { profileGate.ReleaseMutex(); } catch (ApplicationException) { }

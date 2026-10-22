@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -83,6 +83,7 @@ namespace NetBunny
 
             refresh.Interval = 500; refresh.Tick += delegate { if (Visible) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
+            if (controller.IsolatedDesktop) DesktopFeatureStyle.Apply(this);
         }
 
         private Label Line(string text, int height) { return new Label { Text = text, Width = 640, Height = height, AutoSize = true, MaximumSize = new Size(640, 0), MinimumSize = new Size(0, height), Margin = new Padding(0, 4, 0, 4) }; }
@@ -181,7 +182,7 @@ namespace NetBunny
         }
         protected override void OnPaint(PaintEventArgs e)
         {
-            base.OnPaint(e); Graphics g = e.Graphics; g.Clear(Color.FromArgb(245, 244, 251)); g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            base.OnPaint(e); Graphics g = e.Graphics; g.Clear(DesktopFeatureStyle.Tone(this, Color.FromArgb(245, 244, 251))); g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             int columns = 2, rows = 4;
             int cellWidth = (Width - 8 * (columns + 1)) / columns, cellHeight = (Height - 8 * (rows + 1)) / rows;
             for (int i = 0; i < BaiyeCatalog.Paths.Length; i++)
@@ -191,16 +192,16 @@ namespace NetBunny
                 Rectangle cell = new Rectangle(cx, cy, cellWidth, cellHeight);
                 bool discovered = progress != null && progress.Discovered(path.Id);
                 bool active = discovered && path.Id == activePathId;
-                Art.Fill(g, cell, 12, active ? Color.FromArgb(239, 232, 252) : Color.White);
-                using (Pen border = new Pen(active ? Color.FromArgb(115, 78, 191) : Color.FromArgb(224, 220, 236), active ? 2 : 1))
+                Art.Fill(g, cell, 12, active ? DesktopFeatureStyle.Tone(this, Color.FromArgb(239, 232, 252)) : DesktopFeatureStyle.Tone(this, Color.White));
+                using (Pen border = new Pen(active ? DesktopFeatureStyle.Tone(this, Color.FromArgb(115, 78, 191)) : DesktopFeatureStyle.Tone(this, Color.FromArgb(224, 220, 236)), active ? 2 : 1))
                     g.DrawRectangle(border, cell.X, cell.Y, cell.Width - 1, cell.Height - 1);
                 Rectangle seal = new Rectangle(cell.X + 12, cell.Y + 12, 40, 40);
-                Art.Fill(g, seal, 9, discovered ? Color.FromArgb(115, 78, 191) : Color.FromArgb(214, 210, 226));
+                Art.Fill(g, seal, 9, discovered ? DesktopFeatureStyle.Tone(this, Color.FromArgb(115, 78, 191)) : DesktopFeatureStyle.Tone(this, Color.FromArgb(214, 210, 226)));
                 using (Font sealFont = new Font(Font.FontFamily, 15, FontStyle.Bold))
                     TextRenderer.DrawText(g, discovered ? path.Name.Substring(0, 1) : "？", sealFont, seal, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                 Rectangle nameBounds = new Rectangle(cell.X + 62, cell.Y + 10, cell.Width - 74, 22);
                 using (Font nameFont = new Font(Font.FontFamily, 10.5f, FontStyle.Bold))
-                    TextRenderer.DrawText(g, discovered ? path.Name : "？？？", nameFont, nameBounds, discovered ? Color.FromArgb(73, 49, 132) : Color.FromArgb(150, 146, 168), TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, discovered ? path.Name : "？？？", nameFont, nameBounds, discovered ? DesktopFeatureStyle.Tone(this, Color.FromArgb(73, 49, 132)) : DesktopFeatureStyle.Tone(this, Color.FromArgb(150, 146, 168)), TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
                 Rectangle detailBounds = new Rectangle(cell.X + 62, cell.Y + 32, cell.Width - 74, 30);
                 if (discovered)
                 {
@@ -208,18 +209,18 @@ namespace NetBunny
                     double yun = progress.YunOf(path.Id);
                     double baseYun = BaiyeCatalog.YunForLevel(level), nextYun = BaiyeCatalog.YunForLevel(level + 1);
                     string line = BaiyeCatalog.LevelName(level) + " · 道韵 " + ((int)yun).ToString(CultureInfo.InvariantCulture) + " / " + ((int)nextYun).ToString(CultureInfo.InvariantCulture);
-                    TextRenderer.DrawText(g, line, Font, detailBounds, Color.FromArgb(91, 87, 107), TextFormatFlags.WordBreak | TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, line, Font, detailBounds, DesktopFeatureStyle.Tone(this, Color.FromArgb(91, 87, 107)), TextFormatFlags.WordBreak | TextFormatFlags.NoPadding);
                     Rectangle track = new Rectangle(cell.X + 62, cell.Bottom - 14, cell.Width - 74, 5);
-                    Art.Fill(g, track, 2, Color.FromArgb(235, 230, 244));
+                    Art.Fill(g, track, 2, DesktopFeatureStyle.Tone(this, Color.FromArgb(235, 230, 244)));
                     double ratio = nextYun > baseYun ? Math.Min(1, Math.Max(0, (yun - baseYun) / (nextYun - baseYun))) : 0;
                     if (ratio > 0)
                     {
                         int fill = Math.Max(2, (int)Math.Round(track.Width * ratio));
-                        using (Brush brush = new SolidBrush(Color.FromArgb(115, 78, 191))) g.FillRectangle(brush, track.X, track.Y, fill, track.Height);
+                        using (Brush brush = new SolidBrush(DesktopFeatureStyle.Tone(this, Color.FromArgb(115, 78, 191)))) g.FillRectangle(brush, track.X, track.Y, fill, track.Height);
                     }
                 }
                 else
-                    TextRenderer.DrawText(g, "尚未识得的道途 · " + path.Description, Font, detailBounds, Color.FromArgb(150, 146, 168), TextFormatFlags.WordBreak | TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, "尚未识得的道途 · " + path.Description, Font, detailBounds, DesktopFeatureStyle.Tone(this, Color.FromArgb(150, 146, 168)), TextFormatFlags.WordBreak | TextFormatFlags.NoPadding);
             }
         }
     }

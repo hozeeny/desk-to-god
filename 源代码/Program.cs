@@ -24,7 +24,7 @@ namespace NetBunny
         {
 #if DESKTOP_DEMO_ONLY
             if (args.Length == 0) args = new[] { "--desktop-demo" };
-            if (args[0] != "--desktop-demo" && args[0] != "--desktop-demo-accept" && args[0] != "--desktop-demo-smoke")
+            if (args[0] != "--desktop-demo" && args[0] != "--desktop-demo-accept" && args[0] != "--desktop-demo-smoke" && args[0] != "--desktop-demo-soak")
             { Environment.ExitCode = 1; return; }
 #endif
 #if ART_DEMO_ONLY
@@ -37,6 +37,12 @@ namespace NetBunny
                 return;
             }
 #endif
+            if (args.Length > 0 && args[0] == "--desktop-demo-soak")
+            {
+                try { Environment.ExitCode = DesktopNaturalSoak.Run(args.Skip(1).ToArray()); }
+                catch (Exception e) { Environment.ExitCode = 1; try { File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"desktop-soak-error.log"),e.ToString()); } catch { } }
+                return;
+            }
             if (args.Length > 0 && args[0].StartsWith("--desktop-demo", StringComparison.Ordinal))
             {
                 try

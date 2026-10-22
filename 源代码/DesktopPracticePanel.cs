@@ -52,6 +52,7 @@ namespace NetBunny
 
             FlowLayoutPanel battle = Column("桌面历练");
             StyleLabel(hint); hint.AccessibleName = "下一步操作"; battle.Controls.Add(hint);
+            Add(battle, "电脑生态 · 查看来源与维护结果", delegate { session.OpenPanel("ecology"); });
             Section(battle, "桌面妖物 · 点击切换目标");
             targets.AutoSize = true; targets.FlowDirection = FlowDirection.TopDown; targets.WrapContents = false; battle.Controls.Add(targets);
             StyleLabel(attackState); StyleLabel(blockState); battle.Controls.Add(attackState); battle.Controls.Add(blockState);
@@ -160,11 +161,11 @@ namespace NetBunny
                 Button button;
                 if (!targetButtons.TryGetValue(enemy.Id, out button))
                 {
-                    string id = enemy.Id; button = new Button { Height = 39, Margin = new Padding(0, 0, 0, 5) }; StyleButton(button);
+                    string id = enemy.Id; button = new Button { Height = 78, Margin = new Padding(0, 0, 0, 5) }; StyleButton(button);
                     button.Click += delegate { session.Game.DesktopChooseEnemy(id, false); UpdateState(); };
                     targetButtons.Add(id, button); targets.Controls.Add(button);
                 }
-                button.Text = (enemy.Selected ? "当前目标 · " : "选中 · ") + enemy.Name + "　" + enemy.Health + "/" + enemy.MaxHealth;
+                button.Text = (enemy.Selected ? "当前目标 · " : "选中 · ") + enemy.Name + "　" + enemy.Health + "/" + enemy.MaxHealth + "\n" + enemy.Source + "\n" + enemy.Action;
                 button.BackColor = enemy.Selected ? Color.FromArgb(221, 232, 214) : Color.FromArgb(251, 248, 239);
                 button.Enabled = !session.Game.Battle.Progress.Dead;
             }

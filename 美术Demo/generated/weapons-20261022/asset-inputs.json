@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "defaults": {
+    "kind": "weapon",
+    "max_size": [
+      512,
+      512
+    ],
+    "trim_transparent": true,
+    "note": "Independent Codex built-in imagegen v1; fully transparent margin crop and proportional resize only; preserve alpha; no recolour, masks or background removal."
+  },
+  "assets": [
+    {
+      "id": "weapon-wave",
+      "source": "weapon-wave-original-v1.png"
+    },
+    {
+      "id": "weapon-moonring",
+      "source": "weapon-moonring-original-v1.png"
+    },
+    {
+      "id": "weapon-array",
+      "source": "weapon-array-original-v1.png"
+    },
+    {
+      "id": "weapon-talisman",
+      "source": "weapon-talisman-original-v1.png"
+    }
+  ]
+}

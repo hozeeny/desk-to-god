@@ -18,6 +18,7 @@ namespace NetBunny
         internal string BuffId; internal double BuffHours;
     }
     internal sealed class DongtianGearDef { internal string Id, Name, EffectText; internal long ForgeSeconds; internal string[] Materials; }
+    internal sealed class DongtianExpansionDef { internal int FromLevel, ToLevel; internal string[] Materials; }
 
     internal static class DongtianRecipes
     {
@@ -41,9 +42,16 @@ namespace NetBunny
             new DongtianGearDef { Id = "jianwan", Name = "剑丸", EffectText = "战斗伤害 +5% · 常驻", ForgeSeconds = 3600, Materials = new[] { "jianxin", "linggu", "linggu" } },
             new DongtianGearDef { Id = "jinglu", Name = "镜炉", EffectText = "炼丹时长 −10% · 常驻", ForgeSeconds = 3600, Materials = new[] { "jianxin", "ningshen" } },
         };
+        // 仅消耗既有灵田材料，每次扩建多开一畦；成本待自然游玩验证。
+        private static readonly DongtianExpansionDef[] Expansions =
+        {
+            new DongtianExpansionDef { FromLevel = 1, ToLevel = 2, Materials = new[] { "linggu", "linggu", "linggu", "linggu", "ningshen", "ningshen" } },
+            new DongtianExpansionDef { FromLevel = 2, ToLevel = 3, Materials = new[] { "linggu", "linggu", "linggu", "linggu", "linggu", "linggu", "linggu", "linggu", "ningshen", "ningshen", "ningshen", "ningshen", "jianxin" } },
+        };
         internal static DongtianSeedDef Seed(string id) { foreach (DongtianSeedDef d in Seeds) if (d.Id == id) return d; return null; }
         internal static DongtianPillDef Pill(string id) { foreach (DongtianPillDef d in Pills) if (d.Id == id) return d; return null; }
         internal static DongtianGearDef Gear(string id) { foreach (DongtianGearDef d in Gears) if (d.Id == id) return d; return null; }
+        internal static DongtianExpansionDef Expansion(int level) { foreach (DongtianExpansionDef d in Expansions) if (d.FromLevel == level) return d; return null; }
         internal static string MaterialName(string id)
         {
             DongtianSeedDef s = Seed(id); if (s != null) return s.Name;
@@ -59,6 +67,7 @@ namespace NetBunny
     {
         internal const int FormatVersion = 1;
         internal const int MaxFields = 4;
+        internal const int MaxExpansionLevel = MaxFields - 1;
         internal int Level = 1;
         // 灵田/丹炉/器位：<recipeId>,<readyUtcTicks>；空位为 ""。
         internal readonly string[] Fields = new string[MaxFields];
@@ -73,6 +82,20 @@ namespace NetBunny
         internal int UnlockedFields { get { return Math.Min(MaxFields, 1 + Level); } }
         internal bool HasGear(string id) { return Gears.Contains(id); }
         internal int CountOf(string material) { int n; return Bag.TryGetValue(material, out n) ? n : 0; }
+
+        // 按钮携带其显示时的等级，旧点击不能重放为下一等级的付款。
+        // 等级与库存同属洞天一份档案，由控制器沿原有保存路径一次落盘。
+        internal bool Expand(int expectedLevel)
+        {
+            if (expectedLevel != Level) { LastNotice = "洞天等级已变化，请按当前扩建目标操作"; return false; }
+            if (Level >= MaxExpansionLevel) { LastNotice = "洞天已满级，四畦灵田均已开辟"; return false; }
+            DongtianExpansionDef expansion = DongtianRecipes.Expansion(Level);
+            if (expansion == null) { LastNotice = "当前洞天等级无法扩建"; return false; }
+            if (!Consume(expansion.Materials)) return false;
+            Level = expansion.ToLevel;
+            LastNotice = "洞天扩建至 Lv." + Level + "，新增一畦灵田（共 " + UnlockedFields + " 畦）";
+            return true;
+        }
 
         internal bool BuffActive(string buffId, DateTime utc)
         {
@@ -114,7 +137,7 @@ namespace NetBunny
             DongtianSeedDef seed = DongtianRecipes.Seed(seedId);
             if (seed == null || slot < 0 || slot >= UnlockedFields || Fields[slot] != null) return false;
             Fields[slot] = Slot(seed.Id, utc.Ticks + seed.GrowSeconds * TimeSpan.TicksPerSecond);
-            LastNotice = "灵田播下「" + seed.Name + "」，" + seed.GrowSeconds / 3600 + " 时辰后成熟";
+            LastNotice = "灵田播下「" + seed.Name + "」，" + seed.GrowSeconds / 3600 + " 小时后成熟";
             return true;
         }
         internal bool FieldReady(int slot, DateTime utc)

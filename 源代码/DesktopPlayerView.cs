@@ -13,11 +13,13 @@ namespace NetBunny
         internal bool StrikeReady, BlockReady;
         internal int RestSeconds;
         internal string[] RecentEvents;
+        internal string EcologyStatus;
+        internal DesktopMaintenanceEntry[] MaintenanceResults;
         internal DesktopEnemyChoice[] Enemies;
     }
     internal sealed class DesktopEnemyChoice
     {
-        internal string Id, Name;
+        internal string Id, Name, Source, Action;
         internal int Health, MaxHealth;
         internal bool Selected;
     }
@@ -57,6 +59,7 @@ namespace NetBunny
 
         private string DesktopEnemyName(AdventureEnemy enemy)
         {
+            if (enemy.ProcessTarget != null) return "程灵 · " + enemy.ProcessTarget.Name;
             if (enemy.NoFieldClear) return enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖";
             return (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
         }
@@ -65,18 +68,23 @@ namespace NetBunny
         // Mirror encounters, bosses and every non-desktop path keep their rules.
         private bool DesktopMortalUnengaged(AdventureEnemy enemy)
         {
-            return IsolatedDesktop && cultivation.Mortal && enemy.IsVirtual && !enemy.IsBoss
-                && !enemy.NoFieldClear && String.IsNullOrEmpty(enemy.EvilTheme) && battle.Target != enemy;
+            if(!IsolatedDesktop||!cultivation.Mortal||battle.Target==enemy)return false;
+            if(DesktopObservesSystem)return !enemy.NoFieldClear||enemy.ProcessTarget!=null;
+            return !enemy.IsBoss&&!enemy.NoFieldClear&&String.IsNullOrEmpty(enemy.EvilTheme);
         }
 
         internal bool DesktopChooseEnemy(string id, bool strike)
         {
             if (!IsolatedDesktop || disposed || IsDemo || battle.Progress.Dead) return false;
-            AdventureEnemy target = battle.Enemies.FirstOrDefault(e => e.Id == id && e.IsVirtual
+            AdventureEnemy target = battle.Enemies.FirstOrDefault(e => e.Id == id
                 && !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.CleanupStarted && !e.Failed && !e.IsDiskWarning);
             if (target == null) return false;
             bool changed = battle.Target != target;
-            if (changed)
+            if (changed && DesktopObservesSystem)
+            {
+                if (!battle.SelectDesktopTarget(target)) return false;
+            }
+            else if (changed)
             {
                 // The desktop field is virtual. If an unexpected file-backed or
                 // in-flight job exists, refuse rather than touching its queue.
@@ -144,8 +152,11 @@ namespace NetBunny
                 TargetName = target == null ? "未选择目标" : DesktopEnemyName(target) + " " + target.Health + "/" + target.MaxHealth,
                 AttackText = attack, BlockText = block, Notice = notice, StrikeReady = ready, BlockReady = blockReady,
                 RestSeconds = rest, RecentEvents = desktopRecentEvents.Reverse().ToArray(),
-                Enemies = battle.Enemies.Where(e => !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.Failed && e.IsVirtual)
-                    .Select(e => new DesktopEnemyChoice { Id = e.Id, Name = DesktopEnemyName(e), Health = e.Health, MaxHealth = e.MaxHealth, Selected = e == target }).ToArray()
+                EcologyStatus = DesktopEcologyStatus, MaintenanceResults = desktopMaintenance.Reverse().ToArray(),
+                Enemies = battle.Enemies.Where(e => !e.Defeated && !e.VisualDefeated && !e.Cleaning && !e.Failed)
+                    .Select(e => new DesktopEnemyChoice { Id = e.Id, Name = DesktopEnemyName(e), Health = e.Health, MaxHealth = e.MaxHealth, Selected = e == target,
+                        Source = e.ProcessTarget != null ? "所选程序 · PID " + e.ProcessTarget.Id : e.IsVirtual ? "历练妖物 · 虚拟遭遇" : e.IsDiskBoss ? "磁盘空间预警" : e.IsBoss ? "电脑内存压力" : "临时文件 · " + (e.Batch == null ? "来源待复核" : e.Batch.FilesCount + "个 / " + AdventureBattle.FormatBytes(e.Bytes)),
+                        Action = e.ProcessTarget != null ? "击败后单独确认正常退出" : e.IsVirtual ? "仅结算修行奖励" : (e.IsBoss && !e.IsDiskBoss ? consent.MemoryEnabled : consent.CleanupEnabled) ? "已授权对应维护范围" : "未授权 · 本次战斗仅结算修行奖励" }).ToArray()
             };
         }
     }

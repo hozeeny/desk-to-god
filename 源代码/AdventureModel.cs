@@ -56,6 +56,7 @@ namespace NetBunny
     {
         internal string Id;
         internal CleanupBatch Batch;
+        internal ProcessIdentity ProcessTarget;
         // Virtual fiends spawn from the cultivation encounter scheduler and settle
         // as pure combat: they never own files and never touch the cleanup worker.
         internal bool IsVirtual;
@@ -64,6 +65,8 @@ namespace NetBunny
         // 最近一次实际栅格化时的帧量化签名（P0 渲染优化）：签名不变只移窗口不重绘。
         internal string PaintedSignature;
         internal bool KillRewarded;
+        internal bool CultivationRewarded;
+        internal int CultivationRewardQi;
         // 仅在真实战斗（Strike 致死，含群攻溅射）中倒下时置位；
         // 一键清场等未经历战斗的结算不置位——凡人历练只认真正完成的有效战斗。
         internal bool FellInCombat;
@@ -279,6 +282,17 @@ namespace NetBunny
             foreach (AdventureEnemy e in queue) { if (!e.CleanupStarted) retired |= e.CancelBeforeCleanup("待办清理已取消"); e.QueueNumber = 0; }
             queue.Clear(); Automatic = false;
             if (retired) LastReward = "待办清理已取消；已击败的怪物继续消散，未执行文件清理，剩余文件待重新扫描";
+        }
+        // Desktop selection changes combat focus, not the ownership of already
+        // started or queued maintenance. It also preserves automatic preference.
+        internal bool SelectDesktopTarget(AdventureEnemy target)
+        {
+            if (Progress.Dead || target == null || target.Defeated || target.VisualDefeated || target.Cleaning || target.CleanupStarted || target.Failed || target.IsDiskWarning) return false;
+            foreach (AdventureEnemy other in queue.ToArray())
+                if (other != target && !other.Cleaning && !other.CleanupStarted && !other.VisualDefeated)
+                { other.CancelBeforeCleanup("切换战斗目标"); queue.Remove(other); }
+            queue.Remove(target); target.Authorized = true; target.Authorization = AdventureAuthorization.Manual;
+            queue.Insert(0, target); Renumber(); return true;
         }
         internal void StopFightingAfterDeath()
         {

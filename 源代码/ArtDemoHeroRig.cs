@@ -150,7 +150,7 @@ namespace NetBunny
             if(!rest&&!dying)
             {
                 GraphicsState held=g.Save();g.TranslateTransform(farHand.X,farHand.Y);g.RotateTransform((float)(guard?58:attack?12+push*24:12+Math.Sin(a)*(run?4:1)));g.TranslateTransform(-farHand.X,-farHand.Y);
-                RectangleF box=ArtDemoPack.HeldWeaponBounds(weapon.Size,farHand);DrawImage(g,weapon,box,new RectangleF(0,0,weapon.Width,weapon.Height),opacity,0);g.Restore(held);
+                RectangleF box=ArtDemoPack.HeldWeaponBounds(weapon.Size,farHand,s.WeaponId);DrawImage(g,weapon,box,new RectangleF(0,0,weapon.Width,weapon.Height),opacity,0);g.Restore(held);
             }
             Segment(g,5,Joint("farElbow"),Joint("farHand"),farElbow,farHand,opacity,flash,null);
             Segment(g,3,Joint("nearElbow"),Joint("nearHand"),nearElbow,nearHand,opacity,flash,null);

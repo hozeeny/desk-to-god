@@ -14,11 +14,15 @@ namespace NetBunny
     internal sealed partial class AdventureController
     {
         private readonly string isolatedProfileRoot;
+        private readonly DesktopEnvironmentPolicy desktopEnvironment;
         private bool desktopActorsVisible = true, desktopTestAdvancing;
         private bool desktopLastSaveSucceeded = true;
         private double desktopLastRefill;
         private int desktopAcceptanceSpeed = 1;
         internal bool IsolatedDesktop { get { return isolatedProfileRoot != null; } }
+        internal bool DesktopObservesSystem { get { return IsolatedDesktop && desktopEnvironment.MayObserve; } }
+        internal DesktopEnvironmentMode DesktopMode { get { return desktopEnvironment.ReadMode(consent.CleanupEnabled, consent.MemoryEnabled); } }
+        private bool MayObserveLocalResources { get { return !IsolatedDesktop || DesktopObservesSystem; } }
         internal string IsolatedProfileRoot { get { return isolatedProfileRoot; } }
         internal Action DesktopPanelRequested;
         internal KnightLayeredWindow DesktopHeroWindow { get { return heroWindow; } }
@@ -37,15 +41,15 @@ namespace NetBunny
         {
             if (!IsolatedDesktop || disposed) throw new InvalidOperationException("透明桌面 Demo 必须使用独立持久化存档。");
             desktopActorsVisible = showActors;
-            consent.CleanupEnabled = consent.MemoryEnabled = consent.AutoMaintenanceEnabled = false;
+            if (!DesktopObservesSystem) consent.CleanupEnabled = consent.MemoryEnabled = consent.AutoMaintenanceEnabled = false;
             roaming = true;
             battle.Progress.ThemeMode = "OFF";
-            scanStatus = "隔离桌面修行 · 纯虚拟妖物 · 系统维护始终关闭";
+            scanStatus = DesktopObservesSystem ? "电脑生态只读观察 · 真实维护须分别授权" : "隔离桌面修行 · 纯虚拟妖物 · 系统维护始终关闭";
             connectivityDetail = "本地修行 · 不探测网络";
             heroWindow.Text = "桌面修仙传 · 修士";
             // Two ordinary opponents are enough to start immediately without
             // covering the desktop in a staged battle composition.
-            if (!lingyu.CombatPending && !battle.Enemies.Any(e => !e.Defeated))
+            if (!DesktopObservesSystem && !lingyu.CombatPending && !battle.Enemies.Any(e => !e.Defeated))
             { SpawnVirtualFiend(); SpawnVirtualFiend(); }
             desktopLastRefill = clock.Elapsed.TotalSeconds;
             Enabled = true;

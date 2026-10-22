@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -38,7 +38,7 @@ namespace NetBunny
             BackColor = Color.FromArgb(250, 247, 240); Font = new Font("Microsoft YaHei UI", 10F);
             FlowLayoutPanel content = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(20), BackColor = BackColor };
             Label title = new Label { Text = "洞天经营", AutoSize = true, Font = new Font(Font.FontFamily, 17, FontStyle.Bold), ForeColor = Color.FromArgb(73, 49, 132), Margin = new Padding(0, 0, 0, 8) };
-            status.AutoSize = false; status.Width = 640; status.Height = 300; status.Margin = new Padding(0, 2, 0, 6);
+            status.AutoSize = false; status.Width = 640; status.Height = 350; status.Margin = new Padding(0, 2, 0, 6);
             notice.AutoSize = false; notice.Width = 640; notice.Height = 34; notice.ForeColor = Color.FromArgb(130, 84, 32);
             actions = new FlowLayoutPanel { Width = 650, AutoSize = true, WrapContents = true };
             content.Controls.Add(title);
@@ -56,11 +56,13 @@ namespace NetBunny
             Controls.Add(content);
             refresh.Interval = 2000; refresh.Tick += delegate { if (Visible && !IsDisposed) RefreshData(); }; refresh.Start();
             Shown += delegate { RefreshData(); };
+            if (controller.IsolatedDesktop) DesktopFeatureStyle.Apply(this);
         }
 
         private Button CreateAction(DongtianAction action)
         {
             Button button = new Button { Text = action.Label, Width = action.Width, Height = 34, Margin = new Padding(0, 3, 8, 3) };
+            if (controller.IsolatedDesktop) DesktopFeatureStyle.ApplyButton(button);
             if (!String.IsNullOrEmpty(action.Tip)) hints.SetToolTip(button, action.Tip);
             button.Click += delegate { if (action.Run != null && action.Run()) { } notice.Text = controller.Dongtian == null ? "" : controller.Dongtian.LastNotice; RefreshData(); };
             return button;
@@ -83,6 +85,9 @@ namespace NetBunny
             }
             StringBuilder text = new StringBuilder();
             text.AppendLine("洞天等级 Lv." + d.Level + " · 灵田 " + d.UnlockedFields + " 畦 · 丹炉 1 座 · 器位 1 处");
+            DongtianExpansionDef expansion = DongtianRecipes.Expansion(d.Level);
+            if (expansion == null) text.AppendLine("洞天已满级 · 四畦灵田均已开辟");
+            else text.AppendLine("下次扩建：Lv." + expansion.ToLevel + " · 新增一畦灵田 · 材料：" + MaterialsText(expansion.Materials));
             text.AppendLine();
             for (int i = 0; i < d.UnlockedFields; i++)
             {
@@ -117,6 +122,12 @@ namespace NetBunny
             // 可用动作集合：与文本同一份 utc 快照推导；集合（标签+提示）不变时
             // 不触碰控件，保证长开窗口下按钮实例稳定（见 SyncActions）。
             List<DongtianAction> available = new List<DongtianAction>();
+            if (expansion != null)
+            {
+                int expectedLevel = d.Level;
+                available.Add(new DongtianAction { Label = "扩建洞天→Lv." + expansion.ToLevel, Width = 185,
+                    Tip = "新增一畦灵田 · 消耗：" + MaterialsText(expansion.Materials), Run = delegate { return controller.DongtianExpand(expectedLevel); } });
+            }
             foreach (DongtianSeedDef seed in DongtianRecipes.Seeds)
                 for (int i = 0; i < d.UnlockedFields; i++)
                     if (d.Fields[i] == null) { int captured = i; available.Add(new DongtianAction { Label = "种" + seed.Name + "→田" + (i + 1), Width = 150, Tip = seed.GrowSeconds / 3600 + " 小时成熟 · 收获 ×" + seed.Yield, Run = delegate { return controller.DongtianPlant(captured, seed.Id); } }); break; }

@@ -107,7 +107,11 @@ namespace NetBunny
         private double lastInventoryObservation = -1;
         internal const double IdleInventoryIntervalSeconds = 2, ActiveInventoryIntervalSeconds = 2;
         public AdventureController(Form owner, string assetDirectory, bool demonstrationOnly = false, Func<double> waveClock = null, bool artDemoRuntime = false, string isolatedProfileRoot = null)
+            : this(owner, assetDirectory, demonstrationOnly, waveClock, artDemoRuntime, isolatedProfileRoot, false) { }
+        public AdventureController(Form owner, string assetDirectory, bool demonstrationOnly, Func<double> waveClock, bool artDemoRuntime, string isolatedProfileRoot, bool desktopObserve)
         {
+            if (desktopObserve && isolatedProfileRoot == null) throw new ArgumentException("电脑生态入口必须使用独立存档。");
+            desktopEnvironment = new DesktopEnvironmentPolicy(!desktopObserve);
             if (owner == null) throw new ArgumentNullException("owner"); this.owner = owner; this.demonstrationOnly = demonstrationOnly;
             if (artDemoRuntime && !demonstrationOnly) throw new ArgumentException("美术 Demo 必须使用隔离内存模式。");
             this.artDemoRuntime = artDemoRuntime;
@@ -169,7 +173,7 @@ namespace NetBunny
             }
             encounters = new CultivationEncounterScheduler(random);
             deviceGrade = CultivationHardware.Classify(Environment.ProcessorCount, ReadTotalRamBytes());
-            if (IsolatedDesktop) { consent.CleanupEnabled = consent.MemoryEnabled = consent.AutoMaintenanceEnabled = false; RestoreAutoBattlePreference(); }
+            if (IsolatedDesktop && !DesktopObservesSystem) { consent.CleanupEnabled = consent.MemoryEnabled = consent.AutoMaintenanceEnabled = false; RestoreAutoBattlePreference(); }
             else if (demonstrationOnly) { consent.CleanupEnabled = consent.MemoryEnabled = !artDemoRuntime; }
             else
             {
@@ -185,6 +189,7 @@ namespace NetBunny
                 if (cultivation.AutoBattle && cultivation.AutoBattleUnlocked && !battle.Progress.Dead) battle.SetAutomatic(true);
             }
             if (!demonstrationOnly && !IsolatedDesktop) region.SelectMode(battle.Progress.LastThemeCode);
+            LoadDesktopMaintenanceHistory();
             region.SelectMode(demonstrationOnly || IsolatedDesktop ? "OFF" : battle.Progress.ThemeMode);
             region.Changed += RegionChanged;
             area = Screen.FromControl(owner).WorkingArea;
@@ -261,7 +266,7 @@ namespace NetBunny
         internal bool SetCleanupConsent(bool value)
         {
             if (disposed) return false;
-            if (IsolatedDesktop) return !value;
+            if (IsolatedDesktop && !DesktopObservesSystem) return !value;
             string error;
             bool persisted = consent.SetCleanup(ConsentWritePath, value, out error);
             if (!persisted) scanStatus = "授权状态暂未保存：" + error;
@@ -286,7 +291,7 @@ namespace NetBunny
         internal bool SetMemoryConsent(bool value)
         {
             if (disposed) return false;
-            if (IsolatedDesktop) return !value;
+            if (IsolatedDesktop && !DesktopObservesSystem) return !value;
             string error;
             bool persisted = consent.SetMemory(ConsentWritePath, value, out error);
             if (!persisted) scanStatus = "授权状态暂未保存：" + error;
@@ -313,7 +318,7 @@ namespace NetBunny
         internal bool SetAutoMaintenanceConsent(bool value)
         {
             if (disposed) return false;
-            if (IsolatedDesktop) return !value;
+            if (IsolatedDesktop && !DesktopObservesSystem) return !value;
             string error;
             bool persisted = consent.SetAutoMaintenance(ConsentWritePath, value, out error);
             if (!persisted)
@@ -353,6 +358,7 @@ namespace NetBunny
         // own: real-effect targets require the separate auto-maintenance consent.
         private bool AutoMaintenanceEligibility(AdventureEnemy enemy)
         {
+            if (enemy.ProcessTarget != null) return false;
             if (enemy.IsVirtual) return true; // pure combat, never any real effect
             bool memoryBoss = enemy.IsBoss && !enemy.IsDiskBoss;
             if (memoryBoss) return !consent.MemoryEnabled || consent.AutoMaintenanceEnabled;
@@ -596,6 +602,12 @@ namespace NetBunny
             if (!SaveDongtianCore() && dongtian != null) dongtian.LastNotice += "（档案待落盘，自动重试中）";
         }
         internal bool DongtianPlant(int slot, string seedId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Plant(slot, seedId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
+        internal bool DongtianExpand(int expectedLevel)
+        {
+            if (disposed || IsDemo || !DongtianUnlocked) return false;
+            if (DongtianPersistPending) { dongtian.LastNotice = "档案待落盘，请等待自动重试后再扩建"; return false; }
+            bool ok = dongtian.Expand(expectedLevel); if (ok) SaveDongtianWithNotice(); return ok;
+        }
         internal bool DongtianHarvest(int slot) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.Harvest(slot, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
         internal bool DongtianStartPill(string pillId) { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.StartPill(pillId, DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
         internal bool DongtianCollectPill() { if (disposed || IsDemo || !DongtianUnlocked) return false; bool ok = dongtian.CollectPill(DateTime.UtcNow); if (ok) SaveDongtianWithNotice(); return ok; }
@@ -922,24 +934,11 @@ namespace NetBunny
         }
         private void SettleVirtual(AdventureEnemy enemy)
         {
-            int qi = encounters.RollKillQi(enemy.IsBoss);
-            if (enemy.Elite) qi *= CultivationBalance.EliteQiFactor;
-            cultivation.AddQi(qi);
+            int qi = GrantCultivationKill(enemy);
             battle.CompleteVirtual(enemy, qi);
-            // 凡人期：每一次有效击杀都是红尘历练，十次圆满即可觉醒灵根。
-            // 只认真实战斗（Strike 致死）；一键清场等未经历战斗的结算不历练。
-            // 历练提示覆盖修为播报——凡人的修为暂存灵明，觉醒时才真正转化。
-            if (cultivation.Mortal && enemy.FellInCombat)
-            {
-                if (cultivation.RecordMortalKill())
-                    battle.LastReward = cultivation.CanAwaken
-                        ? "十次红尘历练已满 · 打开修炼面板，觉醒灵根"
-                        : "红尘历练 " + cultivation.MortalKills + "/" + CultivationBalance.MortalAwakenKills + " · 凡躯渐生灵明";
-                else if (cultivation.CanAwaken)
-                    battle.LastReward = "灵明已足 · 打开修炼面板，觉醒灵根";
-            }
-            RecordDesktopEvent("击败" + (IsolatedDesktop ? DesktopEnemyName(enemy) : AdventureMonster.Find(enemy.MonsterKind).Name)
-                + " · 修为+" + qi + (cultivation.Mortal ? " · 历练 " + cultivation.MortalKills + "/10" : ""));
+            if (cultivation.Mortal && enemy.FellInCombat) battle.LastReward = cultivation.CanAwaken
+                ? "十次红尘历练已满 · 打开修炼面板，觉醒灵根"
+                : "红尘历练 " + cultivation.MortalKills + "/" + CultivationBalance.MortalAwakenKills + " · 凡躯渐生灵明";
             if (pendingLingyuEnemyId != null && enemy.Id == pendingLingyuEnemyId)
             {
                 pendingLingyuEnemyId = null;
@@ -952,9 +951,7 @@ namespace NetBunny
         }
         private void SettleHeld(AdventureEnemy enemy)
         {
-            int qi = encounters.RollKillQi(enemy.IsBoss);
-            cultivation.AddQi(qi);
-            if (cultivation.Mortal && enemy.FellInCombat) cultivation.RecordMortalKill(); // 未授权虚拟结算：真实战斗击倒同样算有效击杀；清场击倒不算
+            int qi = GrantCultivationKill(enemy);
             battle.CompleteHeld(enemy, qi);
             Save();
         }
@@ -1007,7 +1004,7 @@ namespace NetBunny
         public void RefreshWorld() { RefreshWorld(true); }
         private void RefreshWorld(bool manualRequest)
         {
-            if (disposed || demonstrationOnly || IsolatedDesktop || scanBusy || IsDemo) return;
+            if (disposed || demonstrationOnly || !MayObserveLocalResources || scanBusy || IsDemo) return;
             EnsureTempWatcher(); scannedChangeVersion = Interlocked.CompareExchange(ref tempChangeVersion,0,0);
             scanBusy = true; int scanEpoch = cleanupEpoch; lastScan = clock.Elapsed.TotalSeconds; scanStatus = "正在实时复核临时文件与可处理项目…";
             scanCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
@@ -1061,6 +1058,7 @@ namespace NetBunny
         {
             if (IsDemo) return;
             int slots = EnemyFieldBudget.AvailableOrdinarySlots(battle.Enemies);
+            if (DesktopObservesSystem) slots = Math.Min(slots, Math.Max(0, 3 - EnemyFieldBudget.CountOrdinary(battle.Enemies)));
             if (slots <= 0 || clock.Elapsed.TotalSeconds - lastRefill < .25) return;
             lastRefill = clock.Elapsed.TotalSeconds;
             foreach (CleanupBatch batch in liveTemp.TakePending(battle.Enemies, slots))
@@ -1072,7 +1070,7 @@ namespace NetBunny
         }
         private void EnsureTempWatcher()
         {
-            if (tempWatcher != null || demonstrationOnly || IsolatedDesktop || disposed) return;
+            if (tempWatcher != null || demonstrationOnly || !MayObserveLocalResources || disposed) return;
             try
             {
                 InstallTempWatcher(cleanup.RootPath);
@@ -1090,7 +1088,7 @@ namespace NetBunny
         }
         private void ReadDisk(double now)
         {
-            if (diskBusy || demonstrationOnly || IsolatedDesktop || disposed) return;
+            if (diskBusy || demonstrationOnly || !MayObserveLocalResources || disposed) return;
             diskBusy = true; lastDisk = now;
             Task.Run(delegate
             {
@@ -1187,9 +1185,9 @@ namespace NetBunny
             if ((consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) && now >= consentRetryAt + 5) { consentRetryAt = now; TryFlushConsentRevocation(); }
             // 洞天/灵域档案的待确认操作同款：每 15 秒重试直至双档落盘提交成功。
             if (dongtianPersistPending && now >= dongtianPersistRetryAt) { dongtianPersistRetryAt = now + 15; TryFlushDongtianPersistence(); }
-            DrainCleanup(); DrainMemoryReclaim(); if (demoPending && cleanupTask == null) StartDemo();
+            DrainCleanup(); DrainMemoryReclaim(); DrainDesktopProcessAction(); if (demoPending && cleanupTask == null) StartDemo();
             if (probe) { PerfProbe.End(SecCleanupDrain); PerfProbe.Begin(); }
-            if (!demonstrationOnly && !IsolatedDesktop && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
+            if (!demonstrationOnly && MayObserveLocalResources && now - lastDisk >= 5 && !diskBusy) ReadDisk(now);
             if (probe) { PerfProbe.End(SecDisk); PerfProbe.Begin(); }
             if (!enabled) { if (probe) { PerfProbe.End(SecRender); PerfProbe.EndTotal(SecTotal); } return; }
             effects.Tick(dt);
@@ -1282,7 +1280,7 @@ namespace NetBunny
             PumpCleanup();
             RefillEnemies();
             if (now - lastScan >= InventoryIntervalSeconds || (now - lastScan >= .35 && scannedChangeVersion != Interlocked.CompareExchange(ref tempChangeVersion,0,0))) RefreshWorld(false);
-            if (!demonstrationOnly && !IsolatedDesktop && now - lastMemory >= 1 && !memoryBusy) ReadMemory(now);
+            if (!demonstrationOnly && MayObserveLocalResources && now - lastMemory >= 1 && !memoryBusy) ReadMemory(now);
             if (!demonstrationOnly && !IsolatedDesktop && now - lastRegion >= 60) { lastRegion = now; region.RefreshAsync(); }
             if (IsolatedDesktop) MaintainDesktopField();
             if (probe) { PerfProbe.End(SecWorldMaint); PerfProbe.Begin(); }
@@ -1363,7 +1361,7 @@ namespace NetBunny
         }
         private void ReadMemory(double now)
         {
-            if (IsolatedDesktop) return;
+            if (!MayObserveLocalResources) return;
             double elapsed = lastMemory < 0 ? 5 : now - lastMemory; lastMemory = now; memoryBusy = true;
             Task.Run(delegate
             {
@@ -1387,11 +1385,14 @@ namespace NetBunny
         }
         private void BeginCleanup(AdventureEnemy enemy)
         {
-            if (disposed || IsDemo || !enemy.Authorized || enemy.Defeated) return;
+            if (disposed || IsDemo || !enemy.Authorized || enemy.Defeated || enemy.CleanupStarted) return;
+            GrantCultivationKill(enemy);
+            if (enemy.ProcessTarget != null) { BeginDesktopProcessAction(enemy); return; }
             // Pure cultivation mode (default): virtual fiends and, without explicit
             // maintenance consent, file monsters and bosses all settle virtually.
             // No kill ever deletes real files or trims another process on its own.
             if (enemy.IsVirtual) { SettleVirtual(enemy); return; }
+            if (!DesktopCanMaintain(enemy)) { SettleHeld(enemy); return; }
             // Each real-maintenance scope is gated by its own persisted consent:
             // memory bosses need memory consent; file monsters and disk bosses
             // need cleanup consent. Without it the kill settles purely virtually.
@@ -1426,6 +1427,7 @@ namespace NetBunny
             MemoryReclaimResult result = memoryReclaimTask.IsFaulted ? new MemoryReclaimResult {Error="工作集回收失败"} : memoryReclaimTask.IsCanceled ? new MemoryReclaimResult {Error="回收已取消"} : memoryReclaimTask.Result;
             memoryReclaimTask = null; memoryReclaimCancellation.Dispose(); memoryReclaimCancellation = null;
             cleanupNotice = result.Summary; battle.LastReward = result.Summary;
+            RecordDesktopMaintenance(new DesktopMaintenanceEntry { Kind = "Memory", Summary = result.Summary, WorkingSetReduction = result.WorkingSetReduction, TrimmedProcesses = result.Trimmed });
             if (result.After != null && result.After.Available) { memoryAvailable = true; memoryPercent = result.After.UsedPercent; }
             lastMemory = -100; lastLandmarkPaint = -100;
         }
@@ -1436,6 +1438,7 @@ namespace NetBunny
             {
                 AdventureEnemy enemy = pendingCleanup.Dequeue();
                 if (!enemy.Cleaning || !enemy.Authorized || enemy.Defeated) continue;
+                if (!DesktopCanMaintain(enemy)) { SettleHeld(enemy); continue; }
                 enemy.CleanupStarted = true; activeCleanupEnemy = enemy; cleanupEpoch++; workCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
                 CancellationToken token = workCancellation.Token;
                 cleanupTask = simulatedCleaner != null ? simulatedCleaner(enemy.Batch, token) : Task.Run(delegate
@@ -1450,7 +1453,9 @@ namespace NetBunny
         private void DrainCleanup()
         {
             if (cleanupTask == null || !cleanupTask.IsCompleted) return;
-            CleanupResult result = cleanupTask.Result; AdventureEnemy enemy = activeCleanupEnemy;
+            AdventureEnemy enemy = activeCleanupEnemy;
+            CleanupResult result = cleanupTask.IsFaulted ? new CleanupResult { Message = "清理任务失败：" + cleanupTask.Exception.GetBaseException().Message }
+                : cleanupTask.IsCanceled ? new CleanupResult { Cancelled = true, Message = "清理任务已取消" } : cleanupTask.Result;
             cleanupTask = null; activeCleanupEnemy = null; cleanupEpoch++; workCancellation.Dispose(); workCancellation = null;
             int priorWeapons = battle.Progress.Inventory.Count;
             battle.Complete(enemy, result.FreedBytes, result.DeletedFiles, result.Message, random.NextDouble(), result.Cancelled);
@@ -1460,6 +1465,7 @@ namespace NetBunny
             else if (result.DeletedFiles == 0 && enemy.Batch != null) RecordRecheck(enemy.Batch.Candidates);
             candidateBytes = Math.Max(0, candidateBytes - result.FreedBytes);
             cleanupNotice = "已清理 " + result.DeletedFiles + " 个文件 / " + AdventureBattle.FormatBytes(result.FreedBytes) + (recheckFiles > 0 ? "；待重扫 " + recheckFiles + " 个 / " + AdventureBattle.FormatBytes(recheckBytes) : "");
+            RecordDesktopMaintenance(new DesktopMaintenanceEntry { Kind = "Files", Summary = cleanupNotice + "；" + result.Message + (result.Cancelled ? "（已取消，以上为实际完成量）" : ""), FreedBytes = result.FreedBytes, DeletedFiles = result.DeletedFiles });
             liveTemp.Deleted(enemy.Batch, result); candidateBytes = liveTemp.EligibleBytes;
             RefillEnemies();
             lastLandmarkPaint = -100; lastDisk = -100;
@@ -1670,7 +1676,7 @@ namespace NetBunny
                     {
                         AdventureEnemy captured = enemy; window = NewWindow(enemy.IsDiskBoss ? "C 盘空间危机 Boss" : enemy.IsBoss ? "邪恶分身 Boss" : AdventureMonster.Find(enemy.MonsterKind).Name + " · 临时文件怪物"); enemyWindows.Add(enemy.Id, window);
                         Point pressedAt = Point.Empty; bool dragged = false;
-                        if (artDemoRuntime || IsolatedDesktop) window.Text = enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
+                        if (artDemoRuntime || IsolatedDesktop) window.Text = enemy.ProcessTarget != null ? DesktopEnemyName(enemy) : enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : (enemy.Elite ? "精英 · " : "") + ArtDemoMonsterLabel(enemy.MonsterKind);
                         window.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) { pressedAt = Cursor.Position; dragged = false; } };
                         window.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left && !dragged && !IsDemo && !captured.VisualDefeated) { if (battle.Progress.Dead) OpenEquipment(); else if (IsolatedDesktop) DesktopChooseEnemy(captured.Id, true); else { battle.Authorize(captured); if (cultivation.Mortal) TryMortalStrike(captured); } RenderWorld(true); } };
                         window.ContextRequested = OpenEquipment;
@@ -1680,7 +1686,7 @@ namespace NetBunny
                     window.Location = new Point((int)enemy.X, (int)enemy.Y);
                     if (!enemies && !newWindow && !enemy.VisualDirty && !enemy.VisualDefeated && (enemyIndex - paintStart + enemyCount) % enemyCount >= 4) continue;
                     string label = enemy.Failed ? "暂不能清理 · 重新扫描" : enemy.IsDiskBoss ? (enemy.IsDiskWarning ? "C 盘不足 · 无可清理文件" : "磁盘 Boss · " + AdventureBattle.FormatBytes(enemy.Bytes)) : enemy.IsBoss ? "邪恶分身 · " + AdventureWeapon.Find(enemy.BossWeapon).Name : enemy.Cleaning ? (enemy == activeCleanupEnemy ? "正在清理…" : "等待清理…") : enemy.Authorized ? "#" + enemy.QueueNumber + " · " + AdventureBattle.FormatBytes(enemy.Bytes) : AdventureMonster.Find(enemy.MonsterKind).Name + (enemy.Batch != null && enemy.Batch.Candidates.Any(f=>!f.EligibleForCleanup) ? " · 近期文件" : "");
-                    if (artDemoRuntime || IsolatedDesktop) label = enemy.VisualDefeated ? "" : enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : enemy.Elite ? "精英 · " + ArtDemoMonsterLabel(enemy.MonsterKind) : ArtDemoMonsterLabel(enemy.MonsterKind);
+                    if (artDemoRuntime || IsolatedDesktop) label = enemy.VisualDefeated ? "" : enemy.ProcessTarget != null ? DesktopEnemyName(enemy) : enemy.NoFieldClear ? enemy.IsBoss ? "蜃楼主镜" : "蜃楼镜妖" : enemy.Elite ? "精英 · " + ArtDemoMonsterLabel(enemy.MonsterKind) : ArtDemoMonsterLabel(enemy.MonsterKind);
                     double deathProgress = enemy.VisualDefeated ? Math.Min(1, enemy.DeathElapsed / AdventureEnemy.ShatterSeconds) : 0;
                     // P0：完全静止且无特效的妖物整体跳绘（姿态冻结）；活动妖物按帧量化签名跳绘。
                     bool idleStatic = !enemy.VisualDefeated && enemy.AttackFlash <= .05 && enemy.HitFlash <= 0 && enemy.MoveSpeed <= 1;
@@ -1693,7 +1699,7 @@ namespace NetBunny
                     }
                     if (!idleStatic && enemySig == null) enemySig = EnemySignature(enemy, label, deathProgress);
                     enemy.PaintedSignature = enemySig;
-                    PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", HeroStage = ArtDemoHeroStage, WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = (artDemoRuntime || IsolatedDesktop) && enemy.NoFieldClear ? enemy.IsBoss ? "mirror-boss" : ArtDemoHeroStage == "mortal" ? "mirror-shard" : "mirror-wraith" : (artDemoRuntime || IsolatedDesktop) && enemy.Elite ? enemy.MonsterKind == "mushroom" ? "elite-mushroom" : "elite" : enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
+                    PaintWindow(window, new AdventureRenderState { Kind = !String.IsNullOrEmpty(enemy.EvilTheme) ? "EvilBoss" : enemy.IsBoss ? "Boss" : "Skeleton", HeroStage = ArtDemoHeroStage, WeaponId = enemy.BossWeapon ?? "spear", MonsterKind = (artDemoRuntime || IsolatedDesktop) && enemy.NoFieldClear && enemy.ProcessTarget == null ? enemy.IsBoss ? "mirror-boss" : ArtDemoHeroStage == "mortal" ? "mirror-shard" : "mirror-wraith" : (artDemoRuntime || IsolatedDesktop) && enemy.Elite ? enemy.MonsterKind == "mushroom" ? "elite-mushroom" : "elite" : enemy.MonsterKind, Size = EnemySize(enemy), ThemeCode = enemy.EvilTheme ?? (demonstrationOnly ? demoTheme : region.CurrentCode), Time = enemy.AnimationTime, PhaseTime = enemy.DeathElapsed, DeathProgress = deathProgress, Phase = enemy.VisualDefeated ? "shatter" : enemy.AttackFlash > .05 ? "attack" : enemy.MoveSpeed > 1 ? "run" : "idle", Label = enemy.VisualDefeated ? "" : label, QueueNumber = enemy.QueueNumber, FacingRight = enemy.FacingRight, MoveSpeed = enemy.MoveSpeed / displayScale, HealthRatio = (double)enemy.Health / Math.Max(1, enemy.MaxHealth), HealthCurrent = enemy.Health, HealthMaximum = enemy.MaxHealth, AttackProgress = !String.IsNullOrEmpty(enemy.EvilTheme) ? enemy.AttackFlash : enemy.HitFlash * 4, HitFlash = enemy.HitFlash * 4, Opacity = 1 });
                     enemy.VisualDirty = false;
                 }
                 enemyPaintCursor = enemyCount == 0 ? 0 : (paintStart + 4) % enemyCount;
@@ -1759,6 +1765,8 @@ namespace NetBunny
         {
             if (disposed) return;
             timer.Stop(); CancelPending(); cancellation.Cancel();
+            if (desktopProcessTask != null && desktopProcessTask.IsCompleted) DrainDesktopProcessAction();
+            DisposeDesktopProcessAction();
             // Final best-effort flush of any consent revocation whose file update
             // failed during the session, so a restart cannot resurrect it.
             if (consentRetryCleanup || consentRetryMemory || consentRetryAutoMaint) TryFlushConsentRevocation();

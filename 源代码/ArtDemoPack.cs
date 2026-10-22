@@ -14,9 +14,10 @@ namespace NetBunny
     internal sealed class ArtDemoPack : IDisposable
     {
         internal const string EnvironmentVariable = "DESK_TO_GOD_ART_DEMO_ASSETS";
-        internal const string MappingDescription = "skeleton=monster-guardian; slime=monster-slime; imp=monster-imp; bat=monster-bat; mushroom=monster-mushroom; boss/elite=elite-guardian; elite-mushroom, mirror-shard, mirror-wraith and mirror-boss use dedicated illustrations. Weapon IDs retain gameplay and map to three stage illustrations.";
+        internal const string MappingDescription = "skeleton=monster-guardian; slime=monster-slime; imp=monster-imp; bat=monster-bat; mushroom=monster-mushroom; boss/elite=elite-guardian; elite-mushroom, mirror-shard, mirror-wraith and mirror-boss use dedicated illustrations. Weapons: spear=weapon-mortal; greatsword=weapon-zhuji; laser=weapon-qishi; wave=weapon-wave; boomerang=weapon-moonring; blackhole=weapon-array; automaton=weapon-talisman. Hero identity follows cultivation stage independently.";
         internal static readonly string[] RequiredAssets = {
             "hero-mortal", "hero-qishi", "hero-zhuji", "weapon-mortal", "weapon-qishi", "weapon-zhuji",
+            "weapon-wave", "weapon-moonring", "weapon-array", "weapon-talisman",
             "monster-guardian", "monster-slime", "monster-imp", "monster-bat", "monster-mushroom", "elite-guardian", "elite-mushroom", "mirror-shard", "mirror-wraith", "mirror-boss", "landmark-dongtian",
             "item-spirit-stone", "item-pill", "item-material", "item-scroll", "item-marrow"
         };
@@ -70,8 +71,22 @@ namespace NetBunny
                 case "qishi": return "qishi";
                 case "zhuji": return "zhuji";
                 case "spear": return "mortal";
-                case "greatsword": case "wave": case "boomerang": return "qishi";
+                case "laser": case "wave": case "boomerang": case "moonring": return "qishi";
                 default: return "zhuji";
+            }
+        }
+        internal static string WeaponAsset(string id)
+        {
+            switch ((id ?? "spear").Trim().ToLowerInvariant())
+            {
+                case "": case "spear": case "mortal": return "weapon-mortal";
+                case "greatsword": case "zhuji": return "weapon-zhuji";
+                case "laser": case "qishi": return "weapon-qishi";
+                case "wave": return "weapon-wave";
+                case "boomerang": case "moonring": return "weapon-moonring";
+                case "blackhole": case "array": return "weapon-array";
+                case "automaton": case "talisman": return "weapon-talisman";
+                default: throw new InvalidDataException("美术 Demo 尚未映射武器 ID：" + id);
             }
         }
         internal static string MonsterAsset(string kind, bool boss)
@@ -137,8 +152,18 @@ namespace NetBunny
             return new RectangleF(box.X + (box.Width - width) / 2, box.Bottom - height, width, height);
         }
         internal static RectangleF HeldWeaponBounds(Size source, PointF hand)
+        { return HeldWeaponBounds(source, hand, "spear"); }
+        internal static RectangleF HeldWeaponBounds(Size source, PointF hand, string weaponId)
         {
-            float scale = Math.Min(47f / source.Width, 104f / source.Height);
+            float maxWidth = 47, maxHeight = 104;
+            switch (WeaponAsset(weaponId))
+            {
+                case "weapon-wave": maxWidth = 54; maxHeight = 86; break;
+                case "weapon-moonring": maxWidth = 58; maxHeight = 64; break;
+                case "weapon-array": maxWidth = 58; maxHeight = 58; break;
+                case "weapon-talisman": maxWidth = 43; maxHeight = 70; break;
+            }
+            float scale = Math.Min(maxWidth / source.Width, maxHeight / source.Height);
             float width = source.Width * scale, height = source.Height * scale;
             // The upright illustration's grip is on the lower hilt, not its centre.
             // This same point is both the placement anchor and the rotation pivot.
@@ -177,7 +202,7 @@ namespace NetBunny
             bool attack=phase=="attack"||s.AttackProgress>.03,rest=phase=="grave"||phase=="dead"||phase=="tombstone",revive=phase=="revive"||phase=="reviving";
             Shadow(g,91,rest?30:48);
             if(stage!="mortal"||rest||revive||s.GlowProgress>0) Ring(g,s.Time,stage=="zhuji"?Color.FromArgb(183,211,255):Color.FromArgb(126,216,196),rest?.55f:.75f);
-            heroRigs[stage].Draw(g,s,images["weapon-"+stage]);
+            heroRigs[stage].Draw(g,s,images[WeaponAsset(s.WeaponId)]);
             if(attack)
             {
                 // The held weapon is already attached to the forearm. A melee
@@ -226,7 +251,7 @@ namespace NetBunny
             else DrawItemIcon(g, s.WeaponId, box);
         }
         internal bool DrawWeaponIcon(Graphics g, string id, RectangleF box)
-        { Draw(g, "weapon-" + WeaponStage(id), box, 1, 0); return true; }
+        { Draw(g, WeaponAsset(id), box, 1, 0); return true; }
         internal static string ItemAsset(string id)
         {
             string key = (id ?? "").ToLowerInvariant();
@@ -250,7 +275,7 @@ namespace NetBunny
                     g.DrawArc(pen, -radius - i * 6, -radius - i * 6, (radius + i * 6) * 2, (radius + i * 6) * 2, (float)(-70 + progress * 160 + i * 19), 118);
             }
             g.RotateTransform((float)(weaponId == "boomerang" ? progress * 720 : -24 + progress * 45));
-            Draw(g, "weapon-" + stage, new RectangleF(-22, -51, 44, 94), fade, 0); g.Restore(save); return true;
+            Draw(g, WeaponAsset(weaponId), new RectangleF(-22, -51, 44, 94), fade, 0); g.Restore(save); return true;
         }
         internal void Validate(Action<bool, string> check)
         {
@@ -260,6 +285,15 @@ namespace NetBunny
                 check(image.PixelFormat == PixelFormat.Format32bppPArgb, key + " has premultiplied alpha cache");
             }
             check(itemKeys.Count > 0, "new item illustrations available");
+            HashSet<string> weapons = new HashSet<string>();
+            foreach (string id in RasterActorRenderer.WeaponIds)
+            {
+                string key = WeaponAsset(id); weapons.Add(key);
+                check(images.ContainsKey(key), "mapped gameplay weapon " + id + " uses " + key);
+                RectangleF held = HeldWeaponBounds(images[key].Size, new PointF(143, 134), id);
+                check(held.Width <= 58.001f && held.Height <= 104.001f, id + " has bounded hand-held composition");
+            }
+            check(weapons.Count == RasterActorRenderer.WeaponIds.Length, "seven gameplay weapons have seven distinct illustrations");
             foreach (ArtDemoHeroRig rig in heroRigs.Values) rig.Validate(check);
             foreach (string id in RasterActorRenderer.MonsterKinds) check(images.ContainsKey(MonsterAsset(id, id == "boss")), "mapped gameplay monster " + id);
             HashSet<string> common = new HashSet<string>(); foreach (string id in new[] { "skeleton", "slime", "imp", "bat", "mushroom" }) common.Add(MonsterAsset(id, false));

@@ -1,0 +1,477 @@
+{
+  "version": 1,
+  "created_utc": "2026-10-22T11:47:01.894986+00:00",
+  "policy": {
+    "source_files_immutable": true,
+    "background_removal": false,
+    "recolour": false,
+    "redraw": false,
+    "alpha_gt_24_bounds": "measurement_only",
+    "alpha_edges": "original RGBA retained; resized only when declared",
+    "preview": "220x240 transparent canvas; equal aspect ratio; bottom baseline 228; inspection only",
+    "rig_status": "full illustration cuts do not constitute skeletal parts"
+  },
+  "asset_count": 4,
+  "assets": [
+    {
+      "id": "weapon-wave",
+      "kind": "weapon",
+      "file": "weapon-wave.png",
+      "source": "weapon-wave-original-v1.png",
+      "source_sha256": "94688b1d9415b7bfd2db91d344e3f6da40f1c37351e9a6a2de89efaa441f3eca",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "source_has_alpha": true,
+      "source_rectangle_xywh": [
+        0,
+        0,
+        1024,
+        1536
+      ],
+      "source_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          27,
+          25,
+          1000,
+          1496
+        ],
+        "bounds_alpha_gt_24": [
+          140,
+          30,
+          799,
+          1465
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 1365568,
+        "opaque_pixels": 0,
+        "partial_alpha_pixels": 207296,
+        "transparent_fraction": 0.868205,
+        "partial_alpha_fraction": 0.131795,
+        "nonzero_border_pixels": 0,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "source_keep_rectangles_xywh": null,
+      "retained_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          27,
+          25,
+          1000,
+          1496
+        ],
+        "bounds_alpha_gt_24": [
+          140,
+          30,
+          799,
+          1465
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 1365568,
+        "opaque_pixels": 0,
+        "partial_alpha_pixels": 207296,
+        "transparent_fraction": 0.868205,
+        "partial_alpha_fraction": 0.131795,
+        "nonzero_border_pixels": 0,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "transparent_margin_trim": {
+        "enabled": true,
+        "criterion": "alpha_gt_0",
+        "box_ltrb": [
+          27,
+          25,
+          1000,
+          1496
+        ]
+      },
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "output_size": [
+        339,
+        512
+      ],
+      "output_mode": "RGBA",
+      "output_alpha": {
+        "bounds_alpha_gt_0": [
+          27,
+          0,
+          271,
+          512
+        ],
+        "bounds_alpha_gt_24": [
+          40,
+          1,
+          269,
+          501
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 148332,
+        "opaque_pixels": 915,
+        "partial_alpha_pixels": 24321,
+        "transparent_fraction": 0.854605,
+        "partial_alpha_fraction": 0.140124,
+        "nonzero_border_pixels": 9,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "copy_source_bytes": false,
+      "preview_size": [
+        220,
+        240
+      ],
+      "rig_status": "complete_illustration_not_skeletal_parts",
+      "warnings": [],
+      "note": "Independent Codex built-in imagegen v1; fully transparent margin crop and proportional resize only; preserve alpha; no recolour, masks or background removal.",
+      "output_sha256": "cc46899bd4f11e0741edf2a77cca315d6b5c890e65fa65944df36ae8bbcf91ef",
+      "preview_sha256": "572e8bd49892b45dfeb130feac8afad60d150f1804a8245414ae2e56ec6e1177"
+    },
+    {
+      "id": "weapon-moonring",
+      "kind": "weapon",
+      "file": "weapon-moonring.png",
+      "source": "weapon-moonring-original-v1.png",
+      "source_sha256": "28888c2732accfc3685c3e8d0bfffcede5858a6c77f9b5a0f6baef0ba15d1356",
+      "source_size": [
+        1304,
+        1206
+      ],
+      "source_mode": "RGBA",
+      "source_has_alpha": true,
+      "source_rectangle_xywh": [
+        0,
+        0,
+        1304,
+        1206
+      ],
+      "source_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          0,
+          0,
+          1288,
+          1206
+        ],
+        "bounds_alpha_gt_24": [
+          78,
+          31,
+          1226,
+          1171
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 1045879,
+        "opaque_pixels": 634,
+        "partial_alpha_pixels": 526111,
+        "transparent_fraction": 0.665053,
+        "partial_alpha_fraction": 0.334543,
+        "nonzero_border_pixels": 147,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "source_keep_rectangles_xywh": null,
+      "retained_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          0,
+          0,
+          1288,
+          1206
+        ],
+        "bounds_alpha_gt_24": [
+          78,
+          31,
+          1226,
+          1171
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 1045879,
+        "opaque_pixels": 634,
+        "partial_alpha_pixels": 526111,
+        "transparent_fraction": 0.665053,
+        "partial_alpha_fraction": 0.334543,
+        "nonzero_border_pixels": 147,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "transparent_margin_trim": {
+        "enabled": true,
+        "criterion": "alpha_gt_0",
+        "box_ltrb": [
+          0,
+          0,
+          1288,
+          1206
+        ]
+      },
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "output_size": [
+        512,
+        479
+      ],
+      "output_mode": "RGBA",
+      "output_alpha": {
+        "bounds_alpha_gt_0": [
+          0,
+          0,
+          497,
+          469
+        ],
+        "bounds_alpha_gt_24": [
+          31,
+          12,
+          488,
+          465
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 163004,
+        "opaque_pixels": 1752,
+        "partial_alpha_pixels": 80492,
+        "transparent_fraction": 0.66465,
+        "partial_alpha_fraction": 0.328207,
+        "nonzero_border_pixels": 18,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "copy_source_bytes": false,
+      "preview_size": [
+        220,
+        240
+      ],
+      "rig_status": "complete_illustration_not_skeletal_parts",
+      "warnings": [],
+      "note": "Independent Codex built-in imagegen v1; fully transparent margin crop and proportional resize only; preserve alpha; no recolour, masks or background removal.",
+      "output_sha256": "1a0ca8deb85fcf4b9deb7cc0416ff9ef448b216bc70d81c893788da1a2972585",
+      "preview_sha256": "232e59937c32441a938ecacbb45be442c1f0c5e863302893f935008a06496be3"
+    },
+    {
+      "id": "weapon-array",
+      "kind": "weapon",
+      "file": "weapon-array.png",
+      "source": "weapon-array-original-v1.png",
+      "source_sha256": "63c5160365ceaba18d686a8306642728026ef25170ccd8acf40df78fe5b8cca5",
+      "source_size": [
+        1278,
+        1230
+      ],
+      "source_mode": "RGBA",
+      "source_has_alpha": true,
+      "source_rectangle_xywh": [
+        0,
+        0,
+        1278,
+        1230
+      ],
+      "source_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          0,
+          9,
+          1260,
+          1230
+        ],
+        "bounds_alpha_gt_24": [
+          25,
+          12,
+          1252,
+          1170
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 768676,
+        "opaque_pixels": 433,
+        "partial_alpha_pixels": 802831,
+        "transparent_fraction": 0.488998,
+        "partial_alpha_fraction": 0.510726,
+        "nonzero_border_pixels": 18,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "source_keep_rectangles_xywh": null,
+      "retained_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          0,
+          9,
+          1260,
+          1230
+        ],
+        "bounds_alpha_gt_24": [
+          25,
+          12,
+          1252,
+          1170
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 768676,
+        "opaque_pixels": 433,
+        "partial_alpha_pixels": 802831,
+        "transparent_fraction": 0.488998,
+        "partial_alpha_fraction": 0.510726,
+        "nonzero_border_pixels": 18,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "transparent_margin_trim": {
+        "enabled": true,
+        "criterion": "alpha_gt_0",
+        "box_ltrb": [
+          0,
+          9,
+          1260,
+          1230
+        ]
+      },
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "output_size": [
+        512,
+        496
+      ],
+      "output_mode": "RGBA",
+      "output_alpha": {
+        "bounds_alpha_gt_0": [
+          8,
+          0,
+          512,
+          474
+        ],
+        "bounds_alpha_gt_24": [
+          10,
+          1,
+          509,
+          472
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 120934,
+        "opaque_pixels": 1030,
+        "partial_alpha_pixels": 131988,
+        "transparent_fraction": 0.476208,
+        "partial_alpha_fraction": 0.519736,
+        "nonzero_border_pixels": 3,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "copy_source_bytes": false,
+      "preview_size": [
+        220,
+        240
+      ],
+      "rig_status": "complete_illustration_not_skeletal_parts",
+      "warnings": [],
+      "note": "Independent Codex built-in imagegen v1; fully transparent margin crop and proportional resize only; preserve alpha; no recolour, masks or background removal.",
+      "output_sha256": "83709a94cdff6d3aaca5abc615aad795a70506af12fb736e81c372b118b8f1ae",
+      "preview_sha256": "88110a4c6fdc9b709310c16cb603c193eaf8ca297b5ded046852e167b376358e"
+    },
+    {
+      "id": "weapon-talisman",
+      "kind": "weapon",
+      "file": "weapon-talisman.png",
+      "source": "weapon-talisman-original-v1.png",
+      "source_sha256": "079dadb31ad1fffaa2eafb1635a57fab89ab3c1c2af3e21c5d9fe496e7b6a875",
+      "source_size": [
+        1024,
+        1536
+      ],
+      "source_mode": "RGBA",
+      "source_has_alpha": true,
+      "source_rectangle_xywh": [
+        0,
+        0,
+        1024,
+        1536
+      ],
+      "source_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          39,
+          37,
+          1010,
+          1512
+        ],
+        "bounds_alpha_gt_24": [
+          330,
+          199,
+          723,
+          1275
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 1267880,
+        "opaque_pixels": 0,
+        "partial_alpha_pixels": 304984,
+        "transparent_fraction": 0.806096,
+        "partial_alpha_fraction": 0.193904,
+        "nonzero_border_pixels": 0,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "source_keep_rectangles_xywh": null,
+      "retained_rectangle_alpha": {
+        "bounds_alpha_gt_0": [
+          39,
+          37,
+          1010,
+          1512
+        ],
+        "bounds_alpha_gt_24": [
+          330,
+          199,
+          723,
+          1275
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 1267880,
+        "opaque_pixels": 0,
+        "partial_alpha_pixels": 304984,
+        "transparent_fraction": 0.806096,
+        "partial_alpha_fraction": 0.193904,
+        "nonzero_border_pixels": 0,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "transparent_margin_trim": {
+        "enabled": true,
+        "criterion": "alpha_gt_0",
+        "box_ltrb": [
+          39,
+          37,
+          1010,
+          1512
+        ]
+      },
+      "operations": [
+        "trim_fully_transparent_margin",
+        "proportional_lanczos_resize"
+      ],
+      "output_size": [
+        337,
+        512
+      ],
+      "output_mode": "RGBA",
+      "output_alpha": {
+        "bounds_alpha_gt_0": [
+          20,
+          13,
+          329,
+          481
+        ],
+        "bounds_alpha_gt_24": [
+          101,
+          56,
+          238,
+          430
+        ],
+        "bounds_alpha_gt_24_purpose": "measurement_only",
+        "transparent_pixels": 135822,
+        "opaque_pixels": 1133,
+        "partial_alpha_pixels": 35589,
+        "transparent_fraction": 0.787173,
+        "partial_alpha_fraction": 0.20626,
+        "nonzero_border_pixels": 0,
+        "border_pixels_alpha_gt_24": 0
+      },
+      "copy_source_bytes": false,
+      "preview_size": [
+        220,
+        240
+      ],
+      "rig_status": "complete_illustration_not_skeletal_parts",
+      "warnings": [],
+      "note": "Independent Codex built-in imagegen v1; fully transparent margin crop and proportional resize only; preserve alpha; no recolour, masks or background removal.",
+      "output_sha256": "fbcd3d58cf04e886bc7b00a189141a5970fec44782cba129ed0426f97bf8c399",
+      "preview_sha256": "73937814ce4e0721f47d121e645461a620611a805b91e98cda25990b206b720d"
+    }
+  ]
+}
