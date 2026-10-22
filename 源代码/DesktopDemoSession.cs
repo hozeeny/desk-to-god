@@ -137,6 +137,7 @@ namespace NetBunny
                 statusTimer.Tick += delegate
                 {
                     if (exiting) return;
+                    Game.RefreshDesktopDisplayLayout();
                     string text = "桌面修仙传 · " + (Game.Cultivation.Mortal ? "凡人 " + Game.Cultivation.MortalKills + "/10" : Game.Cultivation.RealmName + " " + Game.Cultivation.Layer + "层");
                     tray.Text = text.Length > 63 ? text.Substring(0, 63) : text;
                 };

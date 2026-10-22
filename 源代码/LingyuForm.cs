@@ -84,6 +84,11 @@ namespace NetBunny
             DesktopFeatureStyle.BindResponsiveColumn(content);
         }
 
+        internal void ShowCollection()
+        {
+            ScrollableControl content = collection.Parent as ScrollableControl;
+            if (content != null) { content.PerformLayout(); content.ScrollControlIntoView(collection); }
+        }
         private Label Line(string text, int height) { return new Label { Text = text, Width = 640, Height = height, AutoSize = true, MaximumSize = new Size(640, 0), MinimumSize = new Size(0, height), Margin = new Padding(0, 4, 0, 4) }; }
         private FlowLayoutPanel Row() { return new FlowLayoutPanel { Width = 650, Height = 40, AutoSize = true, MinimumSize = new Size(0, 40), WrapContents = true, Margin = new Padding(0, 3, 0, 3) }; }
         private void Configure(Button button, string text, int width, Action action) { button.Text = text; button.Width = width; button.Height = 34; button.FlatStyle = FlatStyle.Flat; button.BackColor = Color.FromArgb(115, 78, 191); button.ForeColor = Color.White; button.FlatAppearance.BorderSize = 0; button.Cursor = Cursors.Hand; button.Click += delegate { if (!updating) action(); }; }

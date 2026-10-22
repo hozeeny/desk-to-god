@@ -1,0 +1,22 @@
+{
+  "failures": [
+    {
+      "report_sha256": "b86bbafea49df687515d40569741473deb9a63655bef0705fb924f045cecb569",
+      "elapsed_seconds": 7.102307,
+      "stage": "AfterBrew",
+      "reason": "Background material card retirement activated the source handbook and occluded the cave. Native root gate rejected the image; actual state/input success did not convert this failed run to Pass."
+    },
+    {
+      "report_sha256": "699a167d13f3d78c1ed800e8a9e9f6b11f90a0249f993362182b386b4f52a5e0",
+      "elapsed_seconds": 7.3585721,
+      "stage": "AfterBrew",
+      "reason": "Background material card retirement activated the source handbook and occluded the cave. Native root gate rejected the image; actual state/input success did not convert this failed run to Pass."
+    }
+  ],
+  "diagnosis": "The native Form.Activated stack records UpdateMaterials -> Control.Dispose -> ControlCollection.Remove -> ContainerControl.AfterControlRemoved -> FocusActiveControlInternal -> native SetFocus. No fixture Hide/Activate or relaxed pixel checks were used to pass.",
+  "production_fix": "Clear only a retiring subtree remembered as ActiveControl while the handbook lacks actual focus, then dispose normally. Active foreground keyboard behavior is retained.",
+  "red_hidden_checks": 112,
+  "red_hidden_failures": 2,
+  "old_108_still_passed": true,
+  "all_raw_images_local_only": true
+}

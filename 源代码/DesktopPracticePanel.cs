@@ -23,6 +23,11 @@ namespace NetBunny
         readonly FlowLayoutPanel combatActions = new FlowLayoutPanel();
         readonly ComboBox weapons = new ComboBox(), techniques = new ComboBox();
         readonly FlowLayoutPanel targets = new FlowLayoutPanel(), materials = new FlowLayoutPanel();
+        readonly FlowLayoutPanel screenChoices = new FlowLayoutPanel();
+        readonly Dictionary<string, MaterialCard> materialCards = new Dictionary<string, MaterialCard>();
+        readonly Dictionary<string, Button> screenButtons = new Dictionary<string, Button>();
+        Label emptyMaterials;
+        DateTime nextScreenRefresh;
         readonly TextBox activity = new TextBox();
         readonly TabControl tabs = new TabControl();
         readonly System.Windows.Forms.Timer refresh = new System.Windows.Forms.Timer();
@@ -30,7 +35,7 @@ namespace NetBunny
         readonly Dictionary<string, Button> targetButtons = new Dictionary<string, Button>();
         readonly List<Image> ownedImages = new List<Image>();
         readonly DesktopProgressMeter meter = new DesktopProgressMeter();
-        string inventoryKey = "", materialsKey = "";
+        string inventoryKey = "";
         bool welcomeWithoutActivation;
         static readonly Color Ink = Color.FromArgb(38, 65, 58), Paper = Color.FromArgb(246, 242, 230), Jade = Color.FromArgb(41, 91, 75), Gold = Color.FromArgb(133, 91, 41);
 
@@ -108,8 +113,8 @@ namespace NetBunny
             Section(bag, "材料与洞天储物");
             materials.AutoSize = true; materials.FlowDirection = FlowDirection.TopDown; materials.WrapContents = false; bag.Controls.Add(materials);
             Section(bag, "桌面位置");
-            foreach (Screen screen in Screen.AllScreens)
-            { Screen selected = screen; Add(bag, "移至屏幕 " + (Array.IndexOf(Screen.AllScreens, screen) + 1), delegate { session.Game.ChangeScreen(selected); }); }
+            screenChoices.AutoSize = true; screenChoices.FlowDirection = FlowDirection.TopDown; screenChoices.WrapContents = false; screenChoices.Margin = Padding.Empty;
+            bag.Controls.Add(screenChoices);
             Add(bag, "隐藏／恢复桌面角色", delegate { session.Game.DesktopSetActorsVisible(!session.Game.DesktopActorsVisible); });
             bag.Controls.Add(TextLine("拖动修士可以移动；右键修士可再次打开手札。\n独立进度每20秒保存，正常退出时再次保存。"));
 
@@ -177,7 +182,7 @@ namespace NetBunny
             }
             weaponProgress.Text = DesktopWeaponCatalog.ProgressText(p);
             UpdateWeaponDescription();
-            UpdateMaterials(); ResizeColumns();
+            UpdateMaterials(); UpdateScreens(); ResizeColumns();
         }
 
         void UpdateTargets(DesktopEnemyChoice[] enemies)
@@ -217,24 +222,133 @@ namespace NetBunny
         { Choice choice = techniques.SelectedItem as Choice; if (choice != null) techniqueInfo.Text = CultivationTechnique.Find(choice.Id).Description; }
         void UpdateMaterials()
         {
-            var game = session.Game;
-            string key = String.Join("|", game.Lingyu.Materials.OrderBy(p => p.Key).Select(p => p.Key + ":" + p.Value)) + "/" + String.Join("|", game.Dongtian.Bag.OrderBy(p => p.Key).Select(p => p.Key + ":" + p.Value));
-            if (materialsKey == key && materials.Controls.Count > 0) return;
-            materialsKey = key;
-            foreach (Control control in materials.Controls.Cast<Control>().ToArray()) control.Dispose(); materials.Controls.Clear();
-            foreach (var pair in game.Lingyu.Materials.Where(p => p.Value > 0)) MaterialRow(LingyuCatalog.MaterialName(pair.Key), pair.Value, pair.Key.Contains("lingsui") ? "item-marrow.png" : "item-material.png");
-            foreach (var pair in game.Dongtian.Bag.Where(p => p.Value > 0)) MaterialRow(DongtianRecipes.MaterialName(pair.Key), pair.Value, pair.Key.Contains("dan") ? "item-pill.png" : "item-material.png");
-            if (materials.Controls.Count == 0) materials.Controls.Add(TextLine("行囊暂空。灵域探索与洞天收获的材料会出现在这里；普通战斗先积累历练与修为。"));
-        }
-        void MaterialRow(string name, int count, string image)
-        {
-            var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 5) };
-            Image thumbnail = Thumbnail(image);
-            if (thumbnail != null)
+            DesktopMaterialInfo[] rows = DesktopMaterialCatalog.Read(session.Game);
+            var keys = new HashSet<string>(rows.Select(row => row.Key));
+            bool changed = materialCards.Keys.Any(key => !keys.Contains(key)) || rows.Any(row => !materialCards.ContainsKey(row.Key));
+            Point scroll = columns[2].AutoScrollPosition;
+            materials.SuspendLayout();
+            try
             {
-                row.Controls.Add(new PictureBox { Image = thumbnail, SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(30, 30), Margin = new Padding(0, 0, 10, 0) });
+                foreach (string key in materialCards.Keys.Where(key => !keys.Contains(key)).ToArray())
+                { DisposeRetiredControl(materialCards[key]); materialCards.Remove(key); }
+                if (rows.Length == 0)
+                {
+                    if (emptyMaterials == null) emptyMaterials = TextLine("行囊暂空。灵域收藏与洞天仓储在这里分列，获得材料后可查看真实用途。普通战斗先积累历练与修为。");
+                    if (emptyMaterials.Parent != materials) materials.Controls.Add(emptyMaterials);
+                }
+                else
+                {
+                    if (emptyMaterials != null && emptyMaterials.Parent == materials) materials.Controls.Remove(emptyMaterials);
+                    for (int i = 0; i < rows.Length; i++)
+                    {
+                        DesktopMaterialInfo row = rows[i]; MaterialCard card;
+                        if (!materialCards.TryGetValue(row.Key, out card))
+                        { card = new MaterialCard(this, row.Key); materialCards.Add(row.Key, card); materials.Controls.Add(card); }
+                        card.UpdateInfo(row);
+                        if (materials.Controls.GetChildIndex(card) != i) materials.Controls.SetChildIndex(card, i);
+                    }
+                }
             }
-            var label = TextLine(name + " × " + count); label.Margin = new Padding(0, 4, 0, 0); row.Controls.Add(label); materials.Controls.Add(row);
+            finally { materials.ResumeLayout(true); }
+            if (changed) columns[2].AutoScrollPosition = new Point(-scroll.X, -scroll.Y);
+        }
+        void UpdateScreens()
+        {
+            if (DateTime.UtcNow < nextScreenRefresh) return;
+            nextScreenRefresh = DateTime.UtcNow.AddSeconds(1);
+            Screen[] screens = Screen.AllScreens;
+            var ids = new HashSet<string>(screens.Select(screen => screen.DeviceName));
+            foreach (string id in screenButtons.Keys.Where(id => !ids.Contains(id)).ToArray())
+            { DisposeRetiredControl(screenButtons[id]); screenButtons.Remove(id); }
+            for (int i = 0; i < screens.Length; i++)
+            {
+                Screen screen = screens[i]; Button button;
+                if (!screenButtons.TryGetValue(screen.DeviceName, out button))
+                {
+                    string deviceName = screen.DeviceName;
+                    button = Add(screenChoices, "", delegate
+                    {
+                        Screen current = Screen.AllScreens.FirstOrDefault(candidate => candidate.DeviceName == deviceName);
+                        if (current != null) session.Game.ChangeScreen(current);
+                    });
+                    button.Tag = deviceName; screenButtons.Add(deviceName, button);
+                }
+                button.Text = "移至屏幕 " + (i + 1) + (screen.Primary ? " · 主屏" : "");
+                button.BackColor = screen.WorkingArea == session.Game.WorkingArea ? Color.FromArgb(221, 232, 214) : Color.FromArgb(251, 248, 239);
+                if (screenChoices.Controls.GetChildIndex(button) != i) screenChoices.Controls.SetChildIndex(button, i);
+            }
+        }
+        sealed class MaterialCard : FlowLayoutPanel
+        {
+            readonly DesktopPracticePanel owner;
+            readonly FlowLayoutPanel header = new FlowLayoutPanel();
+            readonly PictureBox icon = new PictureBox();
+            readonly Label title = TextLine(""), location = TextLine(""), purpose = TextLine("");
+            Button action;
+            internal MaterialCard(DesktopPracticePanel owner, string key)
+            {
+                this.owner = owner; Name = "material-" + key;
+                AutoSize = true; AutoSizeMode = AutoSizeMode.GrowAndShrink; FlowDirection = FlowDirection.TopDown; WrapContents = false;
+                Padding = new Padding(8); Margin = new Padding(0, 0, 0, 9); BorderStyle = BorderStyle.FixedSingle; BackColor = Color.FromArgb(251, 248, 239);
+                header.AutoSize = true; header.AutoSizeMode = AutoSizeMode.GrowAndShrink; header.WrapContents = false; header.Margin = Padding.Empty;
+                icon.Size = new Size(30, 30); icon.SizeMode = PictureBoxSizeMode.Zoom; icon.Margin = new Padding(0, 0, 8, 4);
+                title.ForeColor = Jade; title.Margin = new Padding(0, 4, 0, 4);
+                location.ForeColor = Gold; location.Margin = new Padding(0, 0, 0, 5);
+                header.Controls.Add(icon); header.Controls.Add(title); Controls.Add(header); Controls.Add(location); Controls.Add(purpose);
+            }
+            internal void UpdateInfo(DesktopMaterialInfo info)
+            {
+                SuspendLayout();
+                try
+                {
+                    string text = info.Name + " × " + info.Count;
+                    if (title.Text != text) title.Text = text;
+                    if (location.Text != info.Location) location.Text = info.Location;
+                    if (purpose.Text != info.Purpose) purpose.Text = info.Purpose;
+                    icon.Image = owner.Thumbnail(info.Image); icon.Visible = icon.Image != null;
+                    if (String.IsNullOrEmpty(info.ActionId)) { if (action != null) { owner.DisposeRetiredControl(action); action = null; } }
+                    else
+                    {
+                        if (action == null)
+                        {
+                            action = new Button { Name = "material-action-" + info.Key };
+                            owner.Configure(action, "", delegate
+                            {
+                                string id = action.Tag as string;
+                                if (id != "breakthrough" && id != "dongtian" && id != "lingyu") return;
+                                owner.session.OpenPanel(id);
+                                if (id == "lingyu")
+                                {
+                                    LingyuForm collection = Application.OpenForms.OfType<LingyuForm>().FirstOrDefault(form => form.Visible);
+                                    if (collection != null) collection.ShowCollection();
+                                }
+                            });
+                            Controls.Add(action);
+                        }
+                        action.Tag = info.ActionId; action.Text = info.ActionText;
+                    }
+                }
+                finally { ResumeLayout(true); }
+            }
+            internal void Fit(int width)
+            {
+                MinimumSize = new Size(width, 0); MaximumSize = new Size(width, 0); Width = width;
+                int inner = Math.Max(1, ClientSize.Width - Padding.Horizontal);
+                header.MinimumSize = new Size(inner, 0); header.MaximumSize = new Size(inner, 0); header.Width = inner;
+                title.MaximumSize = new Size(Math.Max(1, inner - icon.Width - icon.Margin.Horizontal), 0);
+                location.MaximumSize = purpose.MaximumSize = new Size(inner, 0);
+                location.MinimumSize = purpose.MinimumSize = new Size(inner, 0);
+                if (action != null) action.Width = inner;
+            }
+        }
+        void DisposeRetiredControl(Control control)
+        {
+            // WinForms remembers the last active child even after another form
+            // receives focus. Removing that child calls SetFocus on a sibling;
+            // clear only the stale background selection before retiring it.
+            Control active = ActiveControl;
+            if (!ContainsFocus && active != null && (active == control || control.Contains(active))) ActiveControl = null;
+            control.Dispose();
         }
         Image Thumbnail(string image)
         {
@@ -259,7 +373,12 @@ namespace NetBunny
                 int width = Math.Max(240, column.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 16);
                 foreach (Control control in column.Controls) { control.Width = width; if (control is Label) control.MaximumSize = new Size(width, 0); }
                 foreach (Control control in targets.Controls) control.Width = width;
-                foreach (Control control in materials.Controls) { control.Width = width; if (control is Label) control.MaximumSize = new Size(width, 0); }
+                if (column == columns[2])
+                {
+                    foreach (Control control in materials.Controls)
+                    { MaterialCard card = control as MaterialCard; if (card != null) card.Fit(width); else { control.Width = width; if (control is Label) control.MaximumSize = new Size(width, 0); } }
+                    foreach (Control control in screenChoices.Controls) control.Width = width;
+                }
                 strike.Width = Math.Max(115, (width - 8) / 2); block.Width = strike.Width;
                 strike.Margin = new Padding(0, 0, 6, 6);
                 foreach (Control control in targets.Controls) control.Width = Math.Max(220, width - SystemInformation.VerticalScrollBarWidth - 4);
@@ -276,7 +395,7 @@ namespace NetBunny
         { return DesktopWeaponCatalog.Find(id).Name; }
         sealed class Choice { internal string Id, Text; public override string ToString() { return Text; } }
         protected override void Dispose(bool disposing)
-        { if (disposing) { refresh.Stop(); refresh.Dispose(); foreach (Image image in ownedImages) image.Dispose(); ownedImages.Clear(); } base.Dispose(disposing); }
+        { if (disposing) { refresh.Stop(); refresh.Dispose(); if (emptyMaterials != null) emptyMaterials.Dispose(); foreach (Image image in ownedImages) image.Dispose(); ownedImages.Clear(); } base.Dispose(disposing); }
     }
     internal sealed class DesktopProgressMeter : Control
     {

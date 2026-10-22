@@ -1,0 +1,41 @@
+{
+  "scope": "Continued material guidance/display usability development, not whole product acceptance.",
+  "executable_sha256": "17eddb73678f216cac5bbb73c54f38b7ba0617c1a40567f905bf2fc43fa4c995",
+  "archive_sha256": "178d2e832587f7c57c37181ba7df9290fde0ab21044cae9516b9525fee3e34dd",
+  "production_source_files": 60,
+  "all_baseline_results": 44,
+  "nonpassing": 0,
+  "material_checks": 112,
+  "display_checks": 44,
+  "feature_panel_checks": 61,
+  "handbook_layout_checks": 28,
+  "final_exe": {
+    "seconds": 23.220025699999997,
+    "clicks": 5,
+    "assertions": 34,
+    "captures": 10,
+    "reviewed": 10
+  },
+  "material_native": {
+    "seconds": 7.670547099999999,
+    "clicks": 8,
+    "checks": 19,
+    "captures": 16,
+    "reviewed": 16
+  },
+  "isolation": {
+    "runtime_profile_files": 240,
+    "all_profile_hashes_unchanged": true,
+    "legacy_asset_files": 22,
+    "same_as_main": true,
+    "maintenance_off": true,
+    "raw_other_app_captures_uploaded": false
+  },
+  "limitations": [
+    "Dynamic display recovery is verified with injected geometry and an actual dual-1920x1080 100% run, not physical unplug, mixed DPI or lock-screen recovery.",
+    "Native material flow uses an explicit private qishi-full seed and a production-source runner; final EXE feature test is separate. Neither proves natural growth or a newly matured pill.",
+    "Performance samples cover only the short feature run and include capture overhead; natural first harvest, long testing and automation-3 remain paused by the user.",
+    "Next concrete maintenance gaps: cancellation after partial working-set changes must say partial/cancelled; owned-file/memory native UI settlement needs full dedicated fixture coverage. Native process-exit fixture coverage already exists.",
+    "Native Windows controls/titlebars and dense combat effects can receive further visual polish; no universal overlap-free claim."
+  ]
+}

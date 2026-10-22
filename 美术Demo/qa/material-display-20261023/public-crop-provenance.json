@@ -1,0 +1,54 @@
+[
+  {
+    "source_image": "10-training-handbook.png",
+    "source_sha256": "2240f0b3b3fd357d025945b73e9871d6eabda86d8b77a8cc5d7c82d915730beb",
+    "crop_box": [
+      7,
+      0,
+      479,
+      732
+    ],
+    "output": "native-training-handbook.png",
+    "output_sha256": "e89e57b08111f324f2be07a3da262aeb89411c14a63f75b858bcd410c415ae5e",
+    "scope": "Reviewed opaque owned panel only, original native pixels, crop only with no rescale/redraw; other-app background excluded."
+  },
+  {
+    "source_image": "12-inventory-owned-weapon.png",
+    "source_sha256": "f426d1443881400d72bc98ec3e38718c2de323f77ba0a166f90327eb8f4571b2",
+    "crop_box": [
+      7,
+      0,
+      479,
+      732
+    ],
+    "output": "native-inventory.png",
+    "output_sha256": "a7ce30e3d4d06567139417a216e310e57664f70d43608c885d8e273bb4a9d23b",
+    "scope": "Reviewed opaque owned panel only, original native pixels, crop only with no rescale/redraw; other-app background excluded."
+  },
+  {
+    "source_image": "02-native-material-to-breakthrough.png",
+    "source_sha256": "114d2d4aa68cf1dc353b520fc675cfb3748584bbbc616bbf8525de8a1b7f8e32",
+    "crop_box": [
+      7,
+      0,
+      479,
+      732
+    ],
+    "output": "native-material-purpose.png",
+    "output_sha256": "98edd212fa8ea62fb72bcc85bc865dc7fa4ef87a747e41a9036543c0a394e99f",
+    "scope": "Reviewed opaque owned panel only, original native pixels, crop only with no rescale/redraw; other-app background excluded."
+  },
+  {
+    "source_image": "16-real-furnace-running.png",
+    "source_sha256": "abc81280c29795cb437ea006f72e5847838d5c09ab6f08a73256671cb6f2f2d3",
+    "crop_box": [
+      7,
+      0,
+      713,
+      553
+    ],
+    "output": "native-furnace-running.png",
+    "output_sha256": "d201426ba677be858065ef58484083a78478d8a192a6358283b37145348be3f5",
+    "scope": "Reviewed opaque owned panel only, original native pixels, crop only with no rescale/redraw; other-app background excluded."
+  }
+]

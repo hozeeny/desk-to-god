@@ -1,0 +1,306 @@
+{
+  "scope": "Exact delivered EXE, initial private qishi-full x1 feature seed. Real breakthrough/stage/cave/mirror/five saves and same-process production Load; not natural growth or a new-process restore.",
+  "passed": true,
+  "elapsed_seconds": 23.220025699999997,
+  "native_clicks": 5,
+  "assertions": [
+    {
+      "passed": true,
+      "detail": "业务控制器使用独立持久化存档",
+      "elapsedSeconds": 0.024491
+    },
+    {
+      "passed": true,
+      "detail": "清理、内存、无人值守维护授权及服务全部关闭",
+      "elapsedSeconds": 0.0257085
+    },
+    {
+      "passed": true,
+      "detail": "正式入口不存在传统场景演示窗口",
+      "elapsedSeconds": 0.0262085
+    },
+    {
+      "passed": true,
+      "detail": "每个角色/妖物均为小尺寸独立透明窗，无整屏覆盖层",
+      "elapsedSeconds": 0.25254319999999997
+    },
+    {
+      "passed": true,
+      "detail": "局部测试底窗置于角色下方，原生Z序及220×240边界一致",
+      "elapsedSeconds": 0.6182605999999999
+    },
+    {
+      "passed": true,
+      "detail": "透明角色与测试底窗显示时不抢占前台焦点",
+      "elapsedSeconds": 0.6185159
+    },
+    {
+      "passed": true,
+      "detail": "零alpha透明区域的真实Windows命中穿透角色",
+      "elapsedSeconds": 0.8157439
+    },
+    {
+      "passed": true,
+      "detail": "透明区域的真实鼠标点击到达下方窗口",
+      "elapsedSeconds": 0.9288869
+    },
+    {
+      "passed": true,
+      "detail": "角色可见区域正确接受真实鼠标命中",
+      "elapsedSeconds": 0.9622550999999999
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标拖动角色可以改变桌面位置",
+      "elapsedSeconds": 1.2371355
+    },
+    {
+      "passed": true,
+      "detail": "拖动结束不会误触格挡或点击动作",
+      "elapsedSeconds": 1.2375739
+    },
+    {
+      "passed": true,
+      "detail": "可见角色真实点击触发格挡及冷却",
+      "elapsedSeconds": 1.3778838999999998
+    },
+    {
+      "passed": true,
+      "detail": "选择和拖动透明角色不抢占其他应用焦点",
+      "elapsedSeconds": 1.3783872
+    },
+    {
+      "passed": true,
+      "detail": "透明坐标WM_NCHITTEST返回HTTRANSPARENT（含负屏幕坐标编码）",
+      "elapsedSeconds": 1.5705860999999999
+    },
+    {
+      "passed": true,
+      "detail": "角色WM_MOUSEACTIVATE明确返回MA_NOACTIVATE",
+      "elapsedSeconds": 1.5710669
+    },
+    {
+      "passed": true,
+      "detail": "跨屏拖动由角色自身真实鼠标捕获承载",
+      "elapsedSeconds": 1.676202
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标跨屏拖动后角色完整位于目标显示器工作区",
+      "elapsedSeconds": 1.9303754
+    },
+    {
+      "passed": true,
+      "detail": "跨屏拖动不会触发格挡或点击动作",
+      "elapsedSeconds": 1.9307515
+    },
+    {
+      "passed": true,
+      "detail": "跨屏拖动由角色自身真实鼠标捕获承载",
+      "elapsedSeconds": 2.1008999999999998
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标可拖回原显示器且角色完整落在有效工作区",
+      "elapsedSeconds": 2.3501944999999997
+    },
+    {
+      "passed": true,
+      "detail": "跨屏往返不抢前台焦点、不误触格挡",
+      "elapsedSeconds": 2.3505274
+    },
+    {
+      "passed": true,
+      "detail": "纯透明画面负例会被截图像素校验拒绝",
+      "elapsedSeconds": 2.3530241
+    },
+    {
+      "passed": true,
+      "detail": "修行手札可打开功法与成长目标页",
+      "elapsedSeconds": 3.3393685
+    },
+    {
+      "passed": true,
+      "detail": "手札目标与修行正文已由真实桌面字形像素核实",
+      "elapsedSeconds": 3.4269501
+    },
+    {
+      "passed": true,
+      "detail": "手札真实按钮打开百业道碑，未开启识别或代替玩家确认隐私",
+      "elapsedSeconds": 3.9656585
+    },
+    {
+      "passed": true,
+      "detail": "行囊按需展开，已有兵器可查看独立原画与真实属性",
+      "elapsedSeconds": 4.6100217
+    },
+    {
+      "passed": true,
+      "detail": "炼气圆满经正式确认破境为筑基，外观由修仙状态真实切换",
+      "elapsedSeconds": 7.156188299999999
+    },
+    {
+      "passed": true,
+      "detail": "筑基洞天按需面板可打开",
+      "elapsedSeconds": 8.017844499999999
+    },
+    {
+      "passed": true,
+      "detail": "洞天收起后修士仍在桌面持续修行",
+      "elapsedSeconds": 12.7189908
+    },
+    {
+      "passed": true,
+      "detail": "灵域探索真实生成桌面独立可交互镜妖",
+      "elapsedSeconds": 14.4827794
+    },
+    {
+      "passed": true,
+      "detail": "灵域镜妖经正式战斗胜利结算，探索继续",
+      "elapsedSeconds": 23.118965799999998
+    },
+    {
+      "passed": true,
+      "detail": "五份隔离业务存档安全落盘",
+      "elapsedSeconds": 23.2151365
+    },
+    {
+      "passed": true,
+      "detail": "独立存档重新Load后身份、境界、灵域及洞天一致",
+      "elapsedSeconds": 23.2181867
+    },
+    {
+      "passed": true,
+      "detail": "真实用户五档及维护授权文件哈希保持不变",
+      "elapsedSeconds": 23.2196596
+    }
+  ],
+  "captures": 10,
+  "screenshots_reviewed": 10,
+  "performance": [
+    {
+      "elapsedSeconds": 0.1574264,
+      "cpuOneCorePercent": 29.77581904940976,
+      "cpuMachinePercent": 2.48131825411748,
+      "privateMiB": 104.5234375,
+      "workingSetMiB": 123.72265625,
+      "handles": 348,
+      "gdi": 44,
+      "user": 33,
+      "frames": 12
+    },
+    {
+      "elapsedSeconds": 2.9058599999999997,
+      "cpuOneCorePercent": 50.02849623145344,
+      "cpuMachinePercent": 4.16904135262112,
+      "privateMiB": 110.84765625,
+      "workingSetMiB": 143.578125,
+      "handles": 375,
+      "gdi": 66,
+      "user": 79,
+      "frames": 21
+    },
+    {
+      "elapsedSeconds": 4.952102099999999,
+      "cpuOneCorePercent": 57.26961633718709,
+      "cpuMachinePercent": 4.772468028098924,
+      "privateMiB": 115.31640625,
+      "workingSetMiB": 141.83203125,
+      "handles": 409,
+      "gdi": 87,
+      "user": 167,
+      "frames": 62
+    },
+    {
+      "elapsedSeconds": 7.0646363999999995,
+      "cpuOneCorePercent": 32.54385029393369,
+      "cpuMachinePercent": 2.711987524494474,
+      "privateMiB": 114.8359375,
+      "workingSetMiB": 149.90625,
+      "handles": 409,
+      "gdi": 99,
+      "user": 171,
+      "frames": 149
+    },
+    {
+      "elapsedSeconds": 9.1093741,
+      "cpuOneCorePercent": 51.19849846755404,
+      "cpuMachinePercent": 4.266541538962836,
+      "privateMiB": 115.78515625,
+      "workingSetMiB": 141.33203125,
+      "handles": 409,
+      "gdi": 97,
+      "user": 213,
+      "frames": 256
+    },
+    {
+      "elapsedSeconds": 11.1955688,
+      "cpuOneCorePercent": 23.21811094621226,
+      "cpuMachinePercent": 1.9348425788510217,
+      "privateMiB": 116.16015625,
+      "workingSetMiB": 141.671875,
+      "handles": 409,
+      "gdi": 97,
+      "user": 212,
+      "frames": 348
+    },
+    {
+      "elapsedSeconds": 13.267655399999999,
+      "cpuOneCorePercent": 50.52274359575515,
+      "cpuMachinePercent": 4.210228632979596,
+      "privateMiB": 116.3671875,
+      "workingSetMiB": 142.0546875,
+      "handles": 410,
+      "gdi": 113,
+      "user": 262,
+      "frames": 455
+    },
+    {
+      "elapsedSeconds": 15.366102699999999,
+      "cpuOneCorePercent": 55.84486205586387,
+      "cpuMachinePercent": 4.653738504655323,
+      "privateMiB": 116.4296875,
+      "workingSetMiB": 145.87109375,
+      "handles": 409,
+      "gdi": 119,
+      "user": 267,
+      "frames": 589
+    },
+    {
+      "elapsedSeconds": 17.4303968,
+      "cpuOneCorePercent": 46.17195776512656,
+      "cpuMachinePercent": 3.8476631470938796,
+      "privateMiB": 116.7421875,
+      "workingSetMiB": 144.9609375,
+      "handles": 409,
+      "gdi": 119,
+      "user": 267,
+      "frames": 730
+    },
+    {
+      "elapsedSeconds": 19.496523099999997,
+      "cpuOneCorePercent": 65.03716641136614,
+      "cpuMachinePercent": 5.419763867613845,
+      "privateMiB": 116.65625,
+      "workingSetMiB": 145.3828125,
+      "handles": 409,
+      "gdi": 113,
+      "user": 263,
+      "frames": 868
+    },
+    {
+      "elapsedSeconds": 21.5829961,
+      "cpuOneCorePercent": 61.40745650674603,
+      "cpuMachinePercent": 5.117288042228836,
+      "privateMiB": 116.5703125,
+      "workingSetMiB": 145.28125,
+      "handles": 409,
+      "gdi": 107,
+      "user": 259,
+      "frames": 983
+    }
+  ],
+  "performance_scope": "short live desktop sample incl. capture overhead, not a multi-hour soak",
+  "real_archives_unchanged": true,
+  "source_report_sha256": "f97a68cac00f0d038a4d5d9b5961c681b95c788928cf151f7d6ee32572af19f2"
+}

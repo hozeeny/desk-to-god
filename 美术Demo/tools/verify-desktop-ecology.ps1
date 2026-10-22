@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'All')]
+    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'All')]
     [string]$Suite = 'Policy',
     [switch]$Baseline
 )
@@ -150,7 +150,7 @@ Write-Host ('Ecology verification artifacts: ' + $runRoot)
 try {
     # Always prove the unmodified production source set still builds independently.
     $baselineExecutable = Build-Runner 'Baseline' 'NetBunny.Program' $null
-    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback') } else { @($Suite) })
+    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout') } else { @($Suite) })
     $suiteFiles = @{
         Policy = 'DesktopEnvironmentTests'
         Sources = 'DesktopSourceTests'
@@ -167,6 +167,8 @@ try {
         LingyuFlow = 'LingyuDesktopFlowTests'
         Spacing = 'DesktopEncounterSpacingTests'
         ConsentFeedback = 'DesktopConsentFeedbackTests'
+        MaterialGuidance = 'DesktopMaterialGuidanceTests'
+        DisplayLayout = 'DesktopDisplayLayoutTests'
     }
     foreach ($suiteName in $suiteNames) {
         $className = $suiteFiles[$suiteName]
@@ -185,7 +187,7 @@ try {
                 $ownedProcessFixture = Build-ProcessFixture
                 if ($ownedProcessFixture) { Run-Runner $suiteName $executable @($firstArgument, $evidence, $ownedProcessFixture) }
             } elseif ($suiteName -in @('SuspendCore', 'ConsentFeedback')) { Run-Runner $suiteName $executable @($evidence) }
-            elseif ($suiteName -in @('Equipment', 'LingyuFlow')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
+            elseif ($suiteName -in @('Equipment', 'LingyuFlow', 'MaterialGuidance', 'DisplayLayout')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
             elseif ($firstArgument) { Run-Runner $suiteName $executable @($firstArgument, $evidence) }
         }
     }

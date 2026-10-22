@@ -1,0 +1,156 @@
+{
+  "scope": "Source-compiled native UI runner, not the final distributed EXE or natural growth. Fresh official qishi-full seed; x1 throughout; no HP, realm, reward, probability, crop, furnace or game-clock injection. No real maintenance.",
+  "passed": true,
+  "elapsed_seconds": 7.670547099999999,
+  "native_clicks": 8,
+  "checks": [
+    "Official fresh qishi-full seed supplies two lingsui and the existing guaranteed breakthrough, with an empty cave",
+    "Inventory reading does not transfer or consume the seed material",
+    "Native material navigation opens the real breakthrough panel without consumption; optional material remains unchecked",
+    "The confirmed production breakthrough reaches foundation establishment while retaining both unselected lingsui",
+    "The real cultivation main archive records the completed breakthrough",
+    "The existing source card is reused across the actual realm transition",
+    "Native source-card cave navigation does not perform an implicit import",
+    "Real lingyu/dongtian main archives preserve the one transfer: 1/1",
+    "The source card shows its own one portion after the real import",
+    "The same material ID occupies two distinct controls and inventories, both one",
+    "Stored-card navigation preserves both counts and exposes the original thirty-minute ninglu recipe",
+    "Native alchemy consumes only the one stored portion and starts the real ~1800-second furnace; no mature pill or buff is injected",
+    "Real lingyu/dongtian main archives preserve the one transfer: 1/0",
+    "The real cave main archive preserves the exact production furnace timestamp",
+    "The still-visible source inventory naturally refreshes away its zero-stock cave card within one second",
+    "Removing the background source card never activates its still-visible inventory or steals cave foreground",
+    "All five private business archives save successfully",
+    "All maintenance scopes and real workers remain off through the final save",
+    "The complete flow uses exactly six native control clicks and the two explicit own-dialog confirmations"
+  ],
+  "captures": 16,
+  "screenshots_reviewed": 16,
+  "glyph_checks": [
+    {
+      "stage": "ReadSource",
+      "role": "initial lingyu title",
+      "text": "水月灵髓 × 2",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSource",
+      "role": "initial lingyu location",
+      "text": "灵域收藏 · 尚未入库",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadBreakthrough",
+      "role": "破境仪式 ·",
+      "text": "破境仪式 · 境界突破",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSourceAsCave",
+      "role": "post-breakthrough lingyu title",
+      "text": "水月灵髓 × 2",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSourceAsCave",
+      "role": "post-breakthrough lingyu location",
+      "text": "灵域收藏 · 尚未入库",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadCaveImport",
+      "role": "洞天经营",
+      "text": "洞天经营 · 清虚内苑",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSplitSource",
+      "role": "split lingyu title",
+      "text": "水月灵髓 × 1",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSplitSource",
+      "role": "split lingyu location",
+      "text": "灵域收藏 · 尚未入库",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSplitStored",
+      "role": "split cave title",
+      "text": "水月灵髓 × 1",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadSplitStored",
+      "role": "split cave location",
+      "text": "洞天仓储 · 已入库",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    },
+    {
+      "stage": "ReadCaveRecipe",
+      "role": "洞天经营",
+      "text": "洞天经营 · 清虚内苑",
+      "verification": "unchanged existing native glyph verifier: >=60 samples, >=80% matches, existing colour tolerances"
+    }
+  ],
+  "furnace_timing": {
+    "clickBeforeUtc": "2026-10-22T19:39:37.1137300Z",
+    "observedUtc": "2026-10-22T19:39:37.3670861Z",
+    "readyUtc": "2026-10-22T20:09:37.1617279Z",
+    "remainingSeconds": 1799.7946418,
+    "configuredSeconds": 1800,
+    "observedNotMature": true
+  },
+  "after_brew_refresh_observation": {
+    "seconds": 0.5606159000000002,
+    "minimumDelaySeconds": 0.5,
+    "maximumCardRemovalWaitSeconds": 1,
+    "sourceVisible": true,
+    "sourceStockCardAbsent": true,
+    "sourceActivatedDuringBrew": false,
+    "caveHandle": 11010844,
+    "foreground": 11010844
+  },
+  "observed_stocks": [
+    {
+      "name": "seed-before-input",
+      "realmIndex": 0,
+      "layer": 12,
+      "lingyuLingsui": 2,
+      "dongtianLingsui": 0,
+      "importSeq": 0,
+      "pending": false
+    },
+    {
+      "name": "after-real-breakthrough",
+      "realmIndex": 1,
+      "layer": 1,
+      "lingyuLingsui": 2,
+      "dongtianLingsui": 0,
+      "importSeq": 0,
+      "pending": false
+    },
+    {
+      "name": "after-one-native-import",
+      "realmIndex": 1,
+      "layer": 1,
+      "lingyuLingsui": 1,
+      "dongtianLingsui": 1,
+      "importSeq": 1,
+      "pending": false
+    },
+    {
+      "name": "native-ninglu-started-not-mature",
+      "realmIndex": 1,
+      "layer": 1,
+      "lingyuLingsui": 1,
+      "dongtianLingsui": 0,
+      "importSeq": 1,
+      "pending": false
+    }
+  ],
+  "real_archives_unchanged": true,
+  "source_report_sha256": "bd89754a1e99654888c08c693de0fc93bad3a87dca9769260ffb1c5973c1d98b",
+  "scope_note": "Native source runner compiled from the same production hashes, not the distributed EXE. Initial official seed only, no later material/realm/HP/probability/time edits; no real maintenance. Thirty-minute furnace was just started; no maturity, collection or natural growth is claimed."
+}

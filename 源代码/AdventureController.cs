@@ -1933,7 +1933,11 @@ namespace NetBunny
             PumpCleanup(); Save(); RenderWorld(true);
         }
         internal void ChangeScale(float value) { displayScale = value; heroWindow.Size = HeroSize; landmarkWindow.Size = LandmarkSize; ClampHero(); PositionLandmark(); foreach (AdventureEnemy e in battle.Enemies) BoundEnemy(e); RenderWorld(true); }
-        internal void ChangeScreen(Screen screen) { area = screen.WorkingArea; ClampHero(); PositionLandmark(); foreach (AdventureEnemy e in battle.Enemies) { BoundEnemy(e); PickEnemyTarget(e); } RenderWorld(true); }
+        internal void ChangeScreen(Screen screen)
+        {
+            if (IsolatedDesktop) { ChangeDesktopScreen(screen); return; }
+            area = screen.WorkingArea; ClampHero(); PositionLandmark(); foreach (AdventureEnemy e in battle.Enemies) { BoundEnemy(e); PickEnemyTarget(e); } RenderWorld(true);
+        }
         public static string SelfTest() { return AdventureBattle.SelfTest(); }
         [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern int GetGuiResources(IntPtr process, int flags);
         [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLong")] private static extern int GetWindowLong(IntPtr handle, int index);
