@@ -33,6 +33,8 @@ namespace NetBunny
         readonly Dictionary<string, double> captureRetryAfter = new Dictionary<string, double>();
         readonly StreamWriter csv;
         readonly object initial;
+        object lastCheckpointState;
+        string lastCheckpointUtc;
         readonly DateTime startedUtc = DateTime.UtcNow;
         bool busy, finished, naturalZhuji, harvested, reloaded, saved, archivesUnchanged;
         int phase, plantedSlot = -1, samples, exitCode = 1;
@@ -72,7 +74,11 @@ namespace NetBunny
                 SetProcessDPIAware(); Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
                 using (DesktopDemoSession host = new DesktopDemoSession(assets, profile, true, null, false))
                 using (DesktopNaturalSoak soak = new DesktopNaturalSoak(host, destination, hours * 3600, original, assets, art))
-                { soak.Start(); Application.Run(host); return soak.exitCode; }
+                {
+                    soak.Start(); Application.Run(host);
+                    if (!soak.finished) soak.Finish("消息循环在长测完成前返回，拒绝通过。");
+                    return soak.exitCode;
+                }
             }
             catch (Exception error)
             {
@@ -92,6 +98,7 @@ namespace NetBunny
             input = new DesktopDemoAcceptance(host, output, true);
             ((Stopwatch)Field("wall").GetValue(input)).Start();
             initial = State(Game.Cultivation);
+            lastCheckpointState = initial;
             csv = new StreamWriter(Path.Combine(output, "natural-performance.csv"), false, new UTF8Encoding(true));
             csv.AutoFlush = true;
             csv.WriteLine("utc,elapsedSeconds,cpuOneCorePercent,cpuMachinePercent,privateMiB,workingSetMiB,handles,gdi,user,realmIndex,layer,qi,lifetimeQi,score,phase");
@@ -255,8 +262,12 @@ namespace NetBunny
         void Finish(string error)
         {
             if (finished) return; finished = true; timer.Stop(); failure = PreserveFailure(failure, error);
+            // ApplicationContext.Dispose can clear session.Game before the
+            // global ApplicationExit event. Persist the original reason first.
+            TryFinalizationLog("FINISH " + (failure ?? "规定时长已到，开始核实最终状态"));
             try
             {
+                if (Game == null) throw new InvalidOperationException("程序退出时游戏状态已释放，无法重新核实最终保存、Load或桌面画面。");
                 Sample(wall.Elapsed.TotalSeconds);
                 saved = Game.DesktopSaveNow();
                 if (!saved) throw new IOException("最终保存失败：" + Game.DesktopNotice);
@@ -275,9 +286,21 @@ namespace NetBunny
                 Capture("05-natural-soak-end", true);
             }
             catch (Exception finalizeError) { failure = (failure ?? "") + "\n" + Unwrap(finalizeError); }
-            try { Checkpoint(true); }
-            catch (Exception reportError) { Log("FINALIZE " + reportError); exitCode = 1; }
-            finally { Application.ApplicationExit -= OnExit; session.ExitAfterAcceptance(exitCode); }
+            try
+            {
+                if (Game == null) WriteTerminalFailure("程序提前退出；游戏状态已释放，长测未完成。");
+                else Checkpoint(true);
+            }
+            catch (Exception reportError)
+            {
+                exitCode = 1; TryFinalizationLog("FINALIZE " + reportError);
+                WriteTerminalFailure("最终验收记录未能完整生成：" + reportError);
+            }
+            finally
+            {
+                Application.ApplicationExit -= OnExit;
+                if (session.Game != null) session.ExitAfterAcceptance(exitCode);
+            }
         }
         void Checkpoint(bool final)
         {
@@ -296,11 +319,61 @@ namespace NetBunny
             if (!archivesUnchanged) reasons.Add("真实档案hash发生变化");
             if (final && !evidence) reasons.Add("原生截图或像素验证元数据不足；空白或遮挡不算通过");
             if (!String.IsNullOrEmpty(failure)) reasons.Add(failure);
-            object report = new { passed = passed, running = !final, processId = Process.GetCurrentProcess().Id, startedUtc = startedUtc.ToString("o"), updatedUtc = DateTime.UtcNow.ToString("o"), profile = session.ProfileRoot, output = output, assetsRoot = assetsRoot, artRoot = artRoot, executable = Application.ExecutablePath, requestedSeconds = requestedSeconds, elapsedSeconds = wall.Elapsed.TotalSeconds, effectiveSampledSeconds = sampledSeconds, maximumSampleGapSeconds = maximumSampleGap, maximumAllowedSampleGapSeconds = 30, speed = 1, sampleIntervalSeconds = 10, samples = samples, phase = phase, waiting = waiting, reasons = reasons.ToArray(), initial = initial, current = State(Game.Cultivation), naturalZhuji = naturalZhuji, firstHarvest = harvested, plantedSlot = plantedSlot, plantedRecord = plantedRaw, readyUtcTicks = readyUtcTicks, bag = Game.Dongtian.Bag, beforeHarvest = beforeHarvest, finalSave = saved, loadVerified = reloaded, loadVerificationScope = "same-process production Load of all five archives", originalRealArchivesUnchanged = archivesUnchanged, realArchivesBefore = realBefore, realArchivesAfter = after, captures = Field("captures").GetValue(input), captureFailures = captureErrors.ToArray(), nativeMouseClicks = Field("clicks").GetValue(input), inputLog = Field("log").GetValue(input).ToString(), events = events.ToArray(), restrictions = "formal business only; x1; seed=null; observeSystem=false; no HP/kill/qi/time/archive injection; no other-process control" };
+            object current = State(Game.Cultivation);
+            string recordedUtc = DateTime.UtcNow.ToString("o");
+            object report = new { passed = passed, running = !final, processId = Process.GetCurrentProcess().Id, startedUtc = startedUtc.ToString("o"), updatedUtc = recordedUtc, profile = session.ProfileRoot, output = output, assetsRoot = assetsRoot, artRoot = artRoot, executable = Application.ExecutablePath, requestedSeconds = requestedSeconds, elapsedSeconds = wall.Elapsed.TotalSeconds, effectiveSampledSeconds = sampledSeconds, maximumSampleGapSeconds = maximumSampleGap, maximumAllowedSampleGapSeconds = 30, speed = 1, sampleIntervalSeconds = 10, samples = samples, phase = phase, waiting = waiting, reasons = reasons.ToArray(), initial = initial, current = current, naturalZhuji = naturalZhuji, firstHarvest = harvested, plantedSlot = plantedSlot, plantedRecord = plantedRaw, readyUtcTicks = readyUtcTicks, bag = Game.Dongtian.Bag, beforeHarvest = beforeHarvest, finalSave = saved, loadVerified = reloaded, loadVerificationScope = "same-process production Load of all five archives", originalRealArchivesUnchanged = archivesUnchanged, realArchivesBefore = realBefore, realArchivesAfter = after, captures = Field("captures").GetValue(input), captureFailures = captureErrors.ToArray(), nativeMouseClicks = Field("clicks").GetValue(input), inputLog = Field("log").GetValue(input).ToString(), events = events.ToArray(), restrictions = "formal business only; x1; seed=null; observeSystem=false; no HP/kill/qi/time/archive injection; no other-process control" };
+            WriteReport(report);
+            lastCheckpointState = current; lastCheckpointUtc = recordedUtc;
+            exitCode = passed ? 0 : 1;
+        }
+        void WriteTerminalFailure(string reason)
+        {
+            // No game/window access here: this path also runs after disposal.
+            exitCode = 1; failure = PreserveFailure(failure, reason);
+            Dictionary<string, string> after = null;
+            try { after = HashRealArchives(); }
+            catch (Exception error) { failure = PreserveFailure(failure, "真实档案哈希未能复核：" + error.Message); }
+            bool unchanged = after != null && realBefore.Count == after.Count && realBefore.All(p => after.ContainsKey(p.Key) && after[p.Key] == p.Value);
+            var report = new {
+                passed = false, running = false, processId = Process.GetCurrentProcess().Id,
+                startedUtc = startedUtc.ToString("o"), updatedUtc = DateTime.UtcNow.ToString("o"),
+                profile = session.ProfileRoot, output = output, assetsRoot = assetsRoot, artRoot = artRoot,
+                executable = Application.ExecutablePath, requestedSeconds = requestedSeconds,
+                elapsedSeconds = wall.Elapsed.TotalSeconds, effectiveSampledSeconds = sampledSeconds,
+                maximumSampleGapSeconds = maximumSampleGap, maximumAllowedSampleGapSeconds = 30,
+                speed = 1, sampleIntervalSeconds = 10, samples = samples, phase = phase, waiting = waiting,
+                error = failure, reasons = new[] { failure }, initial = initial, current = lastCheckpointState,
+                currentIsLastCheckpoint = true, lastCurrentCheckpointUtc = lastCheckpointUtc,
+                naturalZhuji = naturalZhuji, firstHarvest = harvested, finalSave = false, loadVerified = false,
+                loadVerificationScope = "not verified after early exit; current is the last successful checkpoint only",
+                originalRealArchivesUnchanged = unchanged, realArchivesBefore = realBefore, realArchivesAfter = after,
+                captures = Field("captures").GetValue(input), captureFailures = captureErrors.ToArray(),
+                events = events.ToArray(), restrictions = "x1; private Virtual profile; no injected growth or maintenance"
+            };
+            try { WriteReport(report); }
+            catch (Exception reportError)
+            {
+                // A reader may hold the canonical checkpoint against replacement.
+                // Keep it as historical evidence and write an independent terminal
+                // record; readers must prefer this file over the old checkpoint.
+                string terminalError = PreserveFailure(failure, "主报告未能替换：" + reportError);
+                File.WriteAllText(Path.Combine(output, "natural-soak-terminal-failure.json"), json.Serialize(new {
+                    passed = false, running = false, processId = Process.GetCurrentProcess().Id,
+                    startedUtc = startedUtc.ToString("o"), updatedUtc = DateTime.UtcNow.ToString("o"),
+                    profile = session.ProfileRoot, output = output, error = terminalError,
+                    reasons = new[] { terminalError }, finalSave = false, loadVerified = false,
+                    canonicalCheckpointIsHistorical = true, current = lastCheckpointState,
+                    currentIsLastCheckpoint = true, lastCurrentCheckpointUtc = lastCheckpointUtc,
+                    elapsedSeconds = wall.Elapsed.TotalSeconds, effectiveSampledSeconds = sampledSeconds,
+                    samples = samples, terminalDetails = report
+                }), new UTF8Encoding(true));
+            }
+        }
+        void WriteReport(object report)
+        {
             string temporary = Path.Combine(output, "natural-soak.json.tmp"), reportPath = Path.Combine(output, "natural-soak.json");
             File.WriteAllText(temporary, json.Serialize(report), new UTF8Encoding(true));
             if (File.Exists(reportPath)) File.Replace(temporary, reportPath, null); else File.Move(temporary, reportPath);
-            exitCode = passed ? 0 : 1;
         }
         static bool Eligible(double elapsed, double requested, bool zhuji, bool harvest, bool save, bool load, bool unchanged, bool evidence, string error)
         { return elapsed >= MinimumSeconds && elapsed >= requested && zhuji && harvest && save && load && unchanged && evidence && String.IsNullOrEmpty(error); }
@@ -380,7 +453,12 @@ namespace NetBunny
         object Invoke(string name, params object[] args) { return typeof(DesktopDemoAcceptance).GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic).Invoke(input, args); }
         static Exception Unwrap(Exception error) { return error is TargetInvocationException && error.InnerException != null ? error.InnerException : error; }
         void Log(string message) { string line = DateTime.UtcNow.ToString("o") + " " + message; events.Add(line); File.AppendAllText(Path.Combine(output, "natural-soak.log"), line + Environment.NewLine, new UTF8Encoding(true)); }
+        void TryFinalizationLog(string message)
+        {
+            try { Log(message); }
+            catch (Exception error) { failure = PreserveFailure(failure, "诊断日志未能持久化：" + error.Message); }
+        }
         void OnExit(object sender, EventArgs args) { if (!finished) Finish("程序在长测完成前退出，拒绝通过。"); }
-        public void Dispose() { timer.Stop(); timer.Dispose(); Application.ApplicationExit -= OnExit; input.Dispose(); csv.Dispose(); }
+        public void Dispose() { if (!finished) Finish("长测记录器在验收完成前释放，拒绝通过。"); timer.Stop(); timer.Dispose(); Application.ApplicationExit -= OnExit; input.Dispose(); csv.Dispose(); }
     }
 }
