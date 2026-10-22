@@ -1,0 +1,13 @@
+{
+  "source_local_name": "05-actual-program-exit-history.png",
+  "source_sha256": "b3eb8392325e1cd1e1108b1820858adb93660b63aa3e30e8c92c27eb7481e6fb",
+  "client_crop_xywh": [
+    8,
+    31,
+    510,
+    700
+  ],
+  "output": "native-program-result-client.png",
+  "output_sha256": "b56ed39532e171946ab72e8f594035cb92674c79d33581c72cef7b925fd774c0",
+  "method": "Exact native HWND client rectangle from GetClientRect/ClientToScreen; original opaque own ecology panel pixels only, no resize, repaint or background replacement. All raw other-app images stay local."
+}

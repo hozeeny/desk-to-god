@@ -28,6 +28,8 @@ namespace NetBunny
         [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr window, uint flags);
         [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
         [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out Rect rect);
+        [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr window, out Rect rect);
+        [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr window, ref Point point);
         [DllImport("user32.dll")] static extern IntPtr GetDlgItem(IntPtr parent, int id);
         [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
         [DllImport("user32.dll")] static extern bool IsWindow(IntPtr window);
@@ -52,7 +54,10 @@ namespace NetBunny
         readonly Stopwatch clock = Stopwatch.StartNew();
         readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         Process fixture;
-        Task<ProcessIdentity[]> observation;
+        Form selectionPanel;
+        ComboBox programChoices;
+        bool programChoicePrepared, programSelected;
+        ProcessIdentity selectedProgramIdentity;
         Thread dialogThread;
         volatile bool confirmed, finished, dialogInProgress;
         volatile Exception dialogError;
@@ -185,6 +190,9 @@ namespace NetBunny
                     Check(!Game.MaintenanceConsentCleanup && !Game.MaintenanceConsentMemory && !Game.MaintenanceConsentAutoMaintenance, "文件/内存/无人值守授权全关");
                     fixture.Refresh(); IntPtr window = fixture.MainWindowHandle; uint pid; GetWindowThreadProcessId(window, out pid);
                     Check(pid == fixture.Id && Text(window).StartsWith("桌面修仙专用进程夹具 close", StringComparison.Ordinal), "夹具窗口PID和专用标题吻合");
+                    // A new mortal now opens the production welcome handbook.
+                    // It is our own panel and is outside this fixture snapshot.
+                    session.ClosePanels();
                     SetWindowPos(window, new IntPtr(-1), 0, 0, 0, 0, 0x13); // own fixture only, no activation
                     phase = 1; next = clock.Elapsed.TotalSeconds + .3; return;
                 }
@@ -192,16 +200,55 @@ namespace NetBunny
                 {
                     CaptureWindow("01-owned-fixture-alive", fixture.MainWindowHandle, fixture.Id);
                     SetWindowPos(fixture.MainWindowHandle, new IntPtr(-2), 0, 0, 0, 0, 0x13);
-                    session.ClosePanels(); observation = Task.Run(() => DesktopProcessTargets.Observe()); phase = 2; return;
+                    session.OpenPanel("ecology");
+                    selectionPanel = (Form)typeof(DesktopDemoSession).GetField("ecology", Private).GetValue(session);
+                    programChoices = (ComboBox)selectionPanel.GetType().GetField("programs", Private).GetValue(selectionPanel);
+                    Button scan = (Button)selectionPanel.GetType().GetField("scanPrograms", Private).GetValue(selectionPanel);
+                    Check(programChoices.SelectedIndex == -1, "生态面板初始不替玩家选择程序");
+                    if (!(bool)Invoke("ClickControl", scan)) return;
+                    clicks++; phase = 2; next = clock.Elapsed.TotalSeconds + .3; return;
                 }
                 if (phase == 2)
                 {
-                    if (!observation.IsCompleted) return;
-                    ProcessIdentity identity = observation.Result.SingleOrDefault(p => p.Id == fixture.Id);
-                    Check(identity != null && String.Equals(identity.ExecutablePath, fixturePath, StringComparison.OrdinalIgnoreCase), "Observe返回所启动夹具的真实PID/启动时间/路径，未构造身份");
-                    report["observedIdentity"] = new { id = identity.Id, startedUtcTicks = identity.StartedUtcTicks, path = identity.ExecutablePath, name = identity.Name };
-                    Check(Game.DesktopAddProcessTarget(identity), "明确标记唯一自有夹具为程灵");
+                    Button scan = (Button)selectionPanel.GetType().GetField("scanPrograms", Private).GetValue(selectionPanel);
+                    if (!scan.Enabled) return;
+                    if (!programSelected)
+                    {
+                        Button mark = (Button)Invoke("FindButtonExact", "将所选程序标记为程灵");
+                        if (!programChoicePrepared)
+                        {
+                            Check(mark != null && programChoices.SelectedIndex == -1 && !mark.Enabled,
+                                "真实程序观察完成后仍未选择，标记按钮保持禁用");
+                            int ownIndex = -1; ProcessIdentity identity = null;
+                            for (int i = 0; i < programChoices.Items.Count; i++)
+                            {
+                                object choice = programChoices.Items[i];
+                                ProcessIdentity candidate = (ProcessIdentity)choice.GetType().GetField("Identity", Private).GetValue(choice);
+                                if (candidate.Id == fixture.Id) { ownIndex = i; identity = candidate; break; }
+                            }
+                            Check(identity != null && String.Equals(identity.ExecutablePath, fixturePath, StringComparison.OrdinalIgnoreCase),
+                                "生态下拉列表实际观察到所启动夹具的真实PID/启动时间/路径，未构造身份");
+                            report["observedIdentity"] = new { id = identity.Id, startedUtcTicks = identity.StartedUtcTicks, path = identity.ExecutablePath, name = identity.Name };
+                            // Only selection of the exact self-owned identity is scripted.
+                            // Scan, mark, combat and target-specific Yes use native input.
+                            programChoices.SelectedIndex = ownIndex;
+                            selectedProgramIdentity = identity; programChoicePrepared = true;
+                        }
+                        object selectedChoice = programChoices.SelectedItem;
+                        Check(mark != null && mark.Enabled && selectedChoice != null
+                            && ((ProcessIdentity)selectedChoice.GetType().GetField("Identity", Private).GetValue(selectedChoice)).Id == selectedProgramIdentity.Id
+                            && Game.Battle.Enemies.All(e => e.ProcessTarget == null),
+                            "明确选择唯一自有程序仅启用标记，不自动生成程灵或执行退出");
+                        if (!(bool)Invoke("ClickControl", mark)) return;
+                        clicks++; programSelected = true;
+                        report["programSelectionPath"] = "Actual ecology panel scan and mark buttons clicked natively; exact owned identity selected in the real ComboBox by script; no direct DesktopAddProcessTarget call";
+                        next = clock.Elapsed.TotalSeconds + .3; return;
+                    }
                     target = Game.Battle.Enemies.Single(e => e.ProcessTarget != null && e.ProcessTarget.Id == fixture.Id);
+                    Check(Game.Battle.Enemies.Count(e => e.ProcessTarget != null) == 1 && !Game.DesktopProcessBusy && !fixture.HasExited,
+                        "原生标记只生成唯一自有夹具程灵，程序仍运行且尚无退出任务");
+                    CaptureWindow("01b-explicit-owned-program-selection", selectionPanel.Handle, Process.GetCurrentProcess().Id);
+                    session.ClosePanels();
                     initialHealth = target.Health; phase = 3; next = clock.Elapsed.TotalSeconds + .8; return;
                 }
                 if (phase == 3)
@@ -248,11 +295,18 @@ namespace NetBunny
                         mortalKills = Game.Cultivation.MortalKills, nativeClicks = clicks, actualFixtureExited = fixture.HasExited, cleanupMarkerExisted = File.Exists(marker + ".stop") };
                     report["confirmation"] = dialogEvidence;
                     session.OpenPanel("ecology"); DesktopEcologyPanel panel = Application.OpenForms.OfType<DesktopEcologyPanel>().Single(f => f.Visible);
+                    TextBox history = (TextBox)typeof(DesktopEcologyPanel).GetField("results", Private).GetValue(panel);
+                    for (Control parent = history.Parent; parent != null; parent = parent.Parent)
+                    { ScrollableControl scroll = parent as ScrollableControl; if (scroll != null) scroll.ScrollControlIntoView(history); }
                     panel.TopMost = true; panel.BringToFront(); panel.Activate(); phase = 6; next = clock.Elapsed.TotalSeconds + .4; return;
                 }
                 if (phase == 6)
                 {
                     DesktopEcologyPanel panel = Application.OpenForms.OfType<DesktopEcologyPanel>().Single(f => f.Visible);
+                    TextBox history = (TextBox)typeof(DesktopEcologyPanel).GetField("results", Private).GetValue(panel);
+                    Check(history.Visible && history.Text.Contains("程序已实际退出")
+                        && panel.ClientRectangle.Contains(panel.PointToClient(history.PointToScreen(Point.Empty))),
+                        "实际退出记录正文已滚动到可见面板客户区，非只核对后台日志");
                     CaptureWindow("05-actual-program-exit-history", panel.Handle, Process.GetCurrentProcess().Id);
                     Check(Game.DesktopSaveNow(), "五份私有业务档保存成功"); Game.DesktopAcceptanceVerifyFiles(Game.DesktopAcceptanceRestartMarker());
                     Check(true, "五份私有业务档重新Load核验通过"); Finish(null);
@@ -403,11 +457,27 @@ namespace NetBunny
             uint pid; Rect r; GetWindowThreadProcessId(window, out pid);
             Check(pid == expectedPid && IsWindowVisible(window) && GetWindowRect(window, out r), "截图窗口归属明确且可见：" + name);
             GetWindowRect(window, out r); Rectangle bounds = Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom);
+            var hits = new List<object>(); bool allHits = true;
             foreach (int x in new[] { bounds.Left + 15, bounds.Left + bounds.Width / 2, bounds.Right - 15 })
                 foreach (int y in new[] { bounds.Top + 40, bounds.Top + bounds.Height / 2, bounds.Bottom - 15 })
-                    Check(GetAncestor(WindowFromPoint(new Point(x, y)), 2) == window, "原生窗口命中验证：" + name + " " + x + "," + y);
+                {
+                    IntPtr root = GetAncestor(WindowFromPoint(new Point(x, y)), 2); uint actualPid; GetWindowThreadProcessId(root, out actualPid);
+                    bool matched = root == window; allHits &= matched;
+                    hits.Add(new { x = x, y = y, expectedRoot = window.ToInt64(), actualRoot = root.ToInt64(), actualPid = actualPid, actualTitle = Text(root), matched = matched });
+                }
+            report["windowHits-" + name] = hits;
+            if (!allHits)
+            {
+                using (Bitmap rejected = DesktopFrameCapture.CaptureRegion(bounds)) rejected.Save(Path.Combine(output, name + "-rejected-hit.png"), ImageFormat.Png);
+                Check(false, "原生窗口九点命中验证：" + name + "；实际遮挡窗口身份与原图保留");
+            }
+            Check(true, "原生窗口九点命中验证：" + name);
             using (Bitmap bitmap = DesktopFrameCapture.CaptureRegion(bounds)) bitmap.Save(Path.Combine(output, name + ".png"), ImageFormat.Png);
-            captures.Add(new { image = name + ".png", bounds = bounds.ToString(), ownerPid = pid, nativeHitVerified = true, capture = "native BitBlt SRCCOPY|CAPTUREBLT" });
+            Rect client; Point clientOrigin = Point.Empty;
+            Check(GetClientRect(window, out client) && ClientToScreen(window, ref clientOrigin), "原生客户区裁切坐标可核实：" + name);
+            captures.Add(new { image = name + ".png", bounds = bounds.ToString(), ownerPid = pid, nativeHitVerified = true,
+                clientCrop = new[] { clientOrigin.X - bounds.Left, clientOrigin.Y - bounds.Top, client.Right - client.Left, client.Bottom - client.Top },
+                capture = "native BitBlt SRCCOPY|CAPTUREBLT" });
         }
         void CaptureActors(string name)
         {

@@ -1,0 +1,395 @@
+{
+  "Scope": "Script behavior contract only. Real launcher copies; stub builder, Start-Process and CIM spies; no native GUI, real process query, game launch or user data access.",
+  "PowerShellVersion": "5.1.19041.6456",
+  "Checks": 76,
+  "Failed": 0,
+  "SourceHashes": {
+    "Start-DesktopDemo.ps1": "6fa6fd5cf9f2fa33d462a0d041c83dad18138cf2224cf11a154e0502406a7457",
+    "开始修仙.cmd": "c0b2308461deac3bb4d81c48faea38325b06d739e771f9635d4655743dae327b",
+    "verify-desktop-launcher.ps1": "d102713054077d93cbc39e4d66bfee7a22d944ef8a49f983a9c1432d1653db23",
+    "launch-demo.ps1": "f65690eedab00d11a85de9d5eb579dd7ef67d31024afd599088ae3369cd22d5b"
+  },
+  "Results": [
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "existing runtime launches successfully"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "existing runtime is reused without rebuilding"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "ordinary reuse does not query processes"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "exactly one process launch"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "launches exact fixture executable"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "uses runtime working directory"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "ordinary entry has only desktop-demo and private profile arguments"
+    },
+    {
+      "Case": "existing-default",
+      "Passed": true,
+      "Check": "ordinary launch is visibly interactive and does not wait"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "missing runtime builds and launches"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "missing runtime builds exactly once"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "exactly one process launch"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "launches exact fixture executable"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "uses runtime working directory"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "ordinary entry has only desktop-demo and private profile arguments"
+    },
+    {
+      "Case": "missing-default",
+      "Passed": true,
+      "Check": "ordinary launch is visibly interactive and does not wait"
+    },
+    {
+      "Case": "missing-skip",
+      "Passed": true,
+      "Check": "SkipBuild with missing runtime is rejected"
+    },
+    {
+      "Case": "missing-skip",
+      "Passed": true,
+      "Check": "SkipBuild rejection has no build or launch"
+    },
+    {
+      "Case": "existing-skip",
+      "Passed": true,
+      "Check": "existing SkipBuild remains compatible"
+    },
+    {
+      "Case": "existing-skip",
+      "Passed": true,
+      "Check": "exactly one process launch"
+    },
+    {
+      "Case": "existing-skip",
+      "Passed": true,
+      "Check": "launches exact fixture executable"
+    },
+    {
+      "Case": "existing-skip",
+      "Passed": true,
+      "Check": "uses runtime working directory"
+    },
+    {
+      "Case": "existing-skip",
+      "Passed": true,
+      "Check": "ordinary entry has only desktop-demo and private profile arguments"
+    },
+    {
+      "Case": "existing-skip",
+      "Passed": true,
+      "Check": "ordinary launch is visibly interactive and does not wait"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "explicit Rebuild succeeds without an active matching process"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "explicit Rebuild checks processes and builds exactly once"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "exactly one process launch"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "launches exact fixture executable"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "uses runtime working directory"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "ordinary entry has only desktop-demo and private profile arguments"
+    },
+    {
+      "Case": "explicit-rebuild",
+      "Passed": true,
+      "Check": "ordinary launch is visibly interactive and does not wait"
+    },
+    {
+      "Case": "conflicting-switches",
+      "Passed": true,
+      "Check": "Rebuild and SkipBuild cannot be combined"
+    },
+    {
+      "Case": "conflicting-switches",
+      "Passed": true,
+      "Check": "conflict is rejected before build, query or launch"
+    },
+    {
+      "Case": "invalid-profile-32",
+      "Passed": true,
+      "Check": "invalid profile is rejected"
+    },
+    {
+      "Case": "invalid-profile-32",
+      "Passed": true,
+      "Check": "invalid profile is rejected before build, query or launch"
+    },
+    {
+      "Case": "invalid-profile-34",
+      "Passed": true,
+      "Check": "invalid profile is rejected"
+    },
+    {
+      "Case": "invalid-profile-34",
+      "Passed": true,
+      "Check": "invalid profile is rejected before build, query or launch"
+    },
+    {
+      "Case": "invalid-profile-36",
+      "Passed": true,
+      "Check": "invalid profile is rejected"
+    },
+    {
+      "Case": "invalid-profile-36",
+      "Passed": true,
+      "Check": "invalid profile is rejected before build, query or launch"
+    },
+    {
+      "Case": "invalid-profile-38",
+      "Passed": true,
+      "Check": "invalid profile is rejected"
+    },
+    {
+      "Case": "invalid-profile-38",
+      "Passed": true,
+      "Check": "invalid profile is rejected before build, query or launch"
+    },
+    {
+      "Case": "invalid-normal-speed",
+      "Passed": true,
+      "Check": "NormalSpeed without explicit acceptance is rejected"
+    },
+    {
+      "Case": "invalid-normal-speed",
+      "Passed": true,
+      "Check": "NormalSpeed rejection precedes build or launch"
+    },
+    {
+      "Case": "invalid-accept-profile",
+      "Passed": true,
+      "Check": "explicit acceptance cannot use ordinary player profile"
+    },
+    {
+      "Case": "invalid-accept-profile",
+      "Passed": true,
+      "Check": "acceptance profile rejection precedes build or launch"
+    },
+    {
+      "Case": "active-same-path",
+      "Passed": true,
+      "Check": "active same-path rebuild asks for normal tray exit"
+    },
+    {
+      "Case": "active-same-path",
+      "Passed": true,
+      "Check": "active same-path process is never overwritten or relaunched"
+    },
+    {
+      "Case": "active-other-path",
+      "Passed": true,
+      "Check": "same filename at another absolute path does not block rebuild"
+    },
+    {
+      "Case": "active-other-path",
+      "Passed": true,
+      "Check": "exactly one process launch"
+    },
+    {
+      "Case": "active-other-path",
+      "Passed": true,
+      "Check": "launches exact fixture executable"
+    },
+    {
+      "Case": "active-other-path",
+      "Passed": true,
+      "Check": "uses runtime working directory"
+    },
+    {
+      "Case": "active-other-path",
+      "Passed": true,
+      "Check": "ordinary entry has only desktop-demo and private profile arguments"
+    },
+    {
+      "Case": "active-other-path",
+      "Passed": true,
+      "Check": "ordinary launch is visibly interactive and does not wait"
+    },
+    {
+      "Case": "query-unavailable",
+      "Passed": true,
+      "Check": "unavailable process verification refuses rebuild"
+    },
+    {
+      "Case": "query-unavailable",
+      "Passed": true,
+      "Check": "failed process verification has no build or launch"
+    },
+    {
+      "Case": "acceptance-compatible",
+      "Passed": true,
+      "Check": "explicit virtual acceptance parameters remain compatible"
+    },
+    {
+      "Case": "acceptance-compatible",
+      "Passed": true,
+      "Check": "acceptance launches exactly once"
+    },
+    {
+      "Case": "acceptance-compatible",
+      "Passed": true,
+      "Check": "acceptance arguments retain their explicit virtual entry"
+    },
+    {
+      "Case": "acceptance-compatible",
+      "Passed": true,
+      "Check": "acceptance still waits and checks exit status"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "ASCII-named root PowerShell entry exists"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "root forwards from unrelated working directory in a Unicode path with spaces"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "exactly one process launch"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "launches exact fixture executable"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "uses runtime working directory"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "ordinary entry has only desktop-demo and private profile arguments"
+    },
+    {
+      "Case": "root-unicode-path",
+      "Passed": true,
+      "Check": "ordinary launch is visibly interactive and does not wait"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "PowerShell source exists: launch-demo.ps1"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "PowerShell source is UTF8 BOM: launch-demo.ps1"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "PowerShell source exists: Start-DesktopDemo.ps1"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "PowerShell source is UTF8 BOM: Start-DesktopDemo.ps1"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "PowerShell source exists: verify-desktop-launcher.ps1"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "PowerShell source is UTF8 BOM: verify-desktop-launcher.ps1"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "double-click command entry exists"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "command wrapper contains ASCII bytes only"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "command wrapper anchors quoted PowerShell entry to its own directory"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "command wrapper reports a failure with a nonzero exit"
+    },
+    {
+      "Case": "source-encoding-and-command-wrapper",
+      "Passed": true,
+      "Check": "command wrapper only delegates and does not inject arguments or change programs"
+    }
+  ],
+  "Failures": []
+}

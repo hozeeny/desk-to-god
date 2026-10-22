@@ -1,0 +1,168 @@
+{
+  "scope": "Current frozen production sources in a dedicated native runner, fresh private normal-x1 mortal Observe profile. Scan/mark/combat/Yes use native clicks; only exact owned ComboBox selection is scripted. Not the final distributable EXE, natural ten-kill growth or true new-process restoration.",
+  "passed": true,
+  "seconds": 17.435740199999998,
+  "assertions": [
+    {
+      "passed": true,
+      "detail": "新凡人Observe私有档，自有夹具真实运行",
+      "seconds": 0.693568
+    },
+    {
+      "passed": true,
+      "detail": "文件/内存/无人值守授权全关",
+      "seconds": 0.6935718
+    },
+    {
+      "passed": true,
+      "detail": "夹具窗口PID和专用标题吻合",
+      "seconds": 0.6956393
+    },
+    {
+      "passed": true,
+      "detail": "截图窗口归属明确且可见：01-owned-fixture-alive",
+      "seconds": 1.0150309
+    },
+    {
+      "passed": true,
+      "detail": "原生窗口九点命中验证：01-owned-fixture-alive",
+      "seconds": 1.0154242
+    },
+    {
+      "passed": true,
+      "detail": "原生客户区裁切坐标可核实：01-owned-fixture-alive",
+      "seconds": 1.0507799
+    },
+    {
+      "passed": true,
+      "detail": "生态面板初始不替玩家选择程序",
+      "seconds": 1.1860328
+    },
+    {
+      "passed": true,
+      "detail": "真实程序观察完成后仍未选择，标记按钮保持禁用",
+      "seconds": 6.0652319
+    },
+    {
+      "passed": true,
+      "detail": "生态下拉列表实际观察到所启动夹具的真实PID/启动时间/路径，未构造身份",
+      "seconds": 6.065265699999999
+    },
+    {
+      "passed": true,
+      "detail": "明确选择唯一自有程序仅启用标记，不自动生成程灵或执行退出",
+      "seconds": 6.0875221999999996
+    },
+    {
+      "passed": true,
+      "detail": "原生标记只生成唯一自有夹具程灵，程序仍运行且尚无退出任务",
+      "seconds": 6.4967684
+    },
+    {
+      "passed": true,
+      "detail": "截图窗口归属明确且可见：01b-explicit-owned-program-selection",
+      "seconds": 6.496773699999999
+    },
+    {
+      "passed": true,
+      "detail": "原生窗口九点命中验证：01b-explicit-owned-program-selection",
+      "seconds": 6.496976699999999
+    },
+    {
+      "passed": true,
+      "detail": "原生客户区裁切坐标可核实：01b-explicit-owned-program-selection",
+      "seconds": 6.5431656
+    },
+    {
+      "passed": true,
+      "detail": "像素校验绑定唯一真实夹具程灵",
+      "seconds": 7.3742315
+    },
+    {
+      "passed": true,
+      "detail": "战斗前程序仍运行且无退出任务",
+      "seconds": 7.474765799999999
+    },
+    {
+      "passed": true,
+      "detail": "像素校验绑定唯一真实夹具程灵",
+      "seconds": 10.234185199999999
+    },
+    {
+      "passed": true,
+      "detail": "真实出招已扣血，击杀前程序仍运行",
+      "seconds": 10.322794499999999
+    },
+    {
+      "passed": true,
+      "detail": "真实鼠标逐次出招，并单独确认指定PID退出",
+      "seconds": 16.9377486
+    },
+    {
+      "passed": true,
+      "detail": "夹具由已确认的正常退出链路实际退出，尚未发送测试清理marker",
+      "seconds": 16.9378456
+    },
+    {
+      "passed": true,
+      "detail": "维护结果反映实际程序退出，未伪称磁盘释放或内存回收",
+      "seconds": 16.937849399999998
+    },
+    {
+      "passed": true,
+      "detail": "真实战斗恰计一次凡人有效击杀",
+      "seconds": 16.9378496
+    },
+    {
+      "passed": true,
+      "detail": "实际退出记录正文已滚动到可见面板客户区，非只核对后台日志",
+      "seconds": 17.3815124
+    },
+    {
+      "passed": true,
+      "detail": "截图窗口归属明确且可见：05-actual-program-exit-history",
+      "seconds": 17.3815162
+    },
+    {
+      "passed": true,
+      "detail": "原生窗口九点命中验证：05-actual-program-exit-history",
+      "seconds": 17.3817053
+    },
+    {
+      "passed": true,
+      "detail": "原生客户区裁切坐标可核实：05-actual-program-exit-history",
+      "seconds": 17.4203516
+    },
+    {
+      "passed": true,
+      "detail": "五份私有业务档保存成功",
+      "seconds": 17.4299915
+    },
+    {
+      "passed": true,
+      "detail": "五份私有业务档重新Load核验通过",
+      "seconds": 17.4348015
+    }
+  ],
+  "outcome": {
+    "summary": "「DesktopProcessFixture」 · 程序已实际退出；已核实原进程退出；未使用强制结束",
+    "freedBytes": 0,
+    "deletedFiles": 0,
+    "trimmedProcesses": 0,
+    "mortalKills": 1,
+    "nativeClicks": 14,
+    "actualFixtureExited": true,
+    "cleanupMarkerExisted": false
+  },
+  "confirmation_target": {
+    "pid": 36392,
+    "native_yes": true,
+    "alive_before_yes": true
+  },
+  "program_selection_path": "Actual ecology panel scan and mark buttons clicked natively; exact owned identity selected in the real ComboBox by script; no direct DesktopAddProcessTarget call",
+  "captures": 6,
+  "native_images_reviewed": 6,
+  "formal_archives_unchanged": true,
+  "history_reloaded_in_second_controller": true,
+  "original_report_sha256": "c6539b94a1ed4db12fed6534651f7ce8a2f450f3b027b035447f4dbdff97c62c"
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "local_folder": "desktop-accept-process-selection-20261023-r1",
+    "raw_passed": false,
+    "raw_report_sha256": "19a1b2362f1d02e950e8946a5fcf481038b2e887ca7285f7840a929b43d60c43",
+    "explanation": "First owned-fixture capture was obscured by this runner own new-player welcome handbook; r2 records exact matching runner PID and handbook HWND/title. Failed report retained; only own panels were later closed before that fixture snapshot."
+  },
+  {
+    "local_folder": "desktop-accept-process-selection-20261023-r2-diagnostic",
+    "raw_passed": false,
+    "raw_report_sha256": "d0ac0b4cba94987c2835074593d0d9808e5b09ea51473501d8b9745a21ed4a20",
+    "explanation": "First owned-fixture capture was obscured by this runner own new-player welcome handbook; r2 records exact matching runner PID and handbook HWND/title. Failed report retained; only own panels were later closed before that fixture snapshot."
+  },
+  {
+    "local_folder": "desktop-accept-process-selection-20261023-r3",
+    "raw_passed": true,
+    "raw_report_sha256": "a7aff402ecd22084f1e64022fcf2e5f4e47e54a117a30a446e0f6e096ec7402c",
+    "explanation": "Core native process-close checks passed, but the image named exit-history still showed the old scroll position and not history. Rejected as visible result evidence; final r4 explicitly scrolls actual history into view before capture."
+  }
+]

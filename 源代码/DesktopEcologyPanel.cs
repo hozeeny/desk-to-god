@@ -8,16 +8,19 @@ namespace NetBunny
     internal sealed class DesktopEcologyPanel:Form
     {
         readonly AdventureController game;
+        readonly Func<ProcessIdentity[]> observePrograms;
         readonly Label status=new Label(),programPath=new Label();
-        readonly Button files=new Button(),memory=new Button(),automatic=new Button(),scanPrograms=new Button();
+        readonly Button files=new Button(),memory=new Button(),automatic=new Button(),scanPrograms=new Button(),markProgram=new Button();
         readonly ComboBox programs=new ComboBox();
         readonly TextBox results=new TextBox();
         readonly TextBox targetSource=new TextBox();
         readonly Timer refresh=new Timer();
         readonly FlowLayoutPanel content=new FlowLayoutPanel();
-        internal DesktopEcologyPanel(AdventureController game)
+        bool scanningPrograms;
+        internal DesktopEcologyPanel(AdventureController game,Func<ProcessIdentity[]> observePrograms=null)
         {
-            this.game=game;Text="桌面修仙传 · 电脑生态与维护";Font=new Font("Microsoft YaHei UI",10);
+            this.game=game;this.observePrograms=observePrograms??DesktopProcessTargets.Observe;
+            Text="桌面修仙传 · 电脑生态与维护";Font=new Font("Microsoft YaHei UI",10);
             BackColor=Color.FromArgb(246,242,230);ForeColor=Color.FromArgb(38,65,58);
             ClientSize=new Size(510,700);MinimumSize=new Size(410,490);StartPosition=FormStartPosition.Manual;
             content.Dock=DockStyle.Fill;content.AutoScroll=true;content.FlowDirection=FlowDirection.TopDown;content.WrapContents=false;content.Padding=new Padding(16);Controls.Add(content);
@@ -33,8 +36,9 @@ namespace NetBunny
             Line("正在运行的程序不等于垃圾。由你选择待处理程序，击败程灵后再单独确认正常退出；不强制结束。",true);
             scanPrograms.Text="查看可正常退出的后台程序";Configure(scanPrograms,async()=>await ScanPrograms());
             programs.DropDownStyle=ComboBoxStyle.DropDownList;programs.AccessibleName="待选择程序";content.Controls.Add(programs);
-            programPath.AutoSize=true;content.Controls.Add(programPath);programs.SelectedIndexChanged+=delegate{var p=programs.SelectedItem as ProgramChoice;programPath.Text=p==null?"":p.Identity.ExecutablePath;};
-            Add("将所选程序标记为程灵",()=>{var p=programs.SelectedItem as ProgramChoice;if(p!=null&&!game.DesktopAddProcessTarget(p.Identity))MessageBox.Show(this,"目标已存在、身份待复核或场上已满。请稍后重试。","尚未生成程灵");});
+            programPath.AutoSize=true;content.Controls.Add(programPath);programs.SelectedIndexChanged+=delegate{var p=programs.SelectedItem as ProgramChoice;programPath.Text=p==null?"请自行选择一个程序，再标记为程灵。":p.Identity.ExecutablePath;UpdateProgramSelection();};
+            programPath.Text=game.DesktopObservesSystem?"先查看可正常退出的后台程序，再自行选择。":"当前为纯虚拟修行，不观察或标记电脑程序。";
+            markProgram.Text="将所选程序标记为程灵";Configure(markProgram,()=>{if(!game.DesktopObservesSystem||scanningPrograms)return;var p=programs.SelectedItem as ProgramChoice;if(p!=null&&!game.DesktopAddProcessTarget(p.Identity))MessageBox.Show(this,"目标已存在、身份待复核或场上已满。请稍后重试。","尚未生成程灵");});
             Add("取消当前程序退出等待",()=>game.DesktopCancelProcessAction());
             Line("实际维护记录",true);results.Multiline=true;results.ReadOnly=true;results.Height=160;results.ScrollBars=ScrollBars.Vertical;results.BackColor=Color.FromArgb(251,248,239);content.Controls.Add(results);
             Add("收起 · 继续桌面修行",()=>Hide());
@@ -62,16 +66,26 @@ namespace NetBunny
         }
         async Task ScanPrograms()
         {
-            scanPrograms.Enabled=false;
+            if(!game.DesktopObservesSystem||scanningPrograms||IsDisposed)return;
+            scanningPrograms=true;
+            programs.Items.Clear();programs.SelectedIndex=-1;
+            programPath.Text="正在观察程序，旧候选已取消；完成后请自行选择。";UpdateProgramSelection();
             try
             {
-                ProcessIdentity[] observed=await Task.Run(()=>DesktopProcessTargets.Observe());
+                ProcessIdentity[] observed=await Task.Run(observePrograms);
                 if(IsDisposed)return;
-                programs.Items.Clear();foreach(var identity in observed)programs.Items.Add(new ProgramChoice{Identity=identity});
-                if(programs.Items.Count>0)programs.SelectedIndex=0;else programPath.Text="当前没有可核实且支持正常退出的后台程序。";
+                foreach(var identity in observed)programs.Items.Add(new ProgramChoice{Identity=identity});
+                programs.SelectedIndex=-1;
+                programPath.Text=programs.Items.Count>0?"请自行选择一个程序，再标记为程灵。":"当前没有可核实且支持正常退出的后台程序。";
             }
-            catch(Exception e){if(!IsDisposed)programPath.Text="暂未完成观察："+e.Message;}
-            finally{if(!IsDisposed)scanPrograms.Enabled=game.DesktopObservesSystem;}
+            catch(Exception e){if(!IsDisposed){programs.Items.Clear();programs.SelectedIndex=-1;programPath.Text="暂未完成观察："+e.Message;}}
+            finally{if(!IsDisposed){scanningPrograms=false;UpdateProgramSelection();}}
+        }
+        void UpdateProgramSelection()
+        {
+            bool available=game.DesktopObservesSystem&&!scanningPrograms;
+            scanPrograms.Enabled=available;programs.Enabled=available&&programs.Items.Count>0;
+            markProgram.Enabled=available&&programs.SelectedItem is ProgramChoice;
         }
         internal void UpdateState()
         {
@@ -83,7 +97,7 @@ namespace NetBunny
             detail=detail.Replace("\r\n","\n").Replace("\n",Environment.NewLine);
             if(targetSource.Text!=detail){targetSource.Text=detail;targetSource.Select(0,0);}
             bool enabled=game.DesktopObservesSystem;files.Enabled=memory.Enabled=automatic.Enabled=enabled;
-            if(!enabled)scanPrograms.Enabled=false;
+            UpdateProgramSelection();
             files.Text="文件清理授权："+(game.MaintenanceConsentCleanup?"已开启 · 点击关闭":"未开启 · 点击了解范围");
             memory.Text="内存维护授权："+(game.MaintenanceConsentMemory?"已开启 · 点击关闭":"未开启 · 点击了解范围");
             automatic.Text="无人值守维护："+(game.MaintenanceConsentAutoMaintenance?"已开启 · 点击关闭":"未开启 · 自动战斗不代表维护授权");

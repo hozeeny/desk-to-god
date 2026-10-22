@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'FinalPathBuffer', 'CensusCadence', 'ReturnTasks', 'CaveSlots', 'PanelReopen', 'All')]
+    [ValidateSet('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'FinalPathBuffer', 'CensusCadence', 'ReturnTasks', 'CaveSlots', 'PanelReopen', 'ProgramSelection', 'All')]
     [string]$Suite = 'Policy',
     [switch]$Baseline
 )
@@ -150,7 +150,7 @@ Write-Host ('Ecology verification artifacts: ' + $runRoot)
 try {
     # Always prove the unmodified production source set still builds independently.
     $baselineExecutable = Build-Runner 'Baseline' 'NetBunny.Program' $null
-    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'FinalPathBuffer', 'CensusCadence', 'ReturnTasks', 'CaveSlots', 'PanelReopen') } else { @($Suite) })
+    $suiteNames = $(if ($Suite -eq 'All') { @('Policy', 'Sources', 'Maintenance', 'Processes', 'Cave', 'Journey', 'Equipment', 'Combat', 'Realm', 'AutoBattle', 'Guidance', 'SuspendCore', 'LingyuFlow', 'Spacing', 'ConsentFeedback', 'MaterialGuidance', 'DisplayLayout', 'MemoryOutcomes', 'IdleTargetBadge', 'FinalPathBuffer', 'CensusCadence', 'ReturnTasks', 'CaveSlots', 'PanelReopen', 'ProgramSelection') } else { @($Suite) })
     $suiteFiles = @{
         Policy = 'DesktopEnvironmentTests'
         Sources = 'DesktopSourceTests'
@@ -176,6 +176,7 @@ try {
         ReturnTasks = 'DesktopReturnTasksTests'
         CaveSlots = 'DesktopCaveSlotsTests'
         PanelReopen = 'DesktopPanelReopenTests'
+        ProgramSelection = 'DesktopProgramSelectionTests'
     }
     foreach ($suiteName in $suiteNames) {
         $className = $suiteFiles[$suiteName]
@@ -194,7 +195,7 @@ try {
                 $ownedProcessFixture = Build-ProcessFixture
                 if ($ownedProcessFixture) { Run-Runner $suiteName $executable @($firstArgument, $evidence, $ownedProcessFixture) }
             } elseif ($suiteName -in @('SuspendCore', 'ConsentFeedback', 'MemoryOutcomes', 'FinalPathBuffer')) { Run-Runner $suiteName $executable @($evidence) }
-            elseif ($suiteName -in @('Equipment', 'LingyuFlow', 'MaterialGuidance', 'DisplayLayout', 'IdleTargetBadge', 'CensusCadence', 'ReturnTasks', 'CaveSlots', 'PanelReopen')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
+            elseif ($suiteName -in @('Equipment', 'LingyuFlow', 'MaterialGuidance', 'DisplayLayout', 'IdleTargetBadge', 'CensusCadence', 'ReturnTasks', 'CaveSlots', 'PanelReopen', 'ProgramSelection')) { Run-Runner $suiteName $executable @($firstArgument, $evidence, (Join-Path $sourceRoot 'ArtDemoAssets')) }
             elseif ($firstArgument) { Run-Runner $suiteName $executable @($firstArgument, $evidence) }
         }
     }
