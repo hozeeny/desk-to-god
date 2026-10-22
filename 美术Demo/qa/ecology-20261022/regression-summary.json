@@ -1,0 +1,102 @@
+﻿[
+    {
+        "Name":  "BaselineBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the production Program Main."
+    },
+    {
+        "Name":  "DesktopEnvironmentTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "Policy",
+        "Status":  "Pass",
+        "Detail":  "Desktop environment regression: 112 checks, 0 failures."
+    },
+    {
+        "Name":  "DesktopSourceTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "Sources",
+        "Status":  "Pass",
+        "Detail":  "Desktop sources: 12 checks passed; synthetic census only, no system worker started."
+    },
+    {
+        "Name":  "DesktopMaintenanceTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "ProcessFixtureBuild",
+        "Status":  "Pass",
+        "Detail":  "Built the dedicated close/save-prompt fixture; no user application is a test target."
+    },
+    {
+        "Name":  "Maintenance",
+        "Status":  "Pass",
+        "Detail":  "Desktop maintenance: 28 checks passed; owned file/process fixtures and injected memory, no user targets."
+    },
+    {
+        "Name":  "DesktopProcessTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "ProcessFixtureBuild",
+        "Status":  "Pass",
+        "Detail":  "Built the dedicated close/save-prompt fixture; no user application is a test target."
+    },
+    {
+        "Name":  "Processes",
+        "Status":  "Pass",
+        "Detail":  "Process backend: 25 checks, 0 failures. Only dedicated fixtures received normal-close requests."
+    },
+    {
+        "Name":  "DongtianExpansionTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "Cave",
+        "Status":  "Pass",
+        "Detail":  "Dongtian expansion: 30 checks, 0 failures."
+    },
+    {
+        "Name":  "DesktopDemoStateTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "DesktopDemoStateTests",
+        "Status":  "Pass",
+        "Detail":  "Evidence profiles: E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\eco-tests\\20261022-195847-049-ba4125\\bin\\evidence-DesktopDemoStateTests\\state-smoke-20261022-115946-3ad6a8"
+    },
+    {
+        "Name":  "DesktopPlayerViewTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "DesktopPlayerViewTests",
+        "Status":  "Pass",
+        "Detail":  "Desktop player regression: 30 checks, 0 failures."
+    },
+    {
+        "Name":  "SelfTest",
+        "Status":  "Pass",
+        "Detail":  "V5 raster art: 840 assertions passed; source atlas transparency, 6 full raster rigs x 60 poses, seamless loops, 5 monsters + boss, 7 textured weapons, both facings, resurrection and GDI ownership."
+    },
+    {
+        "Name":  "AdventureSmoke",
+        "Status":  "Pass",
+        "Detail":  "Growth integration: 81 checks passed (mortal tempering, awakening, breakthrough loop, combat linkage)."
+    },
+    {
+        "Name":  "FormalArchiveIsolation",
+        "Status":  "Pass",
+        "Detail":  "4 archive/authorization SHA256 hashes unchanged."
+    }
+]

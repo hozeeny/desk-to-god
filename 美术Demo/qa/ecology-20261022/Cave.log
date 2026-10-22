@@ -1,0 +1,33 @@
+Fixture root: E:\03工作内容\coding\桌面修仙\desk-to-god-art\美术Demo\verification\eco-tests\20261022-195847-049-ba4125\bin\evidence-cave\fixture-0dd3346bbed74ad999d47e1e2c63dd24
+PASS cave exposes an expected-level expansion operation
+PASS an incomplete multi-material payment leaves every stock and level unchanged
+PASS insufficient inventory produces a readable failure notice
+PASS planting notice agrees with the UI's actual-hour duration
+PASS a first expansion pays exactly one recipe and unlocks one extra field
+PASS expansion preserves in-flight production, buffs, gears and transfer accounting
+PASS replaying an old-level click cannot charge again or skip a level
+PASS only the newly unlocked third field becomes plantable
+PASS the second expansion charges its full distinct recipe and opens the fourth field
+PASS a max-level cave refuses further payment and expansion
+PASS max-level refusal explains the reached cap
+PASS archive reload preserves the paid expansion, field production and transfer ledger
+PASS a stale request remains harmless after restart
+PASS historical level-four archives retain their fields without receiving a reward or downgrade
+PASS ordinary timed harvests supply a complete first expansion without new currency or grants
+PASS alchemy and expansion share the real bag, so a prior recipe prevents a double spend
+Dongtian: 32 checks passed (fields, alchemy, forge, buffs, archive fixture, two-way transfer reconcile).
+PASS an unlocked cave panel exposes a real expansion action
+PASS the panel shows the next expansion's actual materials before payment
+PASS clicking expansion follows the controller save path and persists one paid level
+PASS a queued duplicate event from the old button cannot pay a second recipe
+PASS a locked archive reports pending persistence and never claims the expansion committed
+PASS duplicate events and failed retries never charge a pending expansion again
+PASS unlocking the same archive lets the existing retry commit the full expansion exactly once
+PASS the capped panel retires expansion and states its maximum capacity
+PASS all fixtures stay hidden and never render desktop actors
+PASS a first paid expansion remains visibly pending when its actual archive is locked
+PASS even the new next-level button refuses another payment while the prior save is pending
+PASS a blocked pending operation keeps its persistence warning visible
+PASS before retry the complete previous archive has neither a half debit nor a free level
+PASS the original persistence retry commits exactly the accepted first expansion
+Dongtian expansion: 30 checks, 0 failures.

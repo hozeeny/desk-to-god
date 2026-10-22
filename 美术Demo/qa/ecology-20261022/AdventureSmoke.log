@@ -1,0 +1,4 @@
+Adventure native smoke: 116 checks passed; no real cleanup, network query, or progress save.
+Live field integration: 20 checks passed (synthetic files and memory reclaim).
+Automatic combat integration: 22 checks passed (seven weapons, synthetic enemies, no real cleanup or progress writes).
+Growth integration: 81 checks passed (mortal tempering, awakening, breakthrough loop, combat linkage).

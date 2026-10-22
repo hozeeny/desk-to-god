@@ -1,0 +1,29 @@
+PASS desktop provides explicit process-to-monster binding
+PASS virtual entry refuses process target binding
+PASS virtual entry refuses workers even if a scope flag is supplied
+PASS file consent persists only in private profile
+PASS automatic kill cannot execute attended-only file grant
+PASS actual maintenance kill advances mortal growth independently of worker outcome
+PASS pending worker cannot grant the same cultivation kill twice
+PASS disk accounting uses the worker result only
+PASS desktop history exposes actual deleted bytes and files
+PASS memory has its own private consent
+PASS observed memory rise is reported honestly
+PASS memory maintenance never creates disk bytes
+PASS both grants revoke without stopping cultivation
+PASS revoked scopes remain disabled
+PASS observed program requires explicit target binding
+PASS same process identity cannot produce duplicate targets
+PASS unselected program target cannot attack newcomer
+PASS automatic planning never selects process-exit targets
+PASS declined one-shot confirmation starts no process action
+PASS closing the game records an unfinished process outcome without claiming success
+PASS owned fixture uses a private explicit file grant
+PASS actual file worker deletes only the owned eligible file and skips the locked file
+PASS actual deletion and displayed bytes agree exactly
+PASS dedicated program fixture is ready
+PASS owned program has a verified closeable identity
+PASS owned verified process binds to an actual game target
+PASS confirmed owned target completes its real normal-close request
+PASS actual process exit produces exactly one recorded result
+Desktop maintenance: 28 checks passed; owned file/process fixtures and injected memory, no user targets.

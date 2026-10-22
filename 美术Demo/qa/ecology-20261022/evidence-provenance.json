@@ -1,0 +1,78 @@
+[
+  {
+    "image": "01-mortal-desktop.png",
+    "source": "qa\\desktop-accept-eco-x1-20261022-r1\\00-multi-monitor-secondary.png",
+    "source_sha256": "31cf0cc7f1421797d205b68738af8f4cc6380e314ef00b324ce45a421d74a645",
+    "crop_box": [
+      0,
+      0,
+      276,
+      296
+    ],
+    "operation": "native Windows pixels unchanged; crop only"
+  },
+  {
+    "image": "02-ecology-panel.png",
+    "source": "qa\\desktop-accept-eco-observe-final-20261022-r3\\02-visible-ecology-panel.png",
+    "source_sha256": "2097b067574c921d45eb93746a11bd7b9e5c14a029315d8384c702170994efb4",
+    "crop_box": [
+      9,
+      31,
+      497,
+      730
+    ],
+    "operation": "native Windows pixels unchanged; crop only"
+  },
+  {
+    "image": "03-dongtian-native.png",
+    "source": "qa\\desktop-accept-eco-qishi-final-20261022-r1\\30-dongtian-panel-on-real-desktop.png",
+    "source_sha256": "bae52bd33fed39c5bb739b90134d451a15937e0ce4ee5fab3e3ba4f46744e44a",
+    "crop_box": [
+      789,
+      44,
+      1489,
+      563
+    ],
+    "operation": "native Windows pixels unchanged; crop only"
+  },
+  {
+    "image": "weapons-offscreen.png",
+    "scope": "OFFSCREEN rendering evidence only; not a desktop screenshot"
+  },
+  {
+    "image": "04-target-confirmation.png",
+    "source": "qa\\desktop-accept-process-20261022-r5\\04-target-specific-native-confirmation.png",
+    "source_sha256": "29ea8ef9996a33d0049fd23074d649611c9bf046bbaeac2afafa13442aac961f",
+    "crop_box": [
+      2,
+      2,
+      478,
+      260
+    ],
+    "operation": "native Windows pixels unchanged; crop only; confirmation is real desktop BitBlt, PrintWindow never published"
+  },
+  {
+    "image": "05-process-result.png",
+    "source": "qa\\desktop-accept-process-20261022-r5\\05-actual-program-exit-history.png",
+    "source_sha256": "0c41685b23468d8c803d68f902b6049e58af6f6edc79023768684fca10291b94",
+    "crop_box": [
+      10,
+      31,
+      497,
+      730
+    ],
+    "operation": "native Windows pixels unchanged; crop only; confirmation is real desktop BitBlt, PrintWindow never published"
+  },
+  {
+    "image": "06-natural-qishi-native.png",
+    "source": "qa\\desktop-accept-natural-soak-20261022-r1\\01-natural-qishi-start.png",
+    "source_sha256": "48d226b157a1eced253ab4d622f4132fe892ed147620d30f49d77f49575dfe06",
+    "crop_box": [
+      1316,
+      80,
+      1536,
+      320
+    ],
+    "operation": "native screen pixels unchanged; exact hero window region; unrelated application excluded"
+  }
+]

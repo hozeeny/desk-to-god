@@ -1,0 +1,26 @@
+PASS safe process observation and normal-close backend exists
+PASS verified same-user background window is eligible
+PASS unknown owner fails closed
+PASS different user is denied
+PASS different session is denied
+PASS failed critical-process query is denied
+PASS critical process is denied
+PASS own process is denied
+PASS new foreground process is denied
+PASS Windows directory process is denied
+PASS known system process is denied even outside Windows path
+PASS missing normal close entry is denied
+PASS unknown start identity is denied
+PASS observer excludes its own process
+PASS native execution rejects its own process without closing it
+PASS missing identity is refused with explanation
+PASS native observer includes only our verified background fixture
+PASS changed start time (including PID reuse) cannot close a replacement
+PASS changed executable path cannot close target
+PASS revoked request sends no close message
+PASS normal-close request reports the actual fixture exit
+PASS already exited target is handled without another request
+PASS cancelled save stays running and bounded wait reports timeout honestly
+PASS waiting for a refusing fixture can be cancelled promptly
+PASS open save prompt is never forced closed
+Process backend: 25 checks, 0 failures. Only dedicated fixtures received normal-close requests.

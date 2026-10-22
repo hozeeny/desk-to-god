@@ -1,0 +1,42 @@
+﻿[
+    {
+        "Name":  "BaselineBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the production Program Main."
+    },
+    {
+        "Name":  "DesktopEnvironmentTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "Policy",
+        "Status":  "Pass",
+        "Detail":  "Desktop environment regression: 112 checks, 0 failures."
+    },
+    {
+        "Name":  "DesktopDemoStateTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "DesktopDemoStateTests",
+        "Status":  "Pass",
+        "Detail":  "Evidence profiles: E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\eco-tests\\20261022-200841-071-2ab3a0\\bin\\evidence-DesktopDemoStateTests\\state-smoke-20261022-120858-d8636e"
+    },
+    {
+        "Name":  "DesktopPlayerViewTestsBuild",
+        "Status":  "Pass",
+        "Detail":  "Compiled all 55 production files with the dedicated test Main."
+    },
+    {
+        "Name":  "DesktopPlayerViewTests",
+        "Status":  "Pass",
+        "Detail":  "Desktop player regression: 30 checks, 0 failures."
+    },
+    {
+        "Name":  "FormalArchiveIsolation",
+        "Status":  "Pass",
+        "Detail":  "4 archive/authorization SHA256 hashes unchanged."
+    }
+]

@@ -1,0 +1,252 @@
+{
+  "passed": true,
+  "scope": "Observe entry: real local Temp inventory and memory sampling; real-file actor pixels; ecology panel visibility; private save and exit",
+  "excluded": "No battle progression, maintenance execution, process exit, or virtual-only actor may satisfy the real-file pixel check",
+  "processId": 38856,
+  "startedUtc": "2026-10-22T11:53:48.4015874Z",
+  "privateProfile": "E:\\03工作内容\\coding\\桌面修仙\\desk-to-god-art\\美术Demo\\verification\\eco-observe-native\\profile-20261022-115348-e0c24ed7",
+  "entry": "new DesktopDemoSession(assetsRoot, privateProfile, false, null, true)",
+  "assertions": [
+    {
+      "passed": true,
+      "detail": "普通入口处于Observe，非Virtual/演示/验收快进",
+      "elapsedSeconds": 0.1780648
+    },
+    {
+      "passed": true,
+      "detail": "文件/内存/无人值守三项授权全关",
+      "elapsedSeconds": 0.178068
+    },
+    {
+      "passed": true,
+      "detail": "无文件清理、内存回收或程序退出任务",
+      "elapsedSeconds": 0.1782915
+    },
+    {
+      "passed": true,
+      "detail": "无真实维护记录或释放空间宣称",
+      "elapsedSeconds": 0.17831729999999998
+    },
+    {
+      "passed": true,
+      "detail": "指定Batch中的来源文件确实存在于本机Temp",
+      "elapsedSeconds": 3.14384
+    },
+    {
+      "passed": true,
+      "detail": "指定真实文件目标已进入玩家view",
+      "elapsedSeconds": 3.1441054
+    },
+    {
+      "passed": true,
+      "detail": "像素校验绑定指定真实文件Batch目标，未使用任意虚拟妖物",
+      "elapsedSeconds": 3.7620967
+    },
+    {
+      "passed": true,
+      "detail": "本进程生态面板已实际显示",
+      "elapsedSeconds": 4.6943785
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1398,Y=51}",
+      "elapsedSeconds": 4.6957865
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1398,Y=393}",
+      "elapsedSeconds": 4.69585
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1398,Y=735}",
+      "elapsedSeconds": 4.695886499999999
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1645,Y=51}",
+      "elapsedSeconds": 4.6959015
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1645,Y=393}",
+      "elapsedSeconds": 4.695914999999999
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1645,Y=735}",
+      "elapsedSeconds": 4.6959439
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1892,Y=51}",
+      "elapsedSeconds": 4.6959576
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1892,Y=393}",
+      "elapsedSeconds": 4.6959699
+    },
+    {
+      "passed": true,
+      "detail": "生态面板原生命中归属本进程面板 {X=1892,Y=735}",
+      "elapsedSeconds": 4.6959821
+    },
+    {
+      "passed": true,
+      "detail": "面板收起后角色窗口仍可见",
+      "elapsedSeconds": 5.308573
+    },
+    {
+      "passed": true,
+      "detail": "普通入口处于Observe，非Virtual/演示/验收快进",
+      "elapsedSeconds": 5.4252934999999995
+    },
+    {
+      "passed": true,
+      "detail": "文件/内存/无人值守三项授权全关",
+      "elapsedSeconds": 5.4252948
+    },
+    {
+      "passed": true,
+      "detail": "无文件清理、内存回收或程序退出任务",
+      "elapsedSeconds": 5.4253716999999995
+    },
+    {
+      "passed": true,
+      "detail": "无真实维护记录或释放空间宣称",
+      "elapsedSeconds": 5.4258774
+    },
+    {
+      "passed": true,
+      "detail": "独立五档安全保存",
+      "elapsedSeconds": 5.4403217
+    },
+    {
+      "passed": true,
+      "detail": "独立业务档重新Load核对通过",
+      "elapsedSeconds": 5.4468635
+    }
+  ],
+  "captures": [
+    {
+      "image": "01-observe-real-file-actors.png",
+      "bounds": "{X=92,Y=96,Width=1812,Height=938}",
+      "specificRealEnemyId": "6974232D157E873B70B7B136D1066B567C384BDE9D7616F2F31AE2E3EA740990",
+      "actors": [
+        {
+          "role": "hero",
+          "bounds": "{X=1660,Y=770,Width=220,Height=240}",
+          "sourceOpaqueSamples": 2628,
+          "visibleDistinctSamples": 2583,
+          "matchingSamples": 2583,
+          "matchRatio": 1,
+          "distinctColors": 225,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        },
+        {
+          "role": "enemy",
+          "bounds": "{X=116,Y=120,Width=130,Height=170}",
+          "sourceOpaqueSamples": 630,
+          "visibleDistinctSamples": 630,
+          "matchingSamples": 630,
+          "matchRatio": 1,
+          "distinctColors": 161,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        }
+      ],
+      "capture": "native BitBlt SRCCOPY|CAPTUREBLT; presented-frame alpha comparison; expected composite used only as verifier, never published as capture"
+    },
+    {
+      "image": "02-visible-ecology-panel.png",
+      "bounds": "{X=1382,Y=12,Width=526,Height=739}",
+      "nativeHitTests": [
+        {
+          "screen": "{X=1398,Y=51}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1398,Y=393}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1398,Y=735}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1645,Y=51}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1645,Y=393}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1645,Y=735}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1892,Y=51}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1892,Y=393}",
+          "root": 17697122,
+          "expected": 17697122
+        },
+        {
+          "screen": "{X=1892,Y=735}",
+          "root": 17697122,
+          "expected": 17697122
+        }
+      ],
+      "capture": "native BitBlt SRCCOPY|CAPTUREBLT"
+    },
+    {
+      "image": "03-panels-closed-hero.png",
+      "bounds": "{X=1636,Y=746,Width=268,Height=288}",
+      "specificRealEnemyId": null,
+      "actors": [
+        {
+          "role": "hero",
+          "bounds": "{X=1660,Y=770,Width=220,Height=240}",
+          "sourceOpaqueSamples": 2639,
+          "visibleDistinctSamples": 2594,
+          "matchingSamples": 2594,
+          "matchRatio": 1,
+          "distinctColors": 220,
+          "rgbToleranceSum": 45,
+          "minimumRatio": 0.9
+        }
+      ],
+      "capture": "native BitBlt SRCCOPY|CAPTUREBLT; presented-frame alpha comparison; expected composite used only as verifier, never published as capture"
+    }
+  ],
+  "permissions": {
+    "fileCleanup": false,
+    "memoryReclaim": false,
+    "automaticMaintenance": false,
+    "processExitRequested": false
+  },
+  "panelPresentation": "session.OpenPanel(ecology), then tester-owned panel TopMost/BringToFront/Activate; no other application's windows changed",
+  "elapsedSeconds": 5.4484737999999995,
+  "formalArchivesUnchangedAfterDispose": true,
+  "completedUtc": "2026-10-22T11:53:57.4930664Z",
+  "realSource": {
+    "files": 128,
+    "bytes": 105365513,
+    "memoryPercent": 66.43639130492453,
+    "ecologyStatus": "电脑生态 · 只读观察\n临时文件 8682个 / 2.39 GiB · 内存 66.4%"
+  },
+  "redacted": "unrelated local Temp filenames omitted; raw evidence retained locally with provenance SHA256",
+  "raw_source_sha256": "3c3017c44f0f83a08ec1b2bc0d41f39bc5feba66c0f6911d6c2f91243fb0224f"
+}

@@ -1,0 +1,34 @@
+{
+  "normal_x1": {
+    "passed": true,
+    "elapsed_seconds": 327.91888789999996,
+    "native_clicks": 114,
+    "assertions": 46,
+    "normal_no_input_seconds": 120.15459710000002
+  },
+  "build_and_logic": "20 results PASS; latest source snapshot in tested-sources.json",
+  "art": "2754 assertions PASS; verify-art-pack-final.log",
+  "release_state": "preview; natural eight-hour growth and performance not yet accepted",
+  "capture_review": "native actor and panel screenshots inspected; default process confirmation/body/buttons verified at 100% and visually checked",
+  "unverified": [
+    "mixed DPI displays",
+    "lock and resume",
+    "eight-hour natural growth and first cave harvest",
+    "long-run resource trend",
+    "narrow legacy panel layout"
+  ],
+  "process_native": {
+    "passed": true,
+    "elapsed_seconds": 22.2873488,
+    "native_clicks": 19,
+    "scope": "Native mortal combat against an explicitly marked, uniquely owned fixture; target-specific Yes confirmation; actual graceful exit and persisted truthful outcome",
+    "default_path": true,
+    "visual_reference_match": 1,
+    "failed_runs_retained_locally": [
+      "r1 visual rejection",
+      "r2/r3 missing native presentation",
+      "r4 actor occlusion"
+    ],
+    "root_visual_review": "confirmation/body/buttons, fighting hero+process monster, and actual result visually checked"
+  }
+}
