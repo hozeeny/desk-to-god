@@ -1,0 +1,596 @@
+{
+  "red": {
+    "checks": 68,
+    "failures": 1,
+    "seconds": 11.403729,
+    "scope": "Actual production Open methods and original WinForms classes, off-screen private Virtual fixture. Session OpenPanel uses a dependency-only shell with the same stopped controller and real layer coordinator, without tray/welcome/actor lifecycle construction; only our own Form locations are synchronously confined off-screen. No input or other process actions. Foreground is recorded, never forcibly restored.",
+    "report_sha256": "9d36bf9460c5c017b2819f6d1ac481c247c73dcd8f5f39b6cbf36a60977b56aa",
+    "observations": [
+      {
+        "name": "baiye:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:second-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "practice:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "practice:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:second-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      }
+    ]
+  },
+  "green": {
+    "checks": 68,
+    "failures": 0,
+    "seconds": 11.3130224,
+    "scope": "Actual production Open methods and original WinForms classes, off-screen private Virtual fixture. Session OpenPanel uses a dependency-only shell with the same stopped controller and real layer coordinator, without tray/welcome/actor lifecycle construction; only our own Form locations are synchronously confined off-screen. No input or other process actions. Foreground is recorded, never forcibly restored.",
+    "report_sha256": "0cab8dbbf0f9e5d3d910c3b9606710a435ede24f9a6c62f6d4b06a14c57443c0",
+    "observations": [
+      {
+        "name": "baiye:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "baiye:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "lingyu:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "breakthrough:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:normal-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "dongtian:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "ecology:second-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:initial-open",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:visible-minimized",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "practice:visible-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:hidden-minimized",
+        "visible": false,
+        "nativeVisible": false,
+        "windowState": "Minimized",
+        "iconic": true,
+        "offscreen": true
+      },
+      {
+        "name": "practice:hidden-minimized-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      },
+      {
+        "name": "practice:second-reopen",
+        "visible": true,
+        "nativeVisible": true,
+        "windowState": "Normal",
+        "iconic": false,
+        "offscreen": true
+      }
+    ]
+  }
+}

@@ -165,8 +165,11 @@ namespace NetBunny
             if (id == "ecology")
             {
                 if (ecology == null || ecology.IsDisposed) ecology = new DesktopEcologyPanel(Game);
-                ecology.UpdateState();if(ecology.WindowState==FormWindowState.Minimized)ecology.WindowState=FormWindowState.Normal;
-                ecology.Show();PlaceFeaturePanel(ecology);ecology.BringToFront();ecology.Activate();return;
+                ecology.UpdateState();
+                ecology.Show();
+                // Show can restore the hidden form's saved minimized state.
+                if(ecology.WindowState==FormWindowState.Minimized)ecology.WindowState=FormWindowState.Normal;
+                PlaceFeaturePanel(ecology);ecology.BringToFront();ecology.Activate();return;
             }
             if (id == "baiye") { Game.OpenBaiyeStele(); PlaceFeaturePanel(Application.OpenForms.OfType<BaiyeSteleForm>().FirstOrDefault(f => f.Visible)); return; }
             if (id == "dongtian") { Game.OpenDongtian(); PlaceFeaturePanel(Application.OpenForms.OfType<DongtianForm>().FirstOrDefault(f => f.Visible)); return; }

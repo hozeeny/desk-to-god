@@ -274,8 +274,15 @@ namespace NetBunny
                 using (Pen pen = new Pen(Color.FromArgb((int)((160 - i * 32) * fade), color), 2 + i * 2))
                     g.DrawArc(pen, -radius - i * 6, -radius - i * 6, (radius + i * 6) * 2, (radius + i * 6) * 2, (float)(-70 + progress * 160 + i * 19), 118);
             }
-            g.RotateTransform((float)(weaponId == "boomerang" ? progress * 720 : -24 + progress * 45));
-            Draw(g, WeaponAsset(weaponId), new RectangleF(-22, -51, 44, 94), fade, 0); g.Restore(save); return true;
+            // Melee steel stays in the hero's hand; its hit effect is the arc.
+            // Only ranged attacks carry a second illustrated object in flight.
+            string asset = WeaponAsset(weaponId);
+            if (asset != "weapon-mortal" && asset != "weapon-zhuji")
+            {
+                g.RotateTransform((float)(weaponId == "boomerang" ? progress * 720 : -24 + progress * 45));
+                Draw(g, asset, new RectangleF(-22, -51, 44, 94), fade, 0);
+            }
+            g.Restore(save); return true;
         }
         internal void Validate(Action<bool, string> check)
         {

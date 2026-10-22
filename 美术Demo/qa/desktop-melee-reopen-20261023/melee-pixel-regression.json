@@ -1,0 +1,63 @@
+{
+  "scope": "Pure in-memory real ArtDemoPack and AdventureRenderer pixels. Same-size transparent cache substitution only, restored and disposed on every case. Existing null/empty/valid aliases/Trim inputs; no new invalid-ID contract. No HWND, GUI, input, controller, archive, process census, maintenance, clock advance, HP edit or native-compositor/100-sample proof. Remote baseline comparison is claimed only when baselineProvided=true.",
+  "red": {
+    "checks": 1222,
+    "failures": 132,
+    "seconds": 6.5084119,
+    "raw_report_sha256": "588e4ce37a8a92c1499a81bcf7c067150863e8f6c756788efb859bf00a86829c"
+  },
+  "green": {
+    "checks": 2157,
+    "failures": 0,
+    "seconds": 5.9447754999999995,
+    "raw_report_sha256": "7b43fc324903551c574fc08cccac555402b6aa043f8c3ecec887ce592599ade7",
+    "baseline_report_sha256": "588e4ce37a8a92c1499a81bcf7c067150863e8f6c756788efb859bf00a86829c"
+  },
+  "verified_frames": {
+    "projectile_frames": 312,
+    "melee_arc_only_frames": 132,
+    "unchanged_hero_frames": 104,
+    "unchanged_icon_frames": 26,
+    "unchanged_ranged_frames": 180
+  },
+  "unchanged_authored_asset_hashes": {
+    "asset-manifest.json": "c908d2eaac40f123f9188f0617007dc7bc6a4ff0fdb1323f74a6a37e702282ec",
+    "elite-guardian.png": "ce5eac7dbc77b6d9e8ca905f52d849293dbe015c133a399a1f9f365fd032b461",
+    "elite-mushroom.png": "f3c1c97d78e38f94a0313e0eac934b6c8ddbff6e3b9565a1c3c2d31bb934ddba",
+    "hero-mortal.png": "fb8a887973ac118ec6100565c314e9f03cfc12520faf665fb03756918c324169",
+    "hero-qishi.png": "822e6e35d44b8fc091307947336d440f37a09d597cc0a3ee4957bc1701c69868",
+    "hero-rig-mortal.anchors": "0eab43645def90902e9f22e5254aede4c35e1fbbcc969d7fa8e0f7acad1435b3",
+    "hero-rig-mortal.png": "aff6b9ab9f13284604bc0ca5b39dfe8b1f52f02945c44f7b68a9c6b2179335b2",
+    "hero-rig-mortal.rects": "04ce0d7954e76135202c83ba77826c376bc7d644924ebb1a41380cc44fd3af65",
+    "hero-rig-qishi.anchors": "c5af203786d5444847916b8d77903e350b7e35211c576feae953fb967c0b8a09",
+    "hero-rig-qishi.png": "f813c2d7ff7b9184e34241cab9c34b97a901329aa787039a9209cdcddfbd978d",
+    "hero-rig-qishi.rects": "ee4793746cf2f6a11d9cfd442e7d155663dc41f5a48aafc6f88361fa81ea927a",
+    "hero-rig-zhuji.anchors": "a3eae1ddc340cdb5cf8bb666b4d74e28a3a542eb0f9852f5186672383fee8c50",
+    "hero-rig-zhuji.png": "6618fc9495da63b5773fc99033f3321aad0f0d02a8774844b7dc81128f0aa36b",
+    "hero-rig-zhuji.rects": "dc9d7d30df1df6b48881c236e5880691e9fd8eebe51e8051ff19cd369c3ae2a1",
+    "hero-zhuji.png": "e88d05f8066949902ab900da86e23efeba2d4b052b904fcc92ad0446a67af347",
+    "item-marrow.png": "784c08c19fd0a7d250f19197e5f7a12b89d85784053c0d4f800ed338ab287c94",
+    "item-material.png": "57ac0ad031fb844451ded6b1939199847fc56733ce1d63c69165a27a191c0fc2",
+    "item-pill.png": "4a6b86d62cf2458f998c04167a110986222080385f68c0ed192361ba280ef2f9",
+    "item-scroll.png": "e5edf8f1e2802de6010a541c15b4681fdadc69c8b3f97d6e46af980944c04447",
+    "item-spirit-stone.png": "b67cf40ba8fa2536c17c3b808020f65c67209bce3256b99817f14c517f5589aa",
+    "landmark-dongtian.png": "52b13905ad4e7c29b53bdcdc95dbdd94958fe93a210191db2f7267515ffced85",
+    "mirror-boss.png": "e3d7658f59897c86674c76f9ce763a2911f8ca0b8a5f2efc9cfc8d53b9ccb10d",
+    "mirror-shard.png": "263f7a6534c47676df237b88fec8d59267aaaafa739eea07a6ff1b4ba51cb0ac",
+    "mirror-wraith.png": "f6ba973733068d1022e27ed0295bf9f243623085358a1220d701a5e8c34793a3",
+    "monster-bat.png": "73220462b2e15d70bf0503f7659de0d8573cf2cb0510a7135b4271b7ed65fde9",
+    "monster-guardian.png": "b71aec6277dbf8a6c361475cac72fe3a7706c6376d4e10bf286858a357c3ba24",
+    "monster-imp.png": "9a7f083e398c45590e50a4f875d995a71c841ad7a7213ca054638b4df834b8da",
+    "monster-mushroom.png": "7abe24692005aab90892c9f8282eae62d5afb7aa5fb63551c72cab1b1dd75094",
+    "monster-slime.png": "fe0330d54051a73a8a4157083516083115d45845b35bdbe95d06e872f77e22d2",
+    "scene-battle.png": "3f8ea0d29f8b82137be7c4d0601b9b0b4e5c7e8264db6b280b99db173d761ee9",
+    "scene-dongtian.png": "2b1611cb8b2e76d0f8984e8b79dfe8c26f26daff2143d46b487a35b82660eaff",
+    "weapon-array.png": "83709a94cdff6d3aaca5abc615aad795a70506af12fb736e81c372b118b8f1ae",
+    "weapon-moonring.png": "1a0ca8deb85fcf4b9deb7cc0416ff9ef448b216bc70d81c893788da1a2972585",
+    "weapon-mortal.png": "7185aff89c1390764a4951ea142f3e536786513e425783e2bff996f008ecbb08",
+    "weapon-qishi.png": "4969a74ef8f43142a42c801332cb1851a46947a8d5fc903c781463b9dfb2b9f2",
+    "weapon-talisman.png": "fbcd3d58cf04e886bc7b00a189141a5970fec44782cba129ed0426f97bf8c399",
+    "weapon-wave.png": "cc46899bd4f11e0741edf2a77cca315d6b5c890e65fa65944df36ae8bbcf91ef",
+    "weapon-zhuji.png": "14670df18741b6bf4e847355ded87a742a0c500915a39e6dcaf4c4714d974543"
+  }
+}
