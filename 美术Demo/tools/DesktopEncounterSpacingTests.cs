@@ -37,6 +37,30 @@ namespace NetBunny
         private static double Distance(PointF a, PointF b) { return AdventureBattle.Distance(a.X, a.Y, b.X, b.Y); }
         private static RectangleF Bounds(AdventureController g, AdventureEnemy e)
         { Size z = SizeOf(g, e); return new RectangleF((float)e.X, (float)e.Y, z.Width, z.Height); }
+        private static RectangleF HeroBounds(AdventureController g, float s)
+        { Size z = HeroSize(s); return new RectangleF((float)Field<double>(g, "x"), (float)Field<double>(g, "y"), z.Width, z.Height); }
+        private static double OverlapArea(RectangleF a, RectangleF b)
+        { return Math.Max(0, Math.Min(a.Right, b.Right) - Math.Max(a.Left, b.Left)) * Math.Max(0, Math.Min(a.Bottom, b.Bottom) - Math.Max(a.Top, b.Top)); }
+        private static bool SweepsHero(RectangleF before, RectangleF after, RectangleF hero, float s)
+        {
+            // Check the actual movement segment, including long frames whose endpoints
+            // can both be outside. This observes pixels occupied, not route-planner angles.
+            int samples = Math.Max(1, (int)Math.Ceiling(AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) / Math.Max(.25, s)));
+            for (int i = 0; i <= samples; i++)
+            {
+                float t = (float)i / samples;
+                RectangleF at = new RectangleF(before.X + (after.X - before.X) * t, before.Y + (after.Y - before.Y) * t, before.Width, before.Height);
+                if (OverlapArea(at, hero) > .02 * s * s) return true;
+            }
+            return false;
+        }
+        private static bool IdleUnengaged(AdventureController g, AdventureEnemy e, int experience, int score, long qi, long freed)
+        {
+            return g.Battle.Target == null && g.Battle.QueueCount == 0 && !e.Authorized && e.Authorization == AdventureAuthorization.None
+                && e.Health == 200 && !e.KillRewarded && !e.Defeated && g.Battle.Progress.Health == 100
+                && g.Battle.Progress.Experience == experience && g.Battle.Progress.Score == score
+                && g.Cultivation.LifetimeQi == qi && g.Battle.Progress.FreedBytes == freed;
+        }
         private static bool Finite(double x) { return !Double.IsNaN(x) && !Double.IsInfinity(x); }
         private static bool InBounds(AdventureController g, AdventureEnemy e, Rectangle area)
         {
@@ -205,7 +229,7 @@ namespace NetBunny
                 g.Battle.Enemies.Add(peer); g.Battle.Enemies.Add(untouched); Advance(g, untouched, i == 0, .1); idleResults[i] = Feet(g, untouched);
                 Check(!untouched.Authorized && g.Battle.Target == null && g.Battle.Progress.Health == 100, "unselected mortal scenery stays unengaged for canFight=" + (i == 0));
             }
-            Check(Distance(idleResults[0], idleResults[1]) < .001, "unselected mortal actors retain the same ordinary idle patrol rather than encounter separation");
+            Check(Distance(idleResults[0], idleResults[1]) < .001, "unselected mortal actors stay on the unengaged patrol branch regardless of the caller's canFight flag");
             Scene(g, 1, new Rectangle(0, 0, 1600, 900), new PointF(800, 500));
             AdventureEnemy a = Enemy("blackhole-early"), b = Enemy("blackhole-later");
             Place(g, a, new PointF(720, 500)); Place(g, b, new PointF(720, 500)); g.Battle.Enemies.Add(a); g.Battle.Enemies.Add(b);
@@ -233,6 +257,261 @@ namespace NetBunny
             finally { Set(g, "isolatedProfileRoot", privateRoot); }
         }
 
+        private static void IdleRouteChecks(AdventureController g, float s, Point offset)
+        {
+            Rectangle area = new Rectangle(offset.X, offset.Y, 1800, 1100);
+            PointF heroFeet = new PointF(offset.X + 900, offset.Y + 650);
+            FixedRandom random = Scene(g, s, area, heroFeet); g.Cultivation.Mortal = true;
+            RectangleF hero = HeroBounds(g, s); AdventureEnemy idle = Enemy("idle-route-through-hero");
+            idle.X = hero.Left - 330 * s; idle.Y = hero.Top + 70 * s; idle.PatrolSector = 4;
+            idle.TargetX = area.Right - 140 * s; idle.TargetY = idle.Y; g.Battle.Enemies.Add(idle);
+            double targetX = idle.TargetX, targetY = idle.TargetY; int sector = idle.PatrolSector;
+            int experience = g.Battle.Progress.Experience, score = g.Battle.Progress.Score; long qi = g.Cultivation.LifetimeQi, freed = g.Battle.Progress.FreedBytes;
+            bool clear = true, limited = true, bounded = true, plan = true, unengaged = true;
+            // The final patrol target is farther away than fourteen seconds of original
+            // walking speed, so a sector refresh cannot be mistaken for avoidance work.
+            for (int frame = 0; frame < 280; frame++)
+            {
+                RectangleF before = Bounds(g, idle); Advance(g, idle, true, .05); RectangleF after = Bounds(g, idle);
+                clear &= !SweepsHero(before, after, hero, s);
+                limited &= AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) <= 68 * s * .05 + .003 && idle.MoveSpeed <= 68 * s + .02;
+                bounded &= InBounds(g, idle, area);
+                plan &= idle.TargetX == targetX && idle.TargetY == targetY && idle.PatrolSector == sector;
+                unengaged &= IdleUnengaged(g, idle, experience, score, qi, freed);
+            }
+            string label = "scale " + s + " origin " + offset;
+            Check(clear, "an unselected mortal patrol routed through the hero detours around the entire hero/HUD window: " + label);
+            Check(idle.X >= hero.Right - .1, "idle avoidance makes forward progress to the far side rather than freezing before the hero: " + label);
+            Check(limited && bounded, "idle detours retain original walk speed, frame limits and screen bounds: " + label);
+            Check(plan && random.Doubles == 0 && random.Integers == 0, "visual idle waypoints preserve the original target, patrol sector and random stream: " + label);
+            Check(unengaged, "idle detouring cannot select, authorize, attack, grant rewards or perform maintenance: " + label);
+        }
+
+        private static void HeroMovesOntoIdleChecks(AdventureController g, float s)
+        {
+            Rectangle area = new Rectangle(0, 0, 1800, 1100);
+            FixedRandom random = Scene(g, s, area, new PointF(1400, 850)); g.Cultivation.Mortal = true;
+            AdventureEnemy idle = Enemy("hero-moved-onto-idle"); idle.X = 560; idle.Y = 340; idle.PatrolSector = 7;
+            idle.TargetX = 1600; idle.TargetY = idle.Y; g.Battle.Enemies.Add(idle);
+            Check(OverlapArea(Bounds(g, idle), HeroBounds(g, s)) == 0, "moving-hero fixture starts with an ordinary non-overlapping idle actor at scale " + s);
+            // Move only the hero. The original target would now pull this actor deeper
+            // through the portrait; safe routing must first exit at walking speed.
+            Set(g, "x", idle.X + 110 * s); Set(g, "y", idle.Y + 20 * s);
+            RectangleF hero = HeroBounds(g, s); double overlap = OverlapArea(Bounds(g, idle), hero);
+            double originalX = idle.TargetX, originalY = idle.TargetY; int sector = idle.PatrolSector;
+            int experience = g.Battle.Progress.Experience, score = g.Battle.Progress.Score; long qi = g.Cultivation.LifetimeQi, freed = g.Battle.Progress.FreedBytes;
+            bool limited = true, deeper = false, reentered = false, plan = true; double exitAt = Double.PositiveInfinity;
+            for (int frame = 0; frame < 160; frame++)
+            {
+                RectangleF before = Bounds(g, idle); Advance(g, idle, true, .05); RectangleF after = Bounds(g, idle);
+                double nextOverlap = OverlapArea(after, hero);
+                limited &= AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) <= 68 * s * .05 + .003 && InBounds(g, idle, area);
+                if (Double.IsPositiveInfinity(exitAt))
+                {
+                    deeper |= nextOverlap > overlap + .05 * s * s;
+                    if (nextOverlap <= .02 * s * s) exitAt = (frame + 1) * .05;
+                }
+                else reentered |= SweepsHero(before, after, hero, s);
+                overlap = nextOverlap;
+                plan &= idle.TargetX == originalX && idle.TargetY == originalY && idle.PatrolSector == sector;
+            }
+            Check(exitAt <= 4 && !deeper && !reentered, "an idle actor overlapped by a moved hero exits within four seconds without moving deeper or returning through the HUD at scale " + s);
+            Check(limited, "overlap escape is gradual, finite and bounded by the original speed at scale " + s);
+            Check(plan && random.Doubles == 0 && random.Integers == 0 && IdleUnengaged(g, idle, experience, score, qi, freed),
+                "escaping the moved hero preserves the patrol plan, randomness and noncombat state at scale " + s);
+        }
+
+        private static void IdleEdgeAndLongFrameChecks(AdventureController g)
+        {
+            foreach (float s in new[] { .8f, 1f, 1.2f })
+            {
+                Rectangle[] areas = { new Rectangle(-1920, -260, 1920, 1080), new Rectangle(20, 30, (int)(245 * s), (int)(260 * s)) };
+                foreach (Rectangle area in areas)
+                foreach (bool right in new[] { false, true })
+                foreach (bool bottom in new[] { false, true })
+                {
+                    Size hz = HeroSize(s);
+                    PointF hero = new PointF(right ? area.Right - hz.Width / 2f - 4 : area.Left + hz.Width / 2f + 4,
+                        bottom ? area.Bottom - 4 : area.Top + hz.Height + 2);
+                    FixedRandom random = Scene(g, s, area, hero); g.Cultivation.Mortal = true;
+                    AdventureEnemy idle = Enemy("idle-corner-fallback"); Place(g, idle, hero); boundEnemy.Invoke(g, new object[] { idle });
+                    idle.PatrolSector = 4;
+                    // Deliberately unreachable final target: tests soft fallback without
+                    // a legitimate reached-target reroll obscuring its random-call count.
+                    idle.TargetX = area.Right + 500; idle.TargetY = area.Bottom + 500; g.Battle.Enemies.Add(idle);
+                    double targetX = idle.TargetX, targetY = idle.TargetY; bool okay = true;
+                    for (int frame = 0; frame < 40; frame++)
+                    {
+                        PointF before = Feet(g, idle); Advance(g, idle, true, .1);
+                        okay &= InBounds(g, idle, area) && Distance(before, Feet(g, idle)) <= 68 * s * .1 + .003;
+                    }
+                    Check(okay && idle.TargetX == targetX && idle.TargetY == targetY && idle.PatrolSector == 4 && random.Doubles == 0
+                        && random.Integers == 0 && !idle.Authorized && g.Battle.Target == null,
+                        "idle corner/negative/tight-area soft fallback stays bounded, speed-limited and unengaged without rerolls: scale " + s + " area " + area + " right=" + right + " bottom=" + bottom);
+                }
+                foreach (double dt in new[] { 1.5, 8.0 })
+                {
+                    Rectangle area = new Rectangle(0, 0, 1800, 1100);
+                    FixedRandom random = Scene(g, s, area, new PointF(900, 650)); g.Cultivation.Mortal = true;
+                    RectangleF hero = HeroBounds(g, s); AdventureEnemy idle = Enemy("idle-long-frame");
+                    idle.X = hero.Left - 250 * s; idle.Y = hero.Top + 70 * s; idle.PatrolSector = 2;
+                    idle.TargetX = 1600; idle.TargetY = idle.Y; g.Battle.Enemies.Add(idle);
+                    RectangleF before = Bounds(g, idle); Advance(g, idle, true, dt); RectangleF after = Bounds(g, idle);
+                    Check(!SweepsHero(before, after, hero, s), "a long idle step cannot sweep through the hero even if its endpoint passes the portrait: scale " + s + " dt=" + dt);
+                    Check(InBounds(g, idle, area) && AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) <= 68 * s * dt + .003
+                        && random.Doubles == 0 && random.Integers == 0 && idle.PatrolSector == 2,
+                        "long-dt idle avoidance keeps existing speed, bounds and random cadence: scale " + s + " dt=" + dt);
+                }
+            }
+        }
+
+        private static void IdleVerticalAndOccupiedTargetChecks(AdventureController g)
+        {
+            foreach (float s in new[] { .8f, 1f, 1.2f })
+            {
+                foreach (bool downward in new[] { true, false })
+                {
+                    Rectangle area = new Rectangle(0, 0, 2200, 2000);
+                    FixedRandom random = Scene(g, s, area, new PointF(1100, 1050)); g.Cultivation.Mortal = true;
+                    RectangleF hero = HeroBounds(g, s); AdventureEnemy idle = Enemy("idle-vertical-crossing"); Size size = SizeOf(g, idle);
+                    idle.X = hero.Left + 45 * s;
+                    idle.Y = downward ? hero.Top - size.Height - 180 * s : hero.Bottom + 180 * s;
+                    idle.TargetX = idle.X;
+                    idle.TargetY = downward ? hero.Bottom + 400 * s : hero.Top - size.Height - 400 * s;
+                    idle.PatrolSector = 5; g.Battle.Enemies.Add(idle);
+                    double targetX = idle.TargetX, targetY = idle.TargetY; bool clear = true, limited = true, plan = true, crossed = false;
+                    // Both endpoints sit in the hero's horizontal span. A safe route
+                    // must pass around a side and continue past the far edge; a single
+                    // diagonal to the destination cannot satisfy the swept-window check.
+                    for (int frame = 0; frame < 480; frame++)
+                    {
+                        RectangleF before = Bounds(g, idle); Advance(g, idle, true, .05); RectangleF after = Bounds(g, idle);
+                        clear &= !SweepsHero(before, after, hero, s);
+                        limited &= AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) <= 68 * s * .05 + .003 && InBounds(g, idle, area);
+                        plan &= idle.TargetX == targetX && idle.TargetY == targetY && idle.PatrolSector == 5;
+                        crossed = downward ? after.Top >= hero.Bottom + 60 * s : after.Bottom <= hero.Top - 60 * s;
+                        if (crossed) break; // Keep well outside the legitimate <10px arrival/reroll threshold.
+                    }
+                    string label = "scale " + s + " direction=" + (downward ? "down" : "up");
+                    Check(clear && crossed, "a centered vertical idle crossing goes around the full hero window and reaches the opposite side: " + label);
+                    Check(limited, "vertical detouring respects each frame's original speed and work-area bounds: " + label);
+                    Check(plan && random.Doubles == 0 && random.Integers == 0 && !idle.Authorized && g.Battle.Target == null,
+                        "vertical visual detours leave the patrol destination, sector, random stream and unengaged state intact: " + label);
+                }
+
+                Rectangle waitArea = new Rectangle(0, 0, 1800, 1100);
+                FixedRandom waitRandom = Scene(g, s, waitArea, new PointF(900, 650)); g.Cultivation.Mortal = true;
+                RectangleF occupiedHero = HeroBounds(g, s); AdventureEnemy waiting = Enemy("idle-occupied-target");
+                waiting.X = occupiedHero.Left - 330 * s; waiting.Y = occupiedHero.Top + 70 * s;
+                waiting.TargetX = occupiedHero.Left + 60 * s; waiting.TargetY = waiting.Y; waiting.PatrolSector = 3; g.Battle.Enemies.Add(waiting);
+                double originalX = waiting.TargetX, originalY = waiting.TargetY;
+                double initialDistance = AdventureBattle.Distance(waiting.X, waiting.Y, originalX, originalY), lateTravel = 0;
+                int experience = g.Battle.Progress.Experience, score = g.Battle.Progress.Score; long qi = g.Cultivation.LifetimeQi, freed = g.Battle.Progress.FreedBytes;
+                bool safe = true, limitedWait = true, preserved = true, unengaged = true;
+                for (int frame = 0; frame < 160; frame++)
+                {
+                    RectangleF before = Bounds(g, waiting); Advance(g, waiting, true, .05); RectangleF after = Bounds(g, waiting);
+                    double moved = AdventureBattle.Distance(before.X, before.Y, after.X, after.Y);
+                    safe &= !SweepsHero(before, after, occupiedHero, s);
+                    limitedWait &= moved <= 68 * s * .05 + .003 && InBounds(g, waiting, waitArea);
+                    if (frame >= 120) lateTravel += moved;
+                    preserved &= waiting.TargetX == originalX && waiting.TargetY == originalY && waiting.PatrolSector == 3;
+                    unengaged &= IdleUnengaged(g, waiting, experience, score, qi, freed);
+                }
+                double waitingDistance = AdventureBattle.Distance(waiting.X, waiting.Y, originalX, originalY);
+                Check(safe && waitingDistance < initialDistance - 100 * s && waitingDistance > 10 && lateTravel <= s,
+                    "an occupied patrol destination is approached safely and waits without late oscillation or entering the hero/HUD: scale " + s);
+                Check(limitedWait && preserved && waitRandom.Doubles == 0 && waitRandom.Integers == 0 && unengaged,
+                    "waiting at an occupied target preserves original speed, patrol plan, random cadence and noncombat state: scale " + s);
+
+                // Free the same destination by moving only the hero; do not supply a
+                // replacement target or invoke the planner. Stop before real arrival.
+                Set(g, "x", (double)(waitArea.Right - HeroSize(s).Width - 30)); Set(g, "y", 30d);
+                RectangleF movedHero = HeroBounds(g, s); bool resumedSafe = true, resumedLimited = true;
+                double remaining = waitingDistance;
+                for (int frame = 0; frame < 240 && remaining > 30 * s; frame++)
+                {
+                    RectangleF before = Bounds(g, waiting); Advance(g, waiting, true, .05); RectangleF after = Bounds(g, waiting);
+                    resumedSafe &= !SweepsHero(before, after, movedHero, s);
+                    resumedLimited &= AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) <= 68 * s * .05 + .003 && InBounds(g, waiting, waitArea);
+                    preserved &= waiting.TargetX == originalX && waiting.TargetY == originalY && waiting.PatrolSector == 3;
+                    unengaged &= IdleUnengaged(g, waiting, experience, score, qi, freed);
+                    remaining = AdventureBattle.Distance(waiting.X, waiting.Y, originalX, originalY);
+                }
+                Check(resumedSafe && resumedLimited && remaining <= 30 * s && remaining > 10 && remaining < waitingDistance - 100 * s,
+                    "moving the hero away releases the safe wait and resumes the original target before its arrival threshold: scale " + s);
+                Check(preserved && waitRandom.Doubles == 0 && waitRandom.Integers == 0 && unengaged,
+                    "resuming an occupied patrol plan needs no new target, random draws, authorization, combat or rewards: scale " + s);
+            }
+        }
+
+        private static void IdleWallOverlapEscapeChecks(AdventureController g)
+        {
+            foreach (float s in new[] { .8f, 1f, 1.2f })
+            foreach (int placement in new[] { 0, 1, 2 })
+            {
+                Rectangle area = new Rectangle(0, 0, (int)(720 * s), (int)(480 * s)); Size hz = HeroSize(s);
+                float heroX = placement == 1 ? area.Right - hz.Width - 16 * s : placement == 2 ? 4 : 16 * s;
+                float heroY = placement == 2 ? 2 + 12 * s : 2;
+                FixedRandom random = Scene(g, s, area, new PointF(heroX + hz.Width / 2f, heroY + hz.Height)); g.Cultivation.Mortal = true;
+                AdventureEnemy idle = Enemy("idle-wall-overlap"); Size size = SizeOf(g, idle);
+                idle.X = placement == 1 ? area.Right - size.Width - 4 : 4; idle.Y = 2;
+                idle.TargetX = area.Right + 400; idle.TargetY = area.Bottom + 400; idle.PatrolSector = 8; g.Battle.Enemies.Add(idle);
+                double targetX = idle.TargetX, targetY = idle.TargetY; RectangleF hero = HeroBounds(g, s);
+                double overlap = OverlapArea(Bounds(g, idle), hero); bool monotone = overlap > 0, limited = true, plan = true;
+                int experience = g.Battle.Progress.Experience, score = g.Battle.Progress.Score; long qi = g.Cultivation.LifetimeQi, freed = g.Battle.Progress.FreedBytes;
+                bool unengaged = true; double exitAt = Double.PositiveInfinity;
+                // These legal wall placements have an escape direction that does not
+                // first increase overlap. Observe the actor's actual successive bounds;
+                // neither a shortest-exit choice nor any particular waypoint is assumed.
+                for (int frame = 0; frame < 160; frame++)
+                {
+                    RectangleF before = Bounds(g, idle); Advance(g, idle, true, .05); RectangleF after = Bounds(g, idle);
+                    double nextOverlap = OverlapArea(after, hero);
+                    monotone &= nextOverlap <= overlap + .05 * s * s;
+                    limited &= AdventureBattle.Distance(before.X, before.Y, after.X, after.Y) <= 68 * s * .05 + .003 && InBounds(g, idle, area);
+                    plan &= idle.TargetX == targetX && idle.TargetY == targetY && idle.PatrolSector == 8;
+                    unengaged &= IdleUnengaged(g, idle, experience, score, qi, freed);
+                    overlap = nextOverlap;
+                    if (overlap <= .02 * s * s) { exitAt = (frame + 1) * .05; break; }
+                }
+                string label = "scale " + s + " wall=" + (placement == 0 ? "top-left" : placement == 1 ? "top-right" : "left");
+                Check(monotone && exitAt <= 8, "a wall-overlapped idle actor exits without increasing its full-window overlap on any frame: " + label);
+                Check(limited && plan && random.Doubles == 0 && random.Integers == 0 && unengaged,
+                    "wall-overlap escape stays within original speed and bounds while preserving the patrol plan and noncombat state: " + label);
+            }
+        }
+
+        private static void IdleProtectedAndLegacyChecks(AdventureController g)
+        {
+            Action<AdventureEnemy>[] protect = { e => e.Dragging = true, e => e.Cleaning = true, e => e.VisualDefeated = true,
+                e => e.Defeated = true, e => e.Failed = true, e => { e.IsBoss = true; e.IsDiskBoss = true; } };
+            string[] names = { "dragging", "cleaning", "shattering", "defeated", "failed", "disk warning" };
+            for (int i = 0; i < protect.Length; i++)
+            {
+                Scene(g, 1, new Rectangle(0, 0, 1600, 900), new PointF(800, 500)); g.Cultivation.Mortal = true;
+                AdventureEnemy idle = Enemy("protected-idle"); protect[i](idle); Place(g, idle, new PointF(800, 400));
+                idle.PatrolSector = 6; g.Battle.Enemies.Add(idle); PointF before = Feet(g, idle);
+                double targetX = idle.TargetX, targetY = idle.TargetY; Advance(g, idle, false, .5);
+                Check(Distance(before, Feet(g, idle)) < .001 && idle.TargetX == targetX && idle.TargetY == targetY && idle.PatrolSector == 6,
+                    "idle avoidance leaves " + names[i] + " actors and their patrol plans untouched");
+            }
+            Scene(g, 1, new Rectangle(0, 0, 1800, 1100), new PointF(900, 650)); g.Cultivation.Mortal = true;
+            AdventureEnemy legacy = Enemy("legacy-idle-straight"); legacy.X = 400; legacy.Y = 450; legacy.TargetX = 1600; legacy.TargetY = 450; legacy.PatrolSector = 7;
+            g.Battle.Enemies.Add(legacy); string privateRoot = Field<string>(g, "isolatedProfileRoot"); FixedRandom random = Field<FixedRandom>(g, "random");
+            bool crossed = false;
+            try
+            {
+                Set(g, "isolatedProfileRoot", null);
+                for (int i = 0; i < 100; i++) { Advance(g, legacy, false, .1); crossed |= OverlapArea(Bounds(g, legacy), HeroBounds(g, 1)) > 1; }
+                Check(Math.Abs(legacy.Y - 450) < .001 && Math.Abs(legacy.X - 1080) < .02 && crossed,
+                    "non-isolated idle patrol keeps its original straight-line movement through the same geometry");
+                Check(legacy.TargetX == 1600 && legacy.TargetY == 450 && legacy.PatrolSector == 7 && random.Doubles == 0 && random.Integers == 0,
+                    "legacy idle geometry preserves its original target, sector and random cadence");
+            }
+            finally { Set(g, "isolatedProfileRoot", privateRoot); }
+        }
+
         [STAThread] private static int Main(string[] args)
         {
             try
@@ -246,6 +525,11 @@ namespace NetBunny
                     SpawnChecks(g);
                     foreach (float s in new[] { .8f, 1f, 1.2f }) { RingChecks(g, 2, s); RingChecks(g, 3, s); }
                     BoundsAndFallbackChecks(g); ProtectedAndLegacyChecks(g);
+                    foreach (float s in new[] { .8f, 1f, 1.2f })
+                    {
+                        IdleRouteChecks(g, s, Point.Empty); IdleRouteChecks(g, s, new Point(-1920, -260)); HeroMovesOntoIdleChecks(g, s);
+                    }
+                    IdleEdgeAndLongFrameChecks(g); IdleVerticalAndOccupiedTargetChecks(g); IdleWallOverlapEscapeChecks(g); IdleProtectedAndLegacyChecks(g);
                     Check(!owner.Visible && !g.DesktopHeroWindow.Visible && !g.DesktopActorsVisible && g.DesktopEnemyWindows.Values.All(w => !w.Visible),
                         "all controller and actor windows remain hidden throughout the stopped-timer fixture");
                     Check(g.DesktopRealWorkIdle, "no real scan, process target, cleanup, memory task or system worker is started");

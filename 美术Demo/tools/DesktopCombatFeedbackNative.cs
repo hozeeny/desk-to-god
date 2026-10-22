@@ -28,6 +28,19 @@ namespace NetBunny
         bool busy, finished;
         internal int ExitCode { get; private set; }
         object Call(string name, params object[] args) { return typeof(DesktopDemoAcceptance).GetMethod(name, Hidden).Invoke(native, args); }
+        void VerifyIdleWindowsClear(AdventureController game, string moment)
+        {
+            var windows=game.DesktopEnemyWindows;int idle=0,overlap=0;
+            foreach(AdventureEnemy enemy in game.Battle.Enemies)
+            {
+                KnightLayeredWindow window;
+                if(enemy.Id==targetId||enemy.Authorized||enemy.Defeated||enemy.VisualDefeated||enemy.IsVisuallyHidden
+                    ||!windows.TryGetValue(enemy.Id,out window)||!window.Visible)continue;
+                idle++;if(window.Bounds.IntersectsWith(game.DesktopHeroWindow.Bounds))overlap++;
+            }
+            report[moment+"VisibleIdleActors"]=idle;report[moment+"IdleHeroWindowIntersections"]=overlap;
+            if(overlap>0)throw new InvalidOperationException("Idle actor still overlaps the complete native hero/HUD window at "+moment+".");
+        }
         [STAThread] static int Main(string[] args)
         {
             string output = Path.GetFullPath(args[2]);
@@ -105,6 +118,7 @@ namespace NetBunny
                     report["warning"] = view.BlockText;
                     report["hud"] = typeof(AdventureController).GetProperty("DesktopHudHint", Hidden).GetValue(game, null);
                     report["warningSeconds"] = wall.Elapsed.TotalSeconds;
+                    VerifyIdleWindowsClear(game,"warning");
                     Call("Capture", "01-real-windup-before-impact", true, false, false);
                     if (!(bool)Call("ClickActor", game.DesktopHeroWindow)) return;
                     report["healthBeforeGuard"] = healthBefore; phase = 2; return;
@@ -113,6 +127,7 @@ namespace NetBunny
                 string result = view.RecentEvents.First(s => s.Contains("格挡成功"));
                 if (game.Battle.Progress.Health >= healthBefore || game.Battle.Progress.Dead) throw new InvalidOperationException("Expected original positive post-guard damage, not an injected no-hit result.");
                 report["result"] = result; report["healthAfterGuard"] = game.Battle.Progress.Health;
+                VerifyIdleWindowsClear(game,"guardResult");
                 Call("Capture", "02-real-guard-result", true, false, false);
                 session.OpenPanel("practice");
                 phase = 3;

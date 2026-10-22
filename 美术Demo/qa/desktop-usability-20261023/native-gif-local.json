@@ -1,0 +1,27 @@
+{
+  "scope": "Actual Windows native crop frames from exact EXE normal x1 mirror combat. Camera follows actors; only white edge padding for equal canvas size, no resize/redraw/interpolation. GIF palette quantization applies; original lossless PNG retained. Other-app background: local only.",
+  "sha256": "588ce03a953e064190d960e0a4b1d6d7c466e4b305014d3c78716585ff1ede50",
+  "frames": 17,
+  "width": 333,
+  "height": 512,
+  "wall_seconds": 6.3548385,
+  "durations_ms": [
+    336,
+    428,
+    437,
+    333,
+    432,
+    435,
+    435,
+    335,
+    438,
+    331,
+    437,
+    423,
+    334,
+    438,
+    437,
+    346,
+    346
+  ]
+}

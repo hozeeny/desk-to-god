@@ -1,0 +1,30 @@
+[
+  {
+    "source_report_sha256": "6e7e430b6eb0d4d75edaae63086acd12f70092bea8d9c7d5fe535eb6e340d486",
+    "source_image": "10-training-handbook.png",
+    "source_sha256": "95136e26614b13e6268efc25937f6fc3d522cf19ca4eb253093c6219c3c71b90",
+    "crop_box": [
+      7,
+      0,
+      479,
+      732
+    ],
+    "output": "native-10-training-handbook.png",
+    "output_sha256": "e89e57b08111f324f2be07a3da262aeb89411c14a63f75b858bcd410c415ae5e",
+    "scope": "Reviewed opaque owned panel only; original native pixels, no rescale/redraw; other-app background excluded."
+  },
+  {
+    "source_report_sha256": "6e7e430b6eb0d4d75edaae63086acd12f70092bea8d9c7d5fe535eb6e340d486",
+    "source_image": "12-inventory-owned-weapon.png",
+    "source_sha256": "e2405b6d3b62a3ea26b3131bca9f759591cfdc03fc1350a9f32ed56165e6225f",
+    "crop_box": [
+      7,
+      0,
+      479,
+      732
+    ],
+    "output": "native-12-inventory-owned-weapon.png",
+    "output_sha256": "0a460499fff9be077def81ec872e65b01c09951babc94e369f3a039ee277c89d",
+    "scope": "Reviewed opaque owned panel only; original native pixels, no rescale/redraw; other-app background excluded."
+  }
+]

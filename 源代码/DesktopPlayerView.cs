@@ -141,7 +141,7 @@ namespace NetBunny
                 : blockReady ? "格挡就绪 · 点击修士，持续1秒" : "格挡冷却 " + Math.Max(1, (int)Math.Ceiling(blockCooldownUntil - now)) + "秒";
             string incomingAttack = DesktopIncomingAttackHint();
             if (incomingAttack.Length > 0) block = incomingAttack + "\n" + block;
-            string notice = failure ?? (!desktopLastSaveSucceeded ? scanStatus : dead
+            string notice = failure ?? DesktopConsentFailureNotice ?? (!desktopLastSaveSucceeded ? scanStatus : dead
                 ? "力竭调息中 · 约" + rest + "秒后自动恢复，历练与修为保留"
                 : cultivation.CanAwaken ? "十次有效击杀已达成 · 打开修行面板，点击灵根觉醒"
                 : String.IsNullOrEmpty(desktopPlayerNotice) ? cultivation.Mortal ? "未选中的妖物只会巡游；准备好后再选择目标"

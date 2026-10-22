@@ -1,0 +1,18 @@
+{
+  "scope": "Production-source runner, fresh private mortal, normal x1, real native selection/guard and actual health change; before acceptance-only diagnostic addition, not exact delivered EXE or ten-kill flow.",
+  "passed": true,
+  "elapsed_seconds": 6.0673891,
+  "native_clicks": 2,
+  "health_before": 100,
+  "health_after": 99,
+  "result": "格挡成功 · 山中石傀 · 挡下3点 · 实受1点伤害 · 气血 99/100",
+  "warning_idle_actors": 1,
+  "warning_idle_hero_intersections": 0,
+  "result_idle_actors": 1,
+  "result_idle_hero_intersections": 0,
+  "glyph_samples": 483,
+  "glyph_matches": 483,
+  "captures": 3,
+  "screenshots_reviewed": 3,
+  "source_report_sha256": "30f329e1b835e9eff9d828ca8f6fe14dfe3ad854b51a313b5ede0d8fe8e70bc1"
+}

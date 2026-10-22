@@ -299,7 +299,13 @@ namespace NetBunny
                     Label details = (Label)typeof(DesktopPracticePanel).GetField("cultivation", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handbook);
                     if (!NativePreviewContentMatches(heading, true) || !NativePreviewContentMatches(details, true))
                     {
-                        if (now - trainingPreviewSince > 10) throw new TimeoutException("手札正文未在真实桌面清晰呈现，拒绝淡入或遮挡截图。");
+                        if (now - trainingPreviewSince > 10)
+                        {
+                            using (Bitmap rejected = DesktopFrameCapture.CaptureRegion(handbook.Bounds, true))
+                                rejected.Save(Path.Combine(output, "rejected-training-handbook.png"), ImageFormat.Png);
+                            Log("REJECTED training panel native pixels retained; bounds=" + handbook.Bounds + "; handle=" + handbook.Handle + "; foreground=" + GetForegroundWindow());
+                            throw new TimeoutException("手札正文未在真实桌面清晰呈现，拒绝淡入或遮挡截图。");
+                        }
                         nextAction = now + .1; return;
                     }
                     Assert(true, "手札目标与修行正文已由真实桌面字形像素核实");
@@ -689,6 +695,8 @@ namespace NetBunny
             }
             bool presented = samples >= 60 && matches >= samples * .8;
             if (presented) Log("PRESENTED native control " + (textOnly ? "text glyphs" : "illustration") + " " + matches + "/" + samples);
+            else Log("PRESENTATION pending " + control.GetType().Name + " " + matches + "/" + samples
+                + "; bounds=" + new Rectangle(control.PointToScreen(Point.Empty), control.Size) + "; root=" + RootAt(control.PointToScreen(new Point(control.Width / 2, control.Height / 2))));
             return presented;
         }
         private Rectangle CaptureBounds(IList<ArtDemoActorFrame> actors, bool includePanels)

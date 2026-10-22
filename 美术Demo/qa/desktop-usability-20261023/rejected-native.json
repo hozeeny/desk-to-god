@@ -1,0 +1,13 @@
+{
+  "passed": false,
+  "failures_preserved": 2,
+  "reason": "Interactive child incorrectly launched with WindowStyle Hidden. Diagnostic r2 foreground handle equalled the managed panel while native root/desktop pixels were another app (32/1436 glyphs). Same exact diagnostic EXE with visible Normal startup r3 passed 1436/1436 heading and 2369/2369 body. No threshold relaxation, forced foreground or product focus change.",
+  "first_seconds": 13.3513197,
+  "diagnostic_seconds": 13.4669344,
+  "diagnostic_executable_sha256": "4d0e7f6a266a8bee59061096bbd935b8097cb3bb44691be7fba980e7c369cb0a",
+  "source_reports_sha256": [
+    "5097c54125192aa4b0f4c7f95579500a84acc27fb905263ba0bbf5f1d0ce9344",
+    "000150c34c4bc3ede7087c8c431e9a7d0d481f2009b03006cdcdd28967e19ebb"
+  ],
+  "raw_images_local_only": true
+}

@@ -135,6 +135,95 @@ namespace NetBunny
             PointF origin = KnightPetController.BoundPosition(feetX - size.Width / 2.0, feetY - size.Height, size, area);
             return new PointF(origin.X + size.Width / 2f, origin.Y + size.Height);
         }
+        private static bool DesktopInside(PointF point, RectangleF bounds)
+        { return point.X > bounds.Left && point.X < bounds.Right && point.Y > bounds.Top && point.Y < bounds.Bottom; }
+        private static bool DesktopIdleSegmentBlocked(PointF a, PointF b, RectangleF obstacle)
+        {
+            double enter = 0, leave = 1;
+            for (int axis = 0; axis < 2; axis++)
+            {
+                double start = axis == 0 ? a.X : a.Y, delta = axis == 0 ? b.X - a.X : b.Y - a.Y;
+                double low = axis == 0 ? obstacle.Left : obstacle.Top, high = axis == 0 ? obstacle.Right : obstacle.Bottom;
+                if (Math.Abs(delta) < .000001) { if (start <= low || start >= high) return false; continue; }
+                double first = (low - start) / delta, last = (high - start) / delta;
+                enter = Math.Max(enter, Math.Min(first, last)); leave = Math.Min(leave, Math.Max(first, last));
+                if (enter >= leave - .0000001) return false;
+            }
+            return leave > 0 && enter < 1;
+        }
+        private static void DesktopConsiderIdlePath(PointF current, PointF a, PointF b, PointF goal, RectangleF obstacle,
+            double remainder, ref double bestLength, ref PointF best)
+        {
+            if (DesktopIdleSegmentBlocked(current, a, obstacle) || DesktopIdleSegmentBlocked(a, b, obstacle)
+                || DesktopIdleSegmentBlocked(b, goal, obstacle)) return;
+            double first = AdventureBattle.Distance(current.X, current.Y, a.X, a.Y), middle = AdventureBattle.Distance(a.X, a.Y, b.X, b.Y);
+            double length = first + middle + AdventureBattle.Distance(b.X, b.Y, goal.X, goal.Y) + remainder;
+            if (length + .0001 >= bestLength) return;
+            bestLength = length; best = first > .1 ? a : middle > .1 ? b : goal;
+        }
+        private PointF DesktopIdleWaypoint(AdventureEnemy enemy)
+        {
+            Size size = EnemySize(enemy); float margin = 8 * displayScale, cornerGap = displayScale;
+            PointF current = new PointF((float)enemy.X, (float)enemy.Y);
+            PointF destination = KnightPetController.BoundPosition(enemy.TargetX, enemy.TargetY, size, area);
+            // Move the actor's origin around the hero expanded by its full
+            // window, including the HUD. Actual sprite transparency stays intact.
+            RectangleF obstacle = new RectangleF((float)x - size.Width - margin, (float)y - size.Height - margin,
+                HeroSize.Width + size.Width + 2 * margin, HeroSize.Height + size.Height + 2 * margin);
+            if (DesktopInside(current, obstacle))
+            {
+                PointF[] exits = { new PointF(current.X, obstacle.Top - cornerGap), new PointF(obstacle.Right + cornerGap, current.Y),
+                    new PointF(current.X, obstacle.Bottom + cornerGap), new PointF(obstacle.Left - cornerGap, current.Y),
+                    new PointF(area.Left, area.Top), new PointF(area.Right, area.Top), new PointF(area.Right, area.Bottom), new PointF(area.Left, area.Bottom), current };
+                PointF exit = current; double bestScore = Double.MaxValue;
+                RectangleF hero = new RectangleF((float)x, (float)y, HeroSize.Width, HeroSize.Height);
+                double initialOverlap = DesktopIntersectionArea(new RectangleF(current, size), hero);
+                foreach (PointF proposal in exits)
+                {
+                    PointF bounded = KnightPetController.BoundPosition(proposal.X, proposal.Y, size, area);
+                    // Each axis reaches its greatest overlap nearest the hero's
+                    // center. Their product bounds the complete escape segment;
+                    // reject paths that would first push deeper through the HUD.
+                    float nearestX = Math.Max(Math.Min(current.X, bounded.X), Math.Min(Math.Max(current.X, bounded.X), hero.Left + (hero.Width - size.Width) / 2));
+                    float nearestY = Math.Max(Math.Min(current.Y, bounded.Y), Math.Min(Math.Max(current.Y, bounded.Y), hero.Top + (hero.Height - size.Height) / 2));
+                    if (DesktopIntersectionArea(new RectangleF(nearestX, nearestY, size.Width, size.Height), hero) > initialOverlap + .001) continue;
+                    // When a tiny work area cannot hold two windows, minimize
+                    // overlap or wait; never teleport or enlarge the work area.
+                    double overlap = DesktopIntersectionArea(new RectangleF(bounded, size), hero);
+                    double score = (DesktopInside(bounded, obstacle) ? 1000 : 0) + overlap * 1000 / Math.Max(1, size.Width * size.Height)
+                        + AdventureBattle.Distance(current.X, current.Y, bounded.X, bounded.Y) / Math.Max(1, area.Width + area.Height);
+                    if (score + .000001 < bestScore) { exit = bounded; bestScore = score; }
+                }
+                return exit;
+            }
+            if (!DesktopInside(destination, obstacle) && !DesktopIdleSegmentBlocked(current, destination, obstacle)) return destination;
+            PointF[] corners = { new PointF(obstacle.Left - cornerGap, obstacle.Top - cornerGap), new PointF(obstacle.Right + cornerGap, obstacle.Top - cornerGap),
+                new PointF(obstacle.Right + cornerGap, obstacle.Bottom + cornerGap), new PointF(obstacle.Left - cornerGap, obstacle.Bottom + cornerGap) };
+            for (int i = 0; i < corners.Length; i++) corners[i] = KnightPetController.BoundPosition(corners[i].X, corners[i].Y, size, area);
+            PointF[] goals = DesktopInside(destination, obstacle)
+                ? new[] { new PointF(obstacle.Left - cornerGap, destination.Y), new PointF(obstacle.Right + cornerGap, destination.Y),
+                    new PointF(destination.X, obstacle.Top - cornerGap), new PointF(destination.X, obstacle.Bottom + cornerGap) }
+                : new[] { destination };
+            PointF best = current; double bestLength = Double.MaxValue;
+            foreach (PointF proposedGoal in goals)
+            {
+                PointF goal = KnightPetController.BoundPosition(proposedGoal.X, proposedGoal.Y, size, area);
+                if (DesktopInside(goal, obstacle)) continue;
+                double remainder = AdventureBattle.Distance(goal.X, goal.Y, destination.X, destination.Y);
+                if (!DesktopIdleSegmentBlocked(current, goal, obstacle))
+                { DesktopConsiderIdlePath(current, goal, goal, goal, obstacle, remainder, ref bestLength, ref best); continue; }
+                foreach (PointF a in corners)
+                {
+                    if (DesktopInside(a, obstacle)) continue;
+                    DesktopConsiderIdlePath(current, a, a, goal, obstacle, remainder, ref bestLength, ref best);
+                    foreach (PointF b in corners)
+                        if (!DesktopInside(b, obstacle)) DesktopConsiderIdlePath(current, a, b, goal, obstacle, remainder, ref bestLength, ref best);
+                }
+            }
+            // The patrol target/sector and random stream are untouched. If its
+            // destination is occupied, wait at the safe proxy until the hero moves.
+            return best;
+        }
         private static double DesktopBodyOverlap(PointF feet, Size size, PointF otherFeet, Size otherSize)
         {
             // Estimate the illustrated body, excluding transparent atlas padding.

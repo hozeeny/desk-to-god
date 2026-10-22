@@ -1,0 +1,58 @@
+{
+  "scope": "Continued transparent-desktop usability development; not complete product acceptance.",
+  "executable_sha256": "4d0e7f6a266a8bee59061096bbd935b8097cb3bb44691be7fba980e7c369cb0a",
+  "archive_sha256": "dbed41906a276e2df67665c2f2560abf24eb3b17253e82462d0527e3c1e9031d",
+  "source_files": 58,
+  "regression": {
+    "results": 40,
+    "nonpassing": 0,
+    "scope": "Before final acceptance-only failure screenshot/log addition; exact final EXE receives focused native verification."
+  },
+  "idle_avoidance": {
+    "final_checks": 274,
+    "failures": 0,
+    "initial_red_checks": 226,
+    "initial_failures": 12,
+    "review_red_checks": 274,
+    "review_failures": 6,
+    "scope": "Hidden stopped-timer real controller/private archives, segment clearance/3 scales/negative screens/long dt/occupied destination/release/monotonic wall escape/speed/bounds/randomness/legacy/protected states; no natural-time claim."
+  },
+  "consent_feedback": {
+    "red_checks": 148,
+    "red_failures": 32,
+    "green_checks": 148,
+    "green_failures": 0,
+    "scope": "No-window setters/view plus private faulted consent files; no observer, real maintenance, business archive writes or native failure-dialog layout claim."
+  },
+  "native_guard": {
+    "seconds": 6.0673891,
+    "clicks": 2,
+    "idle_full_window_intersections": [
+      0,
+      0
+    ],
+    "glyph_matches": 483
+  },
+  "final_exe": {
+    "seconds": 21.2019774,
+    "clicks": 5,
+    "assertions": 34,
+    "captures": 10,
+    "reviewed": 10
+  },
+  "isolation": {
+    "runtime_profile_files": 240,
+    "all_profile_hashes_unchanged": true,
+    "legacy_asset_files": 22,
+    "same_as_main": true,
+    "maintenance_off": true,
+    "raw_other_app_captures_uploaded": false
+  },
+  "limitations": [
+    "Escape is conservative. If screen edges leave no non-deepening exit, idle actors wait until the hero moves. Arbitrarily small screens and dense actual melee are not universally overlap-free.",
+    "Pending revocation followed by re-enable retains the existing permission state machine: the grant may be temporarily true until the queued revocation retry. This patch keeps its pending UI visible and does not redesign consent semantics.",
+    "Final x1 feature run starts from an explicit seeded qishi-full fixture and performs same-process Load, not natural growth or genuine new-process restoration.",
+    "Native Windows title bars/controls still need further visual polish; dynamic display-disconnection recovery, material-purpose guidance, mixed DPI and lock-screen handling remain to be improved or verified.",
+    "Performance samples cover about 21 seconds with capture overhead; long testing and automation-3 remain paused by the user. No natural first-harvest or eight-hour conclusion."
+  ]
+}

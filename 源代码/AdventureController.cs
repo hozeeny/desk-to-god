@@ -263,6 +263,33 @@ namespace NetBunny
         // resurrect the authorization.
         private bool consentRetryCleanup, consentRetryMemory, consentRetryAutoMaint;
         private double consentRetryAt = -1;
+        // Process-local UI feedback; never persisted or used to decide consent.
+        private string desktopCleanupConsentFailure, desktopMemoryConsentFailure, desktopAutoConsentFailure;
+        private string DesktopConsentFailureNotice
+        {
+            get
+            {
+                string notice = String.Join(Environment.NewLine, new[] { desktopCleanupConsentFailure, desktopMemoryConsentFailure, desktopAutoConsentFailure }.Where(text => !String.IsNullOrEmpty(text)));
+                return notice.Length == 0 ? null : notice;
+            }
+        }
+        private void RecordDesktopConsentResult(int scope, bool value, bool persisted, string error, string result = null)
+        {
+            if (!IsolatedDesktop) return;
+            string name = scope == 0 ? "文件清理授权" : scope == 1 ? "内存维护授权" : "无人值守自动维护";
+            bool pending = scope == 0 ? consentRetryCleanup : scope == 1 ? consentRetryMemory : consentRetryAutoMaint;
+            string message = result ?? battle.LastReward;
+            if (!persisted)
+                message = value ? message + (String.IsNullOrEmpty(error) ? "" : Environment.NewLine + error)
+                    : name + "已在本机立即关闭；授权文件未能更新，将自动重试保存关闭状态，请保持程序运行";
+            else if (pending)
+                message = name + "关闭状态仍待重试保存；此前授权文件未能更新，请保持程序运行";
+            string failure = !persisted || pending ? message : null;
+            if (scope == 0) desktopCleanupConsentFailure = failure;
+            else if (scope == 1) desktopMemoryConsentFailure = failure;
+            else desktopAutoConsentFailure = failure;
+            RecordDesktopEvent(message);
+        }
         internal bool SetCleanupConsent(bool value)
         {
             if (disposed) return false;
@@ -282,10 +309,12 @@ namespace NetBunny
                     consentRetryCleanup = true; consentRetryAt = clock.Elapsed.TotalSeconds;
                     battle.LastReward = "文件清理授权已在本机立即关闭并取消任务，但授权文件未能更新；将自动重试清除，若重启后仍显示已授权请手动删除 " + consentPath;
                 }
+                RecordDesktopConsentResult(0, value, persisted, error);
                 return persisted;
             }
-            if (!persisted) { battle.LastReward = "授权文件写入失败，为安全起见文件清理授权保持关闭"; return false; }
+            if (!persisted) { battle.LastReward = "授权文件写入失败，为安全起见文件清理授权保持关闭"; RecordDesktopConsentResult(0, value, false, error); return false; }
             battle.LastReward = "文件清理授权已开启：击败文件怪将安全清理其绑定的、超过 24 小时的本用户临时文件";
+            RecordDesktopConsentResult(0, value, true, error);
             return true;
         }
         internal bool SetMemoryConsent(bool value)
@@ -306,10 +335,12 @@ namespace NetBunny
                     consentRetryMemory = true; consentRetryAt = clock.Elapsed.TotalSeconds;
                     battle.LastReward = "内存维护授权已在本机立即关闭并取消任务，但授权文件未能更新；将自动重试清除，若重启后仍显示已授权请手动删除 " + consentPath;
                 }
+                RecordDesktopConsentResult(1, value, persisted, error);
                 return persisted;
             }
-            if (!persisted) { battle.LastReward = "授权文件写入失败，为安全起见内存维护授权保持关闭"; return false; }
+            if (!persisted) { battle.LastReward = "授权文件写入失败，为安全起见内存维护授权保持关闭"; RecordDesktopConsentResult(1, value, false, error); return false; }
             battle.LastReward = "内存维护授权已开启：击败内存 Boss 将尝试回收同会话后台进程的工作集";
+            RecordDesktopConsentResult(1, value, true, error);
             return true;
         }
         // Third, separately confirmed permission: unattended real maintenance.
@@ -333,6 +364,7 @@ namespace NetBunny
                     RetireAutomaticRealEffectJobs();
                 }
                 else battle.LastReward = "授权文件写入失败，为安全起见无人值守自动维护保持关闭";
+                RecordDesktopConsentResult(2, value, false, error);
                 return false;
             }
             if (!value)
@@ -344,6 +376,7 @@ namespace NetBunny
                 battle.LastReward = "无人值守自动维护已关闭：自动作战继续，但只结算虚拟奖励；真实清理/回收需要手动击杀或重新开启";
             }
             else battle.LastReward = "无人值守自动维护已开启：自动作战击败文件怪/内存 Boss 时将执行对应的真实清理或回收（仍须对应授权保持开启）；重启后按授权文件恢复，可随时关闭";
+            RecordDesktopConsentResult(2, value, true, error);
             return true;
         }
         private void RetireAutomaticRealEffectJobs()
@@ -374,9 +407,12 @@ namespace NetBunny
         {
             if (!consentRetryCleanup && !consentRetryMemory && !consentRetryAutoMaint) return;
             string ignored;
-            if (consentRetryCleanup && consent.SetCleanup(ConsentWritePath, false, out ignored)) consentRetryCleanup = false;
-            if (consentRetryMemory && consent.SetMemory(ConsentWritePath, false, out ignored)) consentRetryMemory = false;
-            if (consentRetryAutoMaint && consent.SetAutoMaintenance(ConsentWritePath, false, out ignored)) consentRetryAutoMaint = false;
+            if (consentRetryCleanup && consent.SetCleanup(ConsentWritePath, false, out ignored))
+            { consentRetryCleanup = false; RecordDesktopConsentResult(0, false, true, null, "文件清理授权关闭状态已重试保存成功"); }
+            if (consentRetryMemory && consent.SetMemory(ConsentWritePath, false, out ignored))
+            { consentRetryMemory = false; RecordDesktopConsentResult(1, false, true, null, "内存维护授权关闭状态已重试保存成功"); }
+            if (consentRetryAutoMaint && consent.SetAutoMaintenance(ConsentWritePath, false, out ignored))
+            { consentRetryAutoMaint = false; RecordDesktopConsentResult(2, false, true, null, "无人值守自动维护关闭状态已重试保存成功"); }
             if (!consentRetryCleanup && !consentRetryMemory && !consentRetryAutoMaint) scanStatus = "授权关闭状态已重试保存成功";
         }
         private void CancelCleanupWork(string notice)
@@ -1567,7 +1603,8 @@ namespace NetBunny
             double speed = enemy.IsBoss ? 55 : AdventureMonster.Find(enemy.MonsterKind).WalkSpeed;
             // During death/disconnection, idle patrol remains independent of hero roaming.
             if (enemy.Authorized) speed *= heroDistance < 180 * displayScale ? .18 : .42;
-            MoveEnemy(enemy, enemy.TargetX, enemy.TargetY, speed * displayScale, dt);
+            PointF idle = IsolatedDesktop ? DesktopIdleWaypoint(enemy) : new PointF((float)enemy.TargetX, (float)enemy.TargetY);
+            MoveEnemy(enemy, idle.X, idle.Y, speed * displayScale, dt);
         }
         private double EnemyHeroDistance(AdventureEnemy enemy)
         {
