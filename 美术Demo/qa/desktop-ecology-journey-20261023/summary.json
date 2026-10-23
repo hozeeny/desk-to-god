@@ -1,0 +1,594 @@
+﻿{
+  "schemaVersion": 1,
+  "date": "2026-10-23",
+  "runId": "20261023-210038-554-7345a4",
+  "status": "scoped_pass",
+  "privacy": {
+    "redacted": true,
+    "userTempPathsIncluded": false,
+    "enemyIdsIncluded": false,
+    "otherApplicationNamesIncluded": false,
+    "rawDesktopImagesIncluded": false,
+    "rawDesktopGifsIncluded": false,
+    "profilesOrMarkersCopied": false,
+    "rawEvidenceLocalOnly": true
+  },
+  "sourceJourney": {
+    "passed": true,
+    "checks": 22,
+    "failures": 0,
+    "elapsedSeconds": 248.790951,
+    "nativeClicks": 124,
+    "scope": "One fresh unseeded x1 private Observe profile, original production controller and progress object. The first owned two-file source is explicitly bound after real identity/batch validation and receives one initial position; later targets are existing ordinary field enemies. This is a source runner, not natural first-source discovery by the shipped executable.",
+    "sameController": true,
+    "sameCultivationObject": true,
+    "samePrivateProfile": true,
+    "seed": null,
+    "speedMultiplier": 1,
+    "hpDamageCooldownRealmProbabilityOrClockEdited": false,
+    "repeatedActorRelocation": false,
+    "controlledSource": {
+      "ownedFiles": 2,
+      "fileIdentityAndUniqueBatchVerified": true,
+      "cleanerAllowlistClosed": true,
+      "cleanCalls": 1,
+      "acceptedCleanCalls": 1,
+      "rejectedCleanCalls": 0,
+      "deletedFiles": 1,
+      "freedBytes": 4096,
+      "lockedSkippedFiles": 1,
+      "lockedSkippedBytes": 512,
+      "cancelled": false,
+      "heldFileSHA256Unchanged": true,
+      "nativeFileConsentAndConfirmation": true,
+      "nativeRevocationPersisted": true
+    },
+    "manualProgress": {
+      "firstMaintenanceKill": 1,
+      "additionalKills": 9,
+      "additionalReadOnlyOrdinarySourceKills": 8,
+      "additionalVirtualKills": 1,
+      "totalMortalKills": 10,
+      "activeAwakeningByNativeButton": true,
+      "heroStageAfterAwakening": "qishi",
+      "defaultAutomaticPreferenceEnabled": true
+    },
+    "zeroInputAutomatic": {
+      "passed": true,
+      "scope": "R3 automatic business observation only; this is not a zero-input claim for restart startup probes.",
+      "nativeInputCountAtStart": 124,
+      "nativeInputCountAtEnd": 124,
+      "scoreBefore": 125,
+      "scoreAfter": 155,
+      "lifetimeQiBefore": 80,
+      "lifetimeQiAfter": 240,
+      "actualAutomaticKillObserved": true,
+      "passiveQiObservedWithUnchangedScore": true,
+      "firstIndependentPassiveSample": {
+        "elapsedSeconds": 97.9994577,
+        "score": 125,
+        "scoreDelta": 0,
+        "lifetimeQi": 81,
+        "lifetimeQiDelta": 1
+      },
+      "closedPanelObservationMinimumSeconds": 12,
+      "closedPanelStageElapsedSeconds": 12.097,
+      "finalAlive": true,
+      "finalActiveAutomatic": true
+    },
+    "manualNaturalRests": 0,
+    "automaticNaturalRests": 0,
+    "naturalRecoveryExercised": false,
+    "allMaintenanceScopesOffAtExit": true,
+    "processExitTaskStarted": false,
+    "fivePrivateArchivesSavedAndDirectlyLoaded": true,
+    "restartMarkerWrittenOnlyAfterSave": true,
+    "newProcessRestoreClaimedBySourceReadback": false,
+    "formalArchiveHashesUnchanged": true,
+    "terminal": {
+      "exitCode": 0,
+      "timedOut": false,
+      "error": null,
+      "parentElapsedSeconds": 253.532609,
+      "parentFormalArchiveHashesUnchanged": true,
+      "retainedTerminalFailurePresent": false
+    }
+  },
+  "exactShippedExeRestart": {
+    "passed": true,
+    "restartVerification": true,
+    "elapsedSeconds": 8.481231,
+    "assertions": 28,
+    "failures": 0,
+    "differentProcess": true,
+    "originalPrivateProfileAndUneditedMarker": true,
+    "fiveSourceMainHashesEqualBeforeRestart": true,
+    "mode": "Normal x1 official acceptance entry with Virtual safety cap; not ordinary Observe and not a second maintenance journey.",
+    "sameIdentityRealmMortalKillsAutoPreferenceLingyuAndDongtianRestored": true,
+    "fiveArchivesSavedAndLoadedAgain": true,
+    "formalArchiveHashesUnchanged": true,
+    "exitCode": 0,
+    "timedOut": false,
+    "nativeMouseClicksDriverCounter": 0,
+    "startupNativeTransparencyDragBlockCrossMonitorProbesExecuted": true,
+    "wholeRestartZeroInputClaim": false,
+    "normalSpeedSoakObservationSeconds": 0
+  },
+  "restartAdmissionNegativeContracts": {
+    "checks": 9,
+    "failures": 0,
+    "scope": "Synthetic false-terminal admission contracts; no gameplay or native input, rejected before copying executable/assets/profile.",
+    "allRejectedBeforeCopy": true,
+    "cases": [
+      "missing-terminal",
+      "nonzero-exit",
+      "timeout",
+      "changed-archives",
+      "wrapper-error",
+      "terminal-failure",
+      "wrong-build",
+      "wrong-evidence",
+      "missing-exit"
+    ],
+    "reproducibility": {
+      "script": "../../tools/verify-desktop-ecology-journey-restart-admission.ps1",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"美术Demo/tools/verify-desktop-ecology-journey-restart-admission.ps1\"",
+      "verifiedRuntime": "Windows PowerShell 5.1",
+      "latestRetestId": "20261023-211554-591",
+      "latestRetestChecks": 9,
+      "latestRetestFailures": 0,
+      "latestRetestSameCode": true,
+      "nativeRerun": false,
+      "gameProfilesOrRuntimeCopiesCreated": false
+    }
+  },
+  "visualReview": {
+    "sourceOriginalsReviewed": 10,
+    "restartOriginalsReviewed": 3,
+    "allSourceOriginalsConsideredValid": false,
+    "excludedSourceImages": [
+      {
+        "image": "02-own-file-consent-confirmation.png",
+        "reason": "Blank confirmation content; excluded from presentation and confirmation visual-pass evidence.",
+        "visualPass": false
+      }
+    ],
+    "functionalConfirmationEvidence": "Native own-window/button hit evidence and persisted authorization state; not the rejected blank screenshot.",
+    "actualSourceActorsVisible": 2,
+    "publicCrops": [
+      {
+        "image": "actual-file-result.png",
+        "sha256": "4f921a9748e3a02987cb368e12a94b5a85750dfb929383656632340be7b10ad9",
+        "operation": "Native opaque client-area crop only; no repaint or compositing"
+      },
+      {
+        "image": "file-consent-revoked.png",
+        "sha256": "263da14e669422dacff698f0cfeb4205f8ad7db39ea5cb70c9547fbae1e5c83e",
+        "operation": "Native opaque client-area crop only; no repaint or compositing"
+      },
+      {
+        "image": "ten-kill-active-awakening.png",
+        "sha256": "e36d9513347882cf9c8068eb9b818a68f6521f3400d3fd08b4695f0d50c58238",
+        "operation": "Native opaque client-area crop only; no repaint or compositing"
+      }
+    ],
+    "publicCropProvenance": "public-image-provenance.json",
+    "nativeFrameContactSheetReviewed": true,
+    "eachGifDecodedFirstMiddleLastFramesReviewed": true,
+    "localOnlyMovies": [
+      {
+        "image": "ecology-mortal-manual.gif",
+        "sha256": "d51dc4fed71eab23c6d51291c97cea8ae20729535fba2457d190200d66b9d18d",
+        "frames": 19,
+        "firstSeconds": 11.230014,
+        "lastSeconds": 17.940888,
+        "durationMilliseconds": 7070,
+        "scope": "Local-only native desktop pixels, hero-following crop; black padding outside smaller captures only. Timing rounded to GIF 10 ms units; final frame held one median interval. No game animation recreated. Short excerpt does not prove the later automatic kill."
+      },
+      {
+        "image": "ecology-qishi-automatic.gif",
+        "sha256": "63c6b219b93a69fd411117189554a1c209f24700cf89d14b237360ccf65106a6",
+        "frames": 22,
+        "firstSeconds": 97.267822,
+        "lastSeconds": 105.062857,
+        "durationMilliseconds": 8160,
+        "scope": "Local-only native desktop pixels, hero-following crop; black padding outside smaller captures only. Timing rounded to GIF 10 ms units; final frame held one median interval. No game animation recreated. Short excerpt does not prove the later automatic kill."
+      }
+    ],
+    "movieFrameCount": 41,
+    "automaticClipCoversLaterActualKill": false,
+    "secondaryMonitorActualActorProof": {
+      "actualGameWindow": true,
+      "hudIncludesAutomaticAndQishiStage": true,
+      "frameMatchRatio": 1,
+      "crossMonitorDragAssertionsPassed": true,
+      "scope": "Actual game actor over desktop wallpaper on an existing monitor; no mixed-DPI or hot-plug inference."
+    }
+  },
+  "shortSourcePerformance": {
+    "csv": "short-journey-performance.csv",
+    "json": "short-journey-performance.json",
+    "samples": 124,
+    "samplingErrors": 0,
+    "observedSeconds": 252.0598595,
+    "cpuSeconds": 166.25,
+    "weightedMachineCpuPercent": 5.49637958782829,
+    "maxIntervalMachineCpuPercent": 13.4856341620584,
+    "maxSamplingIntervalSeconds": 2.0966168,
+    "metrics": {
+      "PrivateMiB": {
+        "first": 27.59765625,
+        "minimum": 27.59765625,
+        "maximum": 145.95703125,
+        "last": 144.43359375
+      },
+      "WorkingSetMiB": {
+        "first": 36.23828125,
+        "minimum": 36.23828125,
+        "maximum": 179.5078125,
+        "last": 177.546875
+      },
+      "Handles": {
+        "first": 274.0,
+        "minimum": 274.0,
+        "maximum": 479.0,
+        "last": 448.0
+      },
+      "Gdi": {
+        "first": 16.0,
+        "minimum": 16.0,
+        "maximum": 109.0,
+        "last": 94.0
+      },
+      "User": {
+        "first": 13.0,
+        "minimum": 13.0,
+        "maximum": 133.0,
+        "last": 125.0
+      }
+    },
+    "stages": {
+      "AwaitAwaken": {
+        "samples": 1,
+        "intervalSeconds": 2.0351577,
+        "cpuSeconds": 0.96875,
+        "meanLogicalCores": 0.4760073383993781
+      },
+      "Fight": {
+        "samples": 3,
+        "intervalSeconds": 6.1163777,
+        "cpuSeconds": 3.921875,
+        "meanLogicalCores": 0.6412087664239571
+      },
+      "JourneyFight": {
+        "samples": 41,
+        "intervalSeconds": 83.5940206,
+        "cpuSeconds": 56.984375,
+        "meanLogicalCores": 0.681680036335039
+      },
+      "ObserveAutomatic": {
+        "samples": 68,
+        "intervalSeconds": 138.79936389999997,
+        "cpuSeconds": 87.875,
+        "meanLogicalCores": 0.6331080887612052
+      },
+      "OpenEcology": {
+        "samples": 1,
+        "intervalSeconds": 2.0230811,
+        "cpuSeconds": 2.171875,
+        "meanLogicalCores": 1.0735481637389621
+      },
+      "PanelsClosed": {
+        "samples": 6,
+        "intervalSeconds": 12.19023150000001,
+        "cpuSeconds": 8.71875,
+        "meanLogicalCores": 0.7152243171099739
+      },
+      "ReadRevoked": {
+        "samples": 1,
+        "intervalSeconds": 2.0301655,
+        "cpuSeconds": 0.890625,
+        "meanLogicalCores": 0.43869576150318784
+      },
+      "SelectOwn": {
+        "samples": 1,
+        "intervalSeconds": 2.0966168,
+        "cpuSeconds": 2.28125,
+        "meanLogicalCores": 1.088062444219659
+      },
+      "startup": {
+        "samples": 2,
+        "intervalSeconds": 3.1748447000000004,
+        "cpuSeconds": 2.4375,
+        "meanLogicalCores": 0.7677540888850405
+      }
+    },
+    "scope": "Own retained child process only. Includes source fixture observation, native screenshots, input and verification costs; short explicit journey, not a long-duration or all-scene benchmark.",
+    "caveat": "Short native source verification includes observation, capture and input overhead. Startup-to-game allocations are expected; these samples cannot establish a long-term leak or low-CPU claim.",
+    "finalRuntimePerformanceBenchmarkClaim": false,
+    "longTermLowCpuOrLeakClaim": false
+  },
+  "fingerprints": {
+    "algorithm": "SHA256",
+    "productionSourceCount": 60,
+    "productionManifestSHA256": "5785AADD8F455056591216DB4BB8E6C23FA1CC65DF154BCA4E2B553A267B2743",
+    "compiledInputsManifestSHA256": "9856469A344C0FDF446792536757E9EFCF7763420B2604E731B9E7CD71EBED22",
+    "productionFiles": [
+      {
+        "Name": "AdventureArt.cs",
+        "SHA256": "96FE564019D1BFCB74B210E2A95563604B36D81473E23FBD8DEE2A2F8DD73E4D"
+      },
+      {
+        "Name": "AdventureController.cs",
+        "SHA256": "A3E801C6A661FDC914BE00372A5E3ACFA8C5B12B4DF2BB8BB96F49E3334BBB0C"
+      },
+      {
+        "Name": "AdventureEffects.cs",
+        "SHA256": "36AD40DF6B0CB154366FD0FBC355AFDC23F9CB11EC2CFBD2022D115D74A1D6AA"
+      },
+      {
+        "Name": "AdventureEquipment.cs",
+        "SHA256": "BFB89C77F898EA0099CAA2C83E8F229C42035339B784A7F795A5DA1410AAD11F"
+      },
+      {
+        "Name": "AdventureModel.cs",
+        "SHA256": "DE13C71EE4D6F93028B916E3BF4D6BE3E38DFA5B46A07FE7ED3C1A9DA0F26F4A"
+      },
+      {
+        "Name": "ArtDemoHeroRig.cs",
+        "SHA256": "7FFE384C106D9799019E3A57A092AFE30C98E5D7E4AC7E94E130B8B3E46C053E"
+      },
+      {
+        "Name": "ArtDemoPack.cs",
+        "SHA256": "F3B2C42DD63139EAEE8B5D007DCE3AD46363CC122E52B7EEAC16F9841E2C1D5A"
+      },
+      {
+        "Name": "ArtDemoSession.cs",
+        "SHA256": "37AA60FC137A604B27ED25BEBE4DBB3328161D69F953474C3713E8886DAE838C"
+      },
+      {
+        "Name": "BaiyeCore.cs",
+        "SHA256": "0D347B6F7D42EF68D993667FC1AF8E636F4DA774CEC38D030808A51392981528"
+      },
+      {
+        "Name": "BaiyeSteleForm.cs",
+        "SHA256": "06C0E52CD4939FF7C85BF320627E16669AC2E7B5D9A8BCCEF18623E71D8F08A1"
+      },
+      {
+        "Name": "BreakthroughForm.cs",
+        "SHA256": "7F68B451709F6313B6818DE7F7C108913C93D533FC93094A65D0FD17F16FFBFD"
+      },
+      {
+        "Name": "CleanupWorld.cs",
+        "SHA256": "AE98C85370F94DC4728A74F2B5C2F84E3D52C180EE2DF64CE2E92DDA0224D51A"
+      },
+      {
+        "Name": "CombatTactics.cs",
+        "SHA256": "2CDCB45B1CA54A328C9FEE564EB19CBD869F73CD0D722C2CD6BC8D497EC193BB"
+      },
+      {
+        "Name": "CultivationCore.cs",
+        "SHA256": "8CE86CCD7A3B2CBDA099B2D45AAD33AFFCA7A0B42DFB57179E8F870DF93F595A"
+      },
+      {
+        "Name": "DesktopCombatFeedback.cs",
+        "SHA256": "C519071AF64E467A8246BF476610D476B1142293CB68DDCF5F9010D30E3BDE94"
+      },
+      {
+        "Name": "DesktopDemoAcceptance.cs",
+        "SHA256": "F649953953E20B670D26A8C7FADB97B89A2C289B551EF5C5A3559194FA3DCE79"
+      },
+      {
+        "Name": "DesktopDemoSession.cs",
+        "SHA256": "D8AE419E612FB87DC454E1202B3C8143835858A7475C9BF8D4252E5E1AA7C12C"
+      },
+      {
+        "Name": "DesktopDemoState.cs",
+        "SHA256": "1FCD82F77F296622A867932B330D09C5C1EE11E6235F1A43275C98663329EE15"
+      },
+      {
+        "Name": "DesktopDisplayLayout.cs",
+        "SHA256": "A235CD0DC0F9D34A66E5F992740F00F8A732196BE9F0C16E527BC0182768AA80"
+      },
+      {
+        "Name": "DesktopEcologyPanel.cs",
+        "SHA256": "A1D2AB543E5049F65C1A9721CD1C270E4032A2F2AD4B879AA65A47A11B63D286"
+      },
+      {
+        "Name": "DesktopEnvironmentPolicy.cs",
+        "SHA256": "9A2B8A48BBEBD7FEDC0AFC10C5A7CF6C3991EC30635F37D013665FB030CF2179"
+      },
+      {
+        "Name": "DesktopFeatureStyle.cs",
+        "SHA256": "CC007FFF1AD3893560A7683A9E5ED3F70B3DD4180F96020222562B9FECED6290"
+      },
+      {
+        "Name": "DesktopFrameCapture.cs",
+        "SHA256": "B2D73F8368D7ED911680702A813F1C30E7ABF8F00753FD28825D8BFB7B2D55DF"
+      },
+      {
+        "Name": "DesktopMaintenance.cs",
+        "SHA256": "A5F496A64F93A7042820A69470ECE7A90A98F8C3A3AA58D7224DDC7895A1A7F3"
+      },
+      {
+        "Name": "DesktopMaterialCatalog.cs",
+        "SHA256": "67CC019F2CFD70A18B2336ED22D39715B358C1CA2841E70ACA635BD1CB75D43F"
+      },
+      {
+        "Name": "DesktopNaturalSoak.cs",
+        "SHA256": "1EE6BD7B9FB8749D59D05315ACD15C1184B0B1E0103391B47886EEF6BFE861CA"
+      },
+      {
+        "Name": "DesktopPanelLayerCoordinator.cs",
+        "SHA256": "EC202030B7CF7A73405EA67CA243F554FC4A98211686C212589E53A9C1FF7B35"
+      },
+      {
+        "Name": "DesktopPlayerView.cs",
+        "SHA256": "CFF6E6F1C26B632BC853FBFCE0A45D56E1D45E76F039A3772BDD8E3379C8BEF9"
+      },
+      {
+        "Name": "DesktopPracticePanel.cs",
+        "SHA256": "3DD9F748BB3C17BA8A29687D7F3FF4D464DCDDE1BBD0AF024DBD878C571671B0"
+      },
+      {
+        "Name": "DesktopProcessActions.cs",
+        "SHA256": "27E00063D8EBA7E05E90FA57E8E5CA68F67E6CB9E96EA0694A6AEA8EBD60FA7D"
+      },
+      {
+        "Name": "DesktopProcessController.cs",
+        "SHA256": "251A389BDF543B5E78D8CEDD3EFD563F349B8457A4E5B0C1BE69C05409E3DE15"
+      },
+      {
+        "Name": "DesktopProcessTargets.cs",
+        "SHA256": "CE3B96F7AEFBA039A920BD574D2AA67B94D6264A17EA03E1250CA1463BF2B84D"
+      },
+      {
+        "Name": "DesktopWeaponCatalog.cs",
+        "SHA256": "C89CB9E4A8E47F545E7544606A38DB3C1CD163F9E4524B10037F6068F2455A96"
+      },
+      {
+        "Name": "DiskSpace.cs",
+        "SHA256": "03738F5992F393BB2C3EE34390458E6FE1B0A34B9396000D2AEAC192C491A21B"
+      },
+      {
+        "Name": "DiskSpaceBar.cs",
+        "SHA256": "D531F7F359CF326EC8C68C7C53EC48CCCF6C670CE2C1EC392CF3C4701FA1DDE6"
+      },
+      {
+        "Name": "DongtianCore.cs",
+        "SHA256": "3DBD2E27DC430D560578DC37159B90B0A734E11B5F1D2D9A6A59FDF016ECE804"
+      },
+      {
+        "Name": "DongtianForm.cs",
+        "SHA256": "734A565277FAF4AB31FBA552CCF7812A17165BADA9CD93478AF1A702C8487D18"
+      },
+      {
+        "Name": "EnemyBalance.cs",
+        "SHA256": "B2D186D4C3B3D268D8050B3DAF3D3CA7C3F9F7A9E4E996A0DEBB5E05305BBC7B"
+      },
+      {
+        "Name": "EnemyFieldBudget.cs",
+        "SHA256": "2BF5E1D4E331CDB28EEB4FC804EC024E7C3F919C7D85C3539B6CA2D8B7E4F98D"
+      },
+      {
+        "Name": "FirewallManager.cs",
+        "SHA256": "381408D4C953B484A76E40F28FE4310ADB295B48B24BB4CB527543C0ECAE5884"
+      },
+      {
+        "Name": "HeroPoseRig.cs",
+        "SHA256": "BAF27E0B6245B071E0AF07113EAFCD0C4407D1427D1BEFB495311806AF2DA9C8"
+      },
+      {
+        "Name": "KnightBrand.cs",
+        "SHA256": "2BBFA0B8AC490DAB9F697A224B833651CC7536619D0EC0FD8BF2E9AE5992AD7C"
+      },
+      {
+        "Name": "KnightPet.cs",
+        "SHA256": "755C849F83265A2AFDD53A921B962F824E14ACEA4AD1A7CF6A925B386383353E"
+      },
+      {
+        "Name": "LingyuCore.cs",
+        "SHA256": "FD7E284DB249502AB6D3BF0958428EE3054FDFBA941F4B2CADBCA48C987C3275"
+      },
+      {
+        "Name": "LingyuForm.cs",
+        "SHA256": "6F728D227E5EB9060CACDB2FF7FDDB0CEE6559AD81CC5407DC77A4FB69EF0907"
+      },
+      {
+        "Name": "LiveTempPopulation.cs",
+        "SHA256": "0605BB23BB7A93B6378720604D1CDE690C6BAF19EA01C7EB18DAEEDEF8AC4963"
+      },
+      {
+        "Name": "MaintenanceConsent.cs",
+        "SHA256": "89794B72A748D0F3770BE36CBED80A7550C554C7C1DB5473C7E4BDC651D13AE3"
+      },
+      {
+        "Name": "MemoryReclaimer.cs",
+        "SHA256": "ACB55294FF784EAEF8F42957E52F1C30D249093C62456360817844818D971721"
+      },
+      {
+        "Name": "NetworkCenter.cs",
+        "SHA256": "964B10C5D40438D0CA5D05EC97D0398A5FC5C602C8258348B1A9CE9A2BF08F5E"
+      },
+      {
+        "Name": "NetworkEngine.cs",
+        "SHA256": "1128D48D9EAAB00B1B418C1B648DF7E0149355809A63F3384D68D913150D3218"
+      },
+      {
+        "Name": "NetworkTools.cs",
+        "SHA256": "18A419F12514AB9D29A2119DDCCEC49E081BA783EF7EDAC7C2E5E1F3DC015171"
+      },
+      {
+        "Name": "PerfProbe.cs",
+        "SHA256": "1CA12DE702D417A78D9AAA1B0A8AAC65CBA0E7BC587D534C490F9F241422B02A"
+      },
+      {
+        "Name": "Program.cs",
+        "SHA256": "F395FF2E308208ACEF45507F357BB369FDFB21F0FE070E18F87E7DEC3C887ECC"
+      },
+      {
+        "Name": "RasterActorRenderer.cs",
+        "SHA256": "40AA7E3A177304BF6575839A1B8665BE6532C569E1FCA76512E04BA841B83B92"
+      },
+      {
+        "Name": "RasterAtlas.cs",
+        "SHA256": "AF892B28876525F073BE31987F4BA9A893CD75293452E418034C36F29785A509"
+      },
+      {
+        "Name": "RegionTheme.cs",
+        "SHA256": "75827F22D9E1168861D3ECEA6A37257D1B85B4CF672BC9F811DBCE0AA668DF80"
+      },
+      {
+        "Name": "ResourceWaveState.cs",
+        "SHA256": "7D30E783B94234D3641984F9EE8E0945FBDB4E31E7E8D5E3ADCE1C0F7852A9F0"
+      },
+      {
+        "Name": "SpeedTest.cs",
+        "SHA256": "E83B10D966E20EC95CA704CBB06E4CD73682877F00B6B562E15520AE14A9E4B4"
+      },
+      {
+        "Name": "TrafficDashboard.cs",
+        "SHA256": "84FC6979AA2106D295F44FBECAB569EEFF50D56699D6A7C87892CF5083E00985"
+      },
+      {
+        "Name": "VersionInfo.cs",
+        "SHA256": "82176167A46CB6D288F0C04C4D7483CED43B868A48A1D3EC797CA94750E4FAF3"
+      }
+    ],
+    "journeyToolSHA256": "DA208F87B11AE9D9B89CD21E9FEAAAAF7DC1136F95D66727955FFA835244FBC9",
+    "journeyWrapperSHA256": "2089CD6DFD014F5B735662A169AA8957E002FDFE0DCF6C35DCB966ED23705D72",
+    "sourceRunnerExeSHA256": "D36E19F0C25049431B38B9C1215F8ACA582BECF21EC38A0CD47E6ADD3FE285ED",
+    "exactShippedRestartExeSHA256": "D8E4DCA67B8303A4BAA90210DAB6F47FB5671C5A6D9FA3B1C0E2BCB277827FC0",
+    "sourceReportSHA256": "9A937FD68459BFCDBC652BB5E8EE4E5D299CD1B92A7A79548A5044F700EF93DD",
+    "restartReportSHA256": "18D1063D1B39E8C0D006BECC2A57804F8EBB0BB5DDDFD2C59C603A3A3FAC5BC4",
+    "restartAdmissionReportSHA256": "04A316DF730B60ED62340F4ED1C09297917A06593A0BEE0E4AA95DF3C6C1B5AB",
+    "allCurrentProductionFilesMatchFrozenManifest": true,
+    "restartCoordinatorSHA256": "77228348F2FA9970363D5376117339791D651ED80461B2D576FB666B7CB10196",
+    "restartAdmissionScriptSHA256": "A7E1C6D011A14575442D241EFF6E6F1EF01D69FF7A517C5F1DEEEFA3DE0EDC89"
+  },
+  "priorRuns": {
+    "R1": {
+      "status": "retained_harness_failure",
+      "reason": "The harness incorrectly required active automatic combat during natural death instead of distinguishing enabled preference and resting state.",
+      "joinedToR3": false
+    },
+    "R2": {
+      "status": "retained_interruption",
+      "joinedToR3": false
+    },
+    "priorFailureEvidenceFilesCheckedByMainReview": 241,
+    "priorFailureEvidenceUnchanged": true
+  },
+  "notClaimed": [
+    "R3 natural-rest recovery coverage",
+    "Eight-hour natural-time stability",
+    "First natural crop maturity or harvest",
+    "Mixed-DPI verification",
+    "Natural first-source maintenance discovery by the exact shipped executable",
+    "Whole-restart zero native input",
+    "Long-term low CPU or absence of leaks"
+  ],
+  "automation3Status": "PAUSED",
+  "eightHourFollowupResumed": false,
+  "productionCodeChangedForThisDocumentation": false
+}

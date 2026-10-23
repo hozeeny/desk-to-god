@@ -1,0 +1,16 @@
+{
+  "SourceProcessExited": true,
+  "RestartProcessExited": true,
+  "RuntimeExeSHA256": "d8e4dca67b8303a4baa90210dab6f47fb5671c5a6d9fa3b1c0e2bcb277827fc0",
+  "RuntimeZipSHA256": "021e804462e3351dd9f2dee75681f69e7d012908ea60ef9e01c949acada04de3",
+  "ProductionSourceCount": 60,
+  "ProductionSourceHashesUnchanged": true,
+  "RetainedFailedAttemptFiles": 241,
+  "RetainedFailedAttemptHashesUnchanged": true,
+  "PowerShellParseErrors": 0,
+  "MainCommit": "5f8151ab46b84c5a53c00a3f5569297b8ec7e266",
+  "MainWorkingTreeClean": true,
+  "Scope": "Terminal process existence is an additional check; launch identity, retained process exit and formal archive hashes are the authoritative results. No broad tests rerun because production sources and delivered runtime are unchanged.",
+  "LegacyAssetsComparedWithMain": 22,
+  "ChangedLegacyAssets": []
+}

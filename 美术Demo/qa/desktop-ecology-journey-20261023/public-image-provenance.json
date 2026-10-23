@@ -1,0 +1,41 @@
+[
+  {
+    "source": "05-actual-one-delete-one-locked-skip.png",
+    "sourceSHA256": "5669bbf239262bbac32d98c146db71382452abb764293e0a9e7b757aac6be598",
+    "crop": [
+      8,
+      32,
+      501,
+      731
+    ],
+    "image": "actual-file-result.png",
+    "sha256": "4f921a9748e3a02987cb368e12a94b5a85750dfb929383656632340be7b10ad9",
+    "operation": "Native opaque client-area crop only; no repaint or compositing"
+  },
+  {
+    "source": "07-file-scope-revoked.png",
+    "sourceSHA256": "7732f0e73992a88a7508ea4552b834919522861e6a53a226d6183b770f24bc8d",
+    "crop": [
+      8,
+      32,
+      501,
+      731
+    ],
+    "image": "file-consent-revoked.png",
+    "sha256": "263da14e669422dacff698f0cfeb4205f8ad7db39ea5cb70c9547fbae1e5c83e",
+    "operation": "Native opaque client-area crop only; no repaint or compositing"
+  },
+  {
+    "source": "09-same-mortal-ten-kills-native-awakening.png",
+    "sourceSHA256": "1d16cb5bcc8d66b938d8e93175c94ec0a5122782da805b548f3e3a6094191ce1",
+    "crop": [
+      8,
+      32,
+      462,
+      731
+    ],
+    "image": "ten-kill-active-awakening.png",
+    "sha256": "e36d9513347882cf9c8068eb9b818a68f6521f3400d3fd08b4695f0d50c58238",
+    "operation": "Native opaque client-area crop only; no repaint or compositing"
+  }
+]

@@ -1,0 +1,61 @@
+﻿{
+    "scope":  "Synthetic terminal-admission contracts only, no process, gameplay, user archive or native input; all false reports rejected before file copying.",
+    "checks":  9,
+    "failures":  0,
+    "results":  [
+                    {
+                        "case":  "missing-terminal",
+                        "passed":  true,
+                        "reason":  "The original journey wrapper has no terminal isolation result.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "nonzero-exit",
+                        "passed":  true,
+                        "reason":  "The original journey wrapper did not finish successfully with unchanged formal archives.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "timeout",
+                        "passed":  true,
+                        "reason":  "The original journey wrapper did not finish successfully with unchanged formal archives.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "changed-archives",
+                        "passed":  true,
+                        "reason":  "The original journey wrapper did not finish successfully with unchanged formal archives.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "wrapper-error",
+                        "passed":  true,
+                        "reason":  "The original journey wrapper did not finish successfully with unchanged formal archives.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "terminal-failure",
+                        "passed":  true,
+                        "reason":  "The original journey has a retained terminal failure; do not accept its intermediate report.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "wrong-build",
+                        "passed":  true,
+                        "reason":  "The original terminal result does not belong to this build and evidence directory.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "wrong-evidence",
+                        "passed":  true,
+                        "reason":  "The original terminal result does not belong to this build and evidence directory.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    },
+                    {
+                        "case":  "missing-exit",
+                        "passed":  true,
+                        "reason":  "The original journey wrapper did not finish successfully with unchanged formal archives.",
+                        "noExecutableAssetsOrProfileCopied":  true
+                    }
+                ]
+}

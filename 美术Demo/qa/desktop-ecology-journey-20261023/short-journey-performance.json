@@ -1,0 +1,98 @@
+{
+  "Samples": 124,
+  "SamplingErrors": 0,
+  "ObservedSeconds": 252.0598595,
+  "CpuSeconds": 166.25,
+  "CpuMachinePercent": 5.49637958782829,
+  "Scope": "Own retained child process only. Includes source fixture observation, native screenshots, input and verification costs; short explicit journey, not a long-duration or all-scene benchmark.",
+  "metrics": {
+    "PrivateMiB": {
+      "first": 27.59765625,
+      "minimum": 27.59765625,
+      "maximum": 145.95703125,
+      "last": 144.43359375
+    },
+    "WorkingSetMiB": {
+      "first": 36.23828125,
+      "minimum": 36.23828125,
+      "maximum": 179.5078125,
+      "last": 177.546875
+    },
+    "Handles": {
+      "first": 274.0,
+      "minimum": 274.0,
+      "maximum": 479.0,
+      "last": 448.0
+    },
+    "Gdi": {
+      "first": 16.0,
+      "minimum": 16.0,
+      "maximum": 109.0,
+      "last": 94.0
+    },
+    "User": {
+      "first": 13.0,
+      "minimum": 13.0,
+      "maximum": 133.0,
+      "last": 125.0
+    }
+  },
+  "maxSamplingIntervalSeconds": 2.0966168,
+  "stages": {
+    "AwaitAwaken": {
+      "samples": 1,
+      "intervalSeconds": 2.0351577,
+      "cpuSeconds": 0.96875,
+      "meanLogicalCores": 0.4760073383993781
+    },
+    "Fight": {
+      "samples": 3,
+      "intervalSeconds": 6.1163777,
+      "cpuSeconds": 3.921875,
+      "meanLogicalCores": 0.6412087664239571
+    },
+    "JourneyFight": {
+      "samples": 41,
+      "intervalSeconds": 83.5940206,
+      "cpuSeconds": 56.984375,
+      "meanLogicalCores": 0.681680036335039
+    },
+    "ObserveAutomatic": {
+      "samples": 68,
+      "intervalSeconds": 138.79936389999997,
+      "cpuSeconds": 87.875,
+      "meanLogicalCores": 0.6331080887612052
+    },
+    "OpenEcology": {
+      "samples": 1,
+      "intervalSeconds": 2.0230811,
+      "cpuSeconds": 2.171875,
+      "meanLogicalCores": 1.0735481637389621
+    },
+    "PanelsClosed": {
+      "samples": 6,
+      "intervalSeconds": 12.19023150000001,
+      "cpuSeconds": 8.71875,
+      "meanLogicalCores": 0.7152243171099739
+    },
+    "ReadRevoked": {
+      "samples": 1,
+      "intervalSeconds": 2.0301655,
+      "cpuSeconds": 0.890625,
+      "meanLogicalCores": 0.43869576150318784
+    },
+    "SelectOwn": {
+      "samples": 1,
+      "intervalSeconds": 2.0966168,
+      "cpuSeconds": 2.28125,
+      "meanLogicalCores": 1.088062444219659
+    },
+    "startup": {
+      "samples": 2,
+      "intervalSeconds": 3.1748447000000004,
+      "cpuSeconds": 2.4375,
+      "meanLogicalCores": 0.7677540888850405
+    }
+  },
+  "caveat": "Short native source verification includes observation, capture and input overhead. Startup-to-game allocations are expected; these samples cannot establish a long-term leak or low-CPU claim."
+}
